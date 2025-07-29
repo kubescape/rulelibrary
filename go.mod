@@ -64,6 +64,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/facebookincubator/nvdtools v0.1.5 // indirect
 	github.com/fatih/color v1.18.0 // indirect
+	github.com/fatih/structs v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -223,4 +224,5 @@ replace github.com/mholt/archiver/v3 v3.5.1 => github.com/anchore/archiver/v3 v3
 
 replace github.com/inspektor-gadget/inspektor-gadget => github.com/amirmalka/inspektor-gadget v0.39.1-0.20250511132413-c7a2a761237a
 
-replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.355-0.20250729074053-d92f89c533cb
+// replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.355-0.20250729104256-dce926b87279
+replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.355-0.20250729142725-1d06f369a1a5

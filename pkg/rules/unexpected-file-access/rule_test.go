@@ -1,7 +1,6 @@
 package unexpectedfileaccess
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
@@ -10,11 +9,12 @@ import (
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
-	common "github.com/kubescape/rulelibrary/rules/common"
+	"github.com/kubescape/node-agent/pkg/rulemanager/types"
+	common "github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR0002UnexpectedFileAccess(t *testing.T) {
-	ruleSpec, err := common.LoadRuleFromYAML("rules/unexpected-file-access/unexpected-file-access.yaml")
+	ruleSpec, err := common.LoadRuleFromYAML("unexpected-file-access.yaml")
 	if err != nil {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
@@ -43,12 +43,19 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	bytes, err := json.Marshal(e)
-	if err != nil {
-		t.Fatalf("Failed to marshal event: %v", err)
+	fullEvent := types.EventWithChecks{
+		Event: e,
+		ProfileChecks: profilevalidator.ProfileValidationResult{
+			Checks: []profilevalidator.ProfileValidationCheck{
+				{
+					Name:   "open_dynamic_path",
+					Result: false,
+				},
+			},
+		},
 	}
 
-	ok, err := celEngine.EvaluateRule(bytes, ruleSpec.Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(fullEvent.CelEvaluationMap(), ruleSpec.Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
