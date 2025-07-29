@@ -1,4 +1,4 @@
-package symlinkcreatedoversensitivefile
+package r1010symlinkcreatedoversensitivefile
 
 import (
 	"testing"
