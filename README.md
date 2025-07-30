@@ -19,22 +19,23 @@ metadata:
   labels:
     app: kubescape
 spec:
-  - name: "Rule Display Name"
-    enabled: true
-    id: "R####"
-    description: "Description of what the rule detects"
-    expressions:
-      message: "CEL expression for alert message"
-      unique_id: "CEL expression for unique identifier"
-      rule_expression:
-        - event_type: "event_type_name"
-          expression: "CEL expression for detection logic"
-    profile_dependency: 0  # 0=Required, 1=Optional, 2=NotRequired
-    severity: 1
-    support_policy: false
-    tags:
-      - "tag1"
-      - "tag2"
+  rules:
+    - name: "Rule Display Name"
+      enabled: true
+      id: "R####"
+      description: "Description of what the rule detects"
+      expressions:
+        message: "CEL expression for alert message"
+        unique_id: "CEL expression for unique identifier"
+        rule_expression:
+          - event_type: "event_type_name"
+            expression: "CEL expression for detection logic"
+      profile_dependency: 0  # 0=Required, 1=Optional, 2=NotRequired
+      severity: 1
+      support_policy: false
+      tags:
+        - "tag1"
+        - "tag2"
 ```
 
 ### Rule Fields
@@ -89,11 +90,11 @@ pkg/rules/r0001-unexpected-process-launched/
 
 ### 2. Create Rule YAML File
 
-Create a YAML file in your rule directory with the rule definition (see [example](pkg/rules/r0001-unexpected-process-launched/unexpected-process-launched.yaml))
+Create a YAML file in your rule directory with the rule definition (see example [unexpected-process-launched.yaml](pkg/rules/r0001-unexpected-process-launched/unexpected-process-launched.yaml))
 
 ### 3. Add Test Cases
 
-Create a `rule_test.go` file in your rule directory (see [example](pkg/rules/r0001-unexpected-process-launched/rule_test.go))
+Create a `rule_test.go` file in your rule directory (see example [rule_test.go](pkg/rules/r0001-unexpected-process-launched/rule_test.go))
 
 ### 4. Test Your Rule
 
@@ -133,11 +134,12 @@ metadata:
   labels:
     app: kubescape
 spec:
-  - name: "Rule 1"
-    # ... rule 1 definition
-  - name: "Rule 2"
-    # ... rule 2 definition
-  # ... all other rules
+  rules:
+    - name: "Rule 1"
+      # ... rule 1 definition
+    - name: "Rule 2"
+      # ... rule 2 definition
+    # ... all other rules
 ```
 
 ### Prerequisites
