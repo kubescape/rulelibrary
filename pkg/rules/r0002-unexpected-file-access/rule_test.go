@@ -30,6 +30,8 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 					},
 				},
 			},
+			Pid:      0,
+			Comm:     "test",
 			Path:     "/test",
 			FullPath: "/test",
 			Flags:    []string{"O_RDONLY"},
@@ -61,5 +63,23 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 	if !ok {
 		t.Fatalf("Rule evaluation failed")
+	}
+
+	// Evaluate the message
+	message, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.Message)
+	if err != nil {
+		t.Fatalf("Failed to evaluate message: %v", err)
+	}
+	if message != "Unexpected file access detected: test with PID 0 to /test" {
+		t.Fatalf("Message evaluation failed %s", message)
+	}
+
+	// Evaluate the unique id
+	uniqueId, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.UniqueID)
+	if err != nil {
+		t.Fatalf("Failed to evaluate unique id: %v", err)
+	}
+	if uniqueId != "test_/test" {
+		t.Fatalf("Unique id evaluation failed %s", uniqueId)
 	}
 }
