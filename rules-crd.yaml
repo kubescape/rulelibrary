@@ -23,7 +23,7 @@ spec:
     tags:
       - "anomaly"
       - "process"
-      - "exec" 
+      - "exec"
   - name: "Unexpected file access"
     enabled: true
     id: "R0002"
@@ -40,7 +40,7 @@ spec:
     tags:
       - "anomaly"
       - "file"
-      - "access" 
+      - "access"
   - name: "Symlink Created Over Sensitive File"
     enabled: true
     id: "R1010"
@@ -57,4 +57,4 @@ spec:
     tags:
       - "files"
       - "malicious"
-      - "symlink" 
+      - "symlink"

@@ -65,14 +65,39 @@ for rule_file in $RULE_FILES; do
     echo -e "${YELLOW}Processing: $(basename "$rule_file")${NC}"
     
     # Extract the spec.rules array content from each rule file
-    # We need to get the content under spec.rules: and add it to our combined spec.rules array
     if command -v yq >/dev/null 2>&1; then
-        # Use yq to extract the spec.rules content and format it properly
-        yq eval '.spec.rules' "$rule_file" >> "$OUTPUT_FILE"
+        # Use yq to extract each rule and format it as an array item
+        yq eval '.spec.rules[]' "$rule_file" | sed '1s/^/  - /' | sed '2,$s/^/    /' >> "$OUTPUT_FILE"
     else
-        # Fallback to sed/awk if yq is not available
-        # Extract everything between "rules:" and the end of the file
-        awk '/^  rules:/ {p=1; next} /^[a-zA-Z]/ && p {p=0} p {print}' "$rule_file" >> "$OUTPUT_FILE"
+        # Fallback to awk if yq is not available
+        # Extract everything after "rules:" and format as array items
+        awk '
+        BEGIN { first_line = 1 }
+        /^  rules:/ { 
+            in_rules = 1
+            next 
+        }
+        /^[a-zA-Z]/ && in_rules { 
+            in_rules = 0 
+        }
+        in_rules && /^- / {
+            # This is already a rule array item, print as-is
+            print "  " $0
+            first_line = 0
+            next
+        }
+        in_rules && /^  / {
+            # This is content under rules, need to format it
+            if (first_line && /^  [a-zA-Z]/) {
+                # First property of a rule, make it an array item
+                print "  - " substr($0, 3)
+                first_line = 0
+            } else {
+                # Subsequent properties, indent properly
+                print "    " substr($0, 3)
+            }
+        }
+        ' "$rule_file" >> "$OUTPUT_FILE"
     fi
 done
 
@@ -93,4 +118,3 @@ else
 fi
 
 echo -e "${GREEN}Rules CRD generation completed successfully!${NC}"
-
