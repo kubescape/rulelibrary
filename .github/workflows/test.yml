@@ -44,4 +44,16 @@ jobs:
         file: ./coverage.out
         flags: unittests
         name: codecov-umbrella
-        fail_ci_if_error: false 
+        fail_ci_if_error: false
+        
+    - name: Generate Rules CRD
+      run: |
+        chmod +x gen.sh
+        ./gen.sh
+        
+    - name: Upload Rules CRD as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rules-crd
+        path: rules-crd.yaml
+        retention-days: 30 
