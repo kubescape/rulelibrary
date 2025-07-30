@@ -1,0 +1,26 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: unexpected-process-launched-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+  - name: "Unexpected process launched"
+    enabled: true
+    id: "R0001"
+    description: "Detects unexpected process launches that are not in the baseline"
+    expressions:
+      message: "'Unexpected process launched: ' + data.event.Comm + ' with PID ' + string(data.event.Pid)"
+      unique_id: "data.event.Comm + '_' + string(data.event.Pid) + '_' + data.event.ExePath"
+      rule_expression:
+        - event_type: "exec"
+          expression: "!data.profile_checks.exec_path"
+    profile_dependency: 0
+    severity: 1
+    support_policy: false
+    tags:
+      - "anomaly"
+      - "process"
+      - "exec" 
