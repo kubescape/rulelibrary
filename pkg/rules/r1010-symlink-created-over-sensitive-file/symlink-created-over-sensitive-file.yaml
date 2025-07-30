@@ -1,11 +1,12 @@
 apiVersion: kubescape.io/v1
-kind: Rule
+kind: Rules
 metadata:
   name: symlink-created-over-sensitive-file-rule
   namespace: kubescape
   labels:
     app: kubescape
 spec:
+  rules:
   - name: "Symlink Created Over Sensitive File"
     enabled: true
     id: "R1010"

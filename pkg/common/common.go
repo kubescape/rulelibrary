@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func LoadRuleFromYAML(ruleYAMLPath string) (*v1.RuleSpec, error) {
+func LoadRuleFromYAML(ruleYAMLPath string) (*v1.RulesSpec, error) {
 	rules := &v1.Rules{}
 	bytes, err := os.ReadFile(ruleYAMLPath)
 	if err != nil {
@@ -19,9 +19,9 @@ func LoadRuleFromYAML(ruleYAMLPath string) (*v1.RuleSpec, error) {
 		return nil, err
 	}
 
-	if len(rules.Spec) == 0 {
+	if len(rules.Spec.Rules) == 0 {
 		return nil, fmt.Errorf("no rules found in %s", ruleYAMLPath)
 	}
 
-	return &rules.Spec[0], nil
+	return &rules.Spec, nil
 }

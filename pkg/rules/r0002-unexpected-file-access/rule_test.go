@@ -55,7 +55,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		},
 	}
 
-	ok, err := celEngine.EvaluateRule(fullEvent.CelEvaluationMap(), ruleSpec.Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}

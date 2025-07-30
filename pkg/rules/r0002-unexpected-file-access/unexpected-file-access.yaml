@@ -1,11 +1,12 @@
 apiVersion: kubescape.io/v1
-kind: Rule
+kind: Rules
 metadata:
   name: unexpected-file-access-rule
   namespace: kubescape
   labels:
     app: kubescape
 spec:
+  rules:
   - name: "Unexpected file access"
     enabled: true
     id: "R0002"

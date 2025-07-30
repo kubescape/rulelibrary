@@ -12,7 +12,7 @@ Each rule is defined in a YAML file with the following structure:
 
 ```yaml
 apiVersion: kubescape.io/v1
-kind: Rule
+kind: Rules
 metadata:
   name: rule-name-rule
   namespace: kubescape
@@ -126,7 +126,7 @@ The script generates `rules-crd.yaml` containing:
 
 ```yaml
 apiVersion: kubescape.io/v1
-kind: Rule
+kind: Rules
 metadata:
   name: kubescape-rules
   namespace: kubescape

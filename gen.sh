@@ -28,13 +28,14 @@ trap cleanup EXIT
 # Create the Rule instance header
 cat > "$TEMP_DIR/rule-header.yaml" << 'EOF'
 apiVersion: kubescape.io/v1
-kind: Rule
+kind: Rules
 metadata:
   name: kubescape-rules
   namespace: kubescape
   labels:
     app: kubescape
 spec:
+  rules:
 EOF
 
 # Find all rule YAML files and combine them
@@ -59,19 +60,19 @@ echo -e "${GREEN}Found $(echo "$RULE_FILES" | wc -l) rule files${NC}"
 # Start with the Rule instance header
 cp "$TEMP_DIR/rule-header.yaml" "$OUTPUT_FILE"
 
-# Process each rule file and extract the spec content
+# Process each rule file and extract the spec.rules content
 for rule_file in $RULE_FILES; do
     echo -e "${YELLOW}Processing: $(basename "$rule_file")${NC}"
     
-    # Extract the spec array content from each rule file
-    # We need to get the content under spec: and add it to our combined spec array
+    # Extract the spec.rules array content from each rule file
+    # We need to get the content under spec.rules: and add it to our combined spec.rules array
     if command -v yq >/dev/null 2>&1; then
-        # Use yq to extract the spec content and format it properly
-        yq eval '.spec' "$rule_file" >> "$OUTPUT_FILE"
+        # Use yq to extract the spec.rules content and format it properly
+        yq eval '.spec.rules' "$rule_file" >> "$OUTPUT_FILE"
     else
         # Fallback to sed/awk if yq is not available
-        # Extract everything between "spec:" and the end of the file
-        awk '/^spec:/ {p=1; next} /^[a-zA-Z]/ && p {p=0} p {print}' "$rule_file" >> "$OUTPUT_FILE"
+        # Extract everything between "rules:" and the end of the file
+        awk '/^  rules:/ {p=1; next} /^[a-zA-Z]/ && p {p=0} p {print}' "$rule_file" >> "$OUTPUT_FILE"
     fi
 done
 

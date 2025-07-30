@@ -1,11 +1,12 @@
 apiVersion: kubescape.io/v1
-kind: Rule
+kind: Rules
 metadata:
   name: unexpected-process-launched-rule
   namespace: kubescape
   labels:
     app: kubescape
 spec:
+  rules:
   - name: "Unexpected process launched"
     enabled: true
     id: "R0001"
