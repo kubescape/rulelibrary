@@ -16,7 +16,7 @@ spec:
       unique_id: "data.event.Comm + '_' + data.event.CapName"
       rule_expression:
         - event_type: "capabilities"
-          expression: "!data.profile_checks.capability_whitelisted"
+          expression: "!ap.was_capability_used(data.event.Event.CommonData.Runtime.ContainerID, data.event.CapName)"
     profile_dependency: 0
     severity: 1
     support_policy: false

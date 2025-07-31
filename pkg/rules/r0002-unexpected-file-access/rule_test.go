@@ -3,13 +3,15 @@ package r0002unexpectedfileaccess
 import (
 	"testing"
 
+	"github.com/goradd/maps"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
+	"github.com/kubescape/node-agent/pkg/objectcache"
+	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
 	traceropentype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/open/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
-	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
 
@@ -28,6 +30,9 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 							ContainerName: "test",
 						},
 					},
+					Runtime: eventtypes.BasicRuntimeMetadata{
+						ContainerID: "test",
+					},
 				},
 			},
 			Pid:      0,
@@ -38,26 +43,32 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		},
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{}
+	objCache := &profilevalidator.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+
+	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
+
+		ContainerType: objectcache.Container,
+		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+			objectcache.Container: {
+				{
+					Name: "test",
+				},
+			},
+		},
+	})
 
 	celEngine, err := celengine.NewCEL(objCache)
 	if err != nil {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	fullEvent := types.EventWithChecks{
-		Event: e,
-		ProfileChecks: profilevalidator.ProfileValidationResult{
-			Checks: []profilevalidator.ProfileValidationCheck{
-				{
-					Name:   "open_dynamic_path",
-					Result: false,
-				},
-			},
-		},
-	}
+	celSerializer := celengine.CelEventSerializer{}
 
-	ok, err := celEngine.EvaluateRule(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.RuleExpression)
+	eventMap := celSerializer.Serialize(e)
+
+	ok, err := celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -66,7 +77,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -75,11 +86,36 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
 	if uniqueId != "test_/test" {
 		t.Fatalf("Unique id evaluation failed %s", uniqueId)
+	}
+
+	// Create profile
+	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
+	if profile == nil {
+		profile = &v1beta1.ApplicationProfile{}
+		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
+			Name: "test",
+			Opens: []v1beta1.OpenCalls{
+				{
+					Path:  "/test",
+					Flags: []string{"O_RDONLY"},
+				},
+			},
+		})
+
+		objCache.SetApplicationProfile(profile)
+	}
+
+	ok, err = celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if ok {
+		t.Fatalf("Rule evaluation should have failed")
 	}
 }

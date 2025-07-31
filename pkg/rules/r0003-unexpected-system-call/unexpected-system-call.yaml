@@ -16,7 +16,7 @@ spec:
       unique_id: "data.event.SyscallName"
       rule_expression:
         - event_type: "syscall"
-          expression: "!data.profile_checks.syscall_whitelisted"
+          expression: "!ap.was_syscall_used(data.event.Event.CommonData.Runtime.ContainerID, data.event.SyscallName)"
     profile_dependency: 0
     severity: 1
     support_policy: false
