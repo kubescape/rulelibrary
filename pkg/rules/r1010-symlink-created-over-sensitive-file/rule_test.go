@@ -3,11 +3,14 @@ package r1010symlinkcreatedoversensitivefile
 import (
 	"testing"
 
+	"github.com/goradd/maps"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	tracersymlinktype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/symlink/types"
+	"github.com/kubescape/node-agent/pkg/objectcache"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
 func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
@@ -25,6 +28,9 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 						ContainerName: "test",
 					},
 				},
+				Runtime: eventtypes.BasicRuntimeMetadata{
+					ContainerID: "test",
+				},
 			},
 		},
 		Comm:    "test",
@@ -32,7 +38,21 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 		NewPath: "/etc/abc",
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{}
+	objCache := &profilevalidator.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+
+	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
+
+		ContainerType: objectcache.Container,
+		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+			objectcache.Container: {
+				{
+					Name: "test",
+				},
+			},
+		},
+	})
 
 	celEngine, err := celengine.NewCEL(objCache)
 	if err != nil {
@@ -84,5 +104,30 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 	if ok {
 		t.Fatalf("Rule evaluation should have failed for non-sensitive file symlink")
+	}
+
+	// Create profile
+	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
+	if profile == nil {
+		profile = &v1beta1.ApplicationProfile{}
+		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
+			Name: "test",
+			Opens: []v1beta1.OpenCalls{
+				{
+					Path:  "/etc/shadow",
+					Flags: []string{"O_RDONLY"},
+				},
+			},
+		})
+	}
+
+	objCache.SetApplicationProfile(profile)
+
+	ok, err = celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if ok {
+		t.Fatalf("Rule evaluation should have failed")
 	}
 }

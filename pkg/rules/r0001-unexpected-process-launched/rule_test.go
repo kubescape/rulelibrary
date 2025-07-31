@@ -3,7 +3,10 @@ package r0001unexpectedprocesslaunched
 import (
 	"testing"
 
+	"github.com/goradd/maps"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
+	"github.com/kubescape/node-agent/pkg/objectcache"
+	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
 	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
@@ -27,6 +30,9 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 							ContainerName: "test",
 						},
 					},
+					Runtime: eventtypes.BasicRuntimeMetadata{
+						ContainerID: "test",
+					},
 				},
 			},
 			Pid:     1234,
@@ -37,7 +43,20 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		},
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{}
+	objCache := &profilevalidator.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+
+	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
+		ContainerType: objectcache.Container,
+		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+			objectcache.Container: {
+				{
+					Name: "test",
+				},
+			},
+		},
+	})
 
 	celEngine, err := celengine.NewCEL(objCache)
 	if err != nil {
@@ -74,4 +93,28 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		t.Fatalf("Unique id evaluation failed")
 	}
 
+	// Create profile
+	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
+	if profile == nil {
+		profile = &v1beta1.ApplicationProfile{}
+		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
+			Name: "test",
+			Execs: []v1beta1.ExecCalls{
+				{
+					Path: "/usr/bin/test-process",
+					Args: []string{"test-process", "arg1"},
+				},
+			},
+		})
+
+		objCache.SetApplicationProfile(profile)
+	}
+
+	ok, err = celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if ok {
+		t.Fatalf("Rule evaluation should have failed")
+	}
 }

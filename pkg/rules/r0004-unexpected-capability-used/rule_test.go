@@ -3,11 +3,14 @@ package r0004unexpectedcapabilityused
 import (
 	"testing"
 
+	"github.com/goradd/maps"
 	tracercapabilitiestype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/capabilities/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
+	"github.com/kubescape/node-agent/pkg/objectcache"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
 func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
@@ -25,6 +28,9 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 						ContainerName: "test",
 					},
 				},
+				Runtime: eventtypes.BasicRuntimeMetadata{
+					ContainerID: "test",
+				},
 			},
 		},
 		Comm:    "test",
@@ -33,7 +39,21 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 		Pid:     1234,
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{}
+	objCache := &profilevalidator.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+
+	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
+
+		ContainerType: objectcache.Container,
+		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+			objectcache.Container: {
+				{
+					Name: "test",
+				},
+			},
+		},
+	})
 
 	celEngine, err := celengine.NewCEL(objCache)
 	if err != nil {
@@ -69,5 +89,27 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 	}
 	if uniqueId != "test_test_cap" {
 		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
+	}
+
+	// Create profile
+	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
+	if profile == nil {
+		profile = &v1beta1.ApplicationProfile{}
+		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
+			Name: "test",
+			Capabilities: []string{
+				"test_cap",
+			},
+		})
+	}
+
+	objCache.SetApplicationProfile(profile)
+
+	ok, err = celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if ok {
+		t.Fatalf("Rule evaluation should have failed")
 	}
 }
