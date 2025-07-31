@@ -39,20 +39,12 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	fullEvent := types.EventWithChecks{
-		Event: e,
-		ProfileChecks: profilevalidator.ProfileValidationResult{
-			Checks: []profilevalidator.ProfileValidationCheck{
-				{
-					Name:   "syscall_whitelisted",
-					Result: false,
-				},
-			},
-		},
-	}
+	celSerializer := celengine.CelEventSerializer{}
+
+	eventMap := celSerializer.Serialize(e)
 
 	// Evaluate the rule
-	ok, err := celEngine.EvaluateRule(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -61,7 +53,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -70,7 +62,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}

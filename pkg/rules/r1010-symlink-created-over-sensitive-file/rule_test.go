@@ -7,7 +7,6 @@ import (
 	tracersymlinktype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/symlink/types"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
-	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
 
@@ -40,15 +39,12 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	fullEvent := types.EventWithChecks{
-		Event: e,
-		ProfileChecks: profilevalidator.ProfileValidationResult{
-			Checks: []profilevalidator.ProfileValidationCheck{},
-		},
-	}
+	celSerializer := celengine.CelEventSerializer{}
+
+	eventMap := celSerializer.Serialize(e)
 
 	// Evaluate the rule
-	ok, err := celEngine.EvaluateRule(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -57,7 +53,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -67,7 +63,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
@@ -80,7 +76,9 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	e.OldPath = "/tmp/test"
 	e.NewPath = "/tmp/abc"
 
-	ok, err = celEngine.EvaluateRule(fullEvent.CelEvaluationMap(), ruleSpec.Rules[0].Expressions.RuleExpression)
+	eventMap = celSerializer.Serialize(e)
+
+	ok, err = celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
