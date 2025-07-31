@@ -18,7 +18,7 @@ spec:
         - event_type: "syscall"
           expression: "data.event.SyscallName == 'bpf' && !ap.was_syscall_used(data.event.Event.CommonData.Runtime.ContainerID, data.event.SyscallName)"
     profile_dependency: 1
-    severity: 1
+    severity: 5
     support_policy: false
     tags:
       - "syscall"
