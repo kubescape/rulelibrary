@@ -21,6 +21,5 @@ spec:
     severity: 1
     support_policy: true
     tags:
-      - "files"
-      - "malicious"
+      - "anomaly"
       - "symlink" 

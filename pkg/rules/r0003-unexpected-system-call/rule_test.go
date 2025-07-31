@@ -9,6 +9,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	"github.com/kubescape/node-agent/pkg/rulemanager/types"
+	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
@@ -64,7 +65,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	eventMap := celSerializer.Serialize(e)
 
 	// Evaluate the rule
-	ok, err := celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -102,7 +103,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 
 	objCache.SetApplicationProfile(profile)
 
-	ok, err = celEngine.EvaluateRule(eventMap, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
