@@ -32,6 +32,8 @@ kind: Rules
 metadata:
   name: kubescape-rules
   namespace: kubescape
+  annotations:
+    kubescape.io/namespace: kubescape
   labels:
     app: kubescape
 spec:
