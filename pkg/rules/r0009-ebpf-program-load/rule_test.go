@@ -1,4 +1,4 @@
-package r0003unexpectedsystemcall
+package r0009ebpfprogramload
 
 import (
 	"testing"
@@ -14,13 +14,13 @@ import (
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
-func TestR0003UnexpectedSystemCall(t *testing.T) {
-	ruleSpec, err := common.LoadRuleFromYAML("unexpected-system-call.yaml")
+func TestR0009EbpfProgramLoad(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("ebpf-program-load.yaml")
 	if err != nil {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 
-	// Create a syscall event
+	// Create a syscall event with bpf syscall
 	e := &types.SyscallEvent{
 		Event: eventtypes.Event{
 			CommonData: eventtypes.CommonData{
@@ -34,9 +34,9 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 				},
 			},
 		},
-		Comm:        "test",
-		SyscallName: "test_syscall",
 		Pid:         1234,
+		Comm:        "test-process",
+		SyscallName: "bpf",
 	}
 
 	objCache := &profilevalidator.RuleObjectCacheMock{
@@ -44,7 +44,6 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	}
 
 	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
-
 		ContainerType: objectcache.Container,
 		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 			objectcache.Container: {
@@ -61,16 +60,15 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	}
 
 	celSerializer := celengine.CelEventSerializer{}
-
 	eventMap := celSerializer.Serialize(e)
 
-	// Evaluate the rule
+	// Test without profile - should trigger alert
 	ok, err := celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if !ok {
-		t.Fatalf("Rule evaluation failed")
+		t.Fatalf("Rule evaluation failed - should have detected bpf syscall")
 	}
 
 	// Evaluate the message
@@ -78,8 +76,8 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected system call detected: test_syscall with PID 1234" {
-		t.Fatalf("Message evaluation failed: %s", message)
+	if message != "bpf system call executed in test" {
+		t.Fatalf("Message evaluation failed, got: %s", message)
 	}
 
 	// Evaluate the unique id
@@ -87,27 +85,39 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test_syscall" {
-		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
+	if uniqueId != "test-process_bpf" {
+		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 
-	// Create profile
+	// Test with whitelisted bpf syscall in profile
 	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
 	if profile == nil {
 		profile = &v1beta1.ApplicationProfile{}
 		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
 			Name:     "test",
-			Syscalls: []string{"test_syscall"},
+			Syscalls: []string{"bpf"},
 		})
-	}
 
-	objCache.SetApplicationProfile(profile)
+		objCache.SetApplicationProfile(profile)
+	}
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if ok {
-		t.Fatalf("Rule evaluation should have failed")
+		t.Fatalf("Rule evaluation should have failed since bpf syscall is whitelisted")
+	}
+
+	// Test with non-bpf syscall (should not trigger)
+	e.SyscallName = "open"
+	eventMap = celSerializer.Serialize(e)
+
+	ok, err = celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if ok {
+		t.Fatalf("Rule evaluation should have failed for non-bpf syscall")
 	}
 }

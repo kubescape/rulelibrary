@@ -18,9 +18,8 @@ spec:
         - event_type: "symlink"
           expression: "(data.event.OldPath.startsWith('/etc/shadow') || data.event.OldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(data.event.Event.CommonData.Runtime.ContainerID, data.event.OldPath)"
     profile_dependency: 0
-    severity: 1
+    severity: 5
     support_policy: true
     tags:
-      - "files"
-      - "malicious"
+      - "anomaly"
       - "symlink" 

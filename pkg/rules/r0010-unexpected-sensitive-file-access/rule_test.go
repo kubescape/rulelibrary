@@ -1,4 +1,4 @@
-package r0002unexpectedfileaccess
+package r0010unexpectedsensitivefileaccess
 
 import (
 	"testing"
@@ -16,12 +16,13 @@ import (
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
 
-func TestR0002UnexpectedFileAccess(t *testing.T) {
-	ruleSpec, err := common.LoadRuleFromYAML("unexpected-file-access.yaml")
+func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("unexpected-sensitive-file-access.yaml")
 	if err != nil {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
-	// Create a file access event
+
+	// Create a file access event to sensitive file
 	e := &events.OpenEvent{
 		Event: traceropentype.Event{
 			Event: eventtypes.Event{
@@ -36,10 +37,10 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 					},
 				},
 			},
-			Pid:      0,
-			Comm:     "test",
-			Path:     "/test",
-			FullPath: "/test",
+			Pid:      1234,
+			Comm:     "test-process",
+			Path:     "/etc/shadow",
+			FullPath: "/etc/shadow",
 			Flags:    []string{"O_RDONLY"},
 		},
 	}
@@ -49,7 +50,6 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 
 	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
-
 		ContainerType: objectcache.Container,
 		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 			objectcache.Container: {
@@ -66,15 +66,15 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 
 	celSerializer := celengine.CelEventSerializer{}
-
 	eventMap := celSerializer.Serialize(e)
 
+	// Test without profile - should trigger alert for sensitive file
 	ok, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if !ok {
-		t.Fatalf("Rule evaluation failed")
+		t.Fatalf("Rule evaluation failed - should have detected sensitive file access")
 	}
 
 	// Evaluate the message
@@ -82,8 +82,8 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected file access detected: test with PID 0 to /test" {
-		t.Fatalf("Message evaluation failed %s", message)
+	if message != "Unexpected sensitive file access: /etc/shadow by process test-process" {
+		t.Fatalf("Message evaluation failed, got: %s", message)
 	}
 
 	// Evaluate the unique id
@@ -91,11 +91,11 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test_/test" {
-		t.Fatalf("Unique id evaluation failed %s", uniqueId)
+	if uniqueId != "test-process_/etc/shadow" {
+		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 
-	// Create profile
+	// Test with whitelisted sensitive file in profile
 	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
 	if profile == nil {
 		profile = &v1beta1.ApplicationProfile{}
@@ -103,7 +103,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 			Name: "test",
 			Opens: []v1beta1.OpenCalls{
 				{
-					Path:  "/test",
+					Path:  "/etc/shadow",
 					Flags: []string{"O_RDONLY"},
 				},
 			},
@@ -117,6 +117,19 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if ok {
-		t.Fatalf("Rule evaluation should have failed")
+		t.Fatalf("Rule evaluation should have failed since sensitive file is whitelisted")
+	}
+
+	// Test with non-sensitive file (should not trigger)
+	e.Event.Path = "/tmp/test.txt"
+	e.Event.FullPath = "/tmp/test.txt"
+	eventMap = celSerializer.Serialize(e)
+
+	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if ok {
+		t.Fatalf("Rule evaluation should have failed for non-sensitive file")
 	}
 }
