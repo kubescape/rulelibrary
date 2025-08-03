@@ -1,0 +1,28 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: exec-from-malicious-source-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+  - name: "Exec from malicious source"
+    enabled: true
+    id: "R1000"
+    description: "Detecting exec calls that are from malicious source like: /dev/shm, /proc/self"
+    expressions:
+      message: "'Execution from malicious source: ' + data.event.ExePath + ' in directory ' + data.event.Cwd"
+      unique_id: "data.event.Comm + '_' + data.event.ExePath + '_' + data.event.Pcomm"
+      rule_expression:
+        - event_type: "exec"
+          expression: >
+            (data.event.ExePath == '/dev/shm' || data.event.ExePath.startsWith('/dev/shm/')) ||
+            (data.event.Cwd == '/dev/shm' || data.event.Cwd.startsWith('/dev/shm/'))
+    profile_dependency: 2
+    severity: 8
+    support_policy: true
+    tags:
+      - "exec"
+      - "signature"
+      - "malicious" 
