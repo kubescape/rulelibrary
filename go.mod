@@ -229,4 +229,4 @@ replace github.com/mholt/archiver/v3 v3.5.1 => github.com/anchore/archiver/v3 v3
 
 replace github.com/inspektor-gadget/inspektor-gadget => github.com/amirmalka/inspektor-gadget v0.39.1-0.20250511132413-c7a2a761237a
 
-replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.355-0.20250803110006-28655b1f6e23
+replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.355-0.20250803124348-5294c640e3a7

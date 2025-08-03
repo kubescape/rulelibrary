@@ -96,6 +96,31 @@ spec:
         - "dns"
         - "anomaly"
         - "networkprofile"
+    - name: "Unexpected Service Account Token Access"
+      enabled: true
+      id: "R0006"
+      description: "Detecting unexpected access to service account token."
+      expressions:
+        message: "'Unexpected access to service account token: ' + data.event.FullPath + ' with flags: ' + data.event.Flags.join(',')"
+        unique_id: "data.event.Comm + '_' + data.event.FullPath"
+        rule_expression:
+          - event_type: "open"
+            expression: >
+              (data.event.FullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') || 
+               data.event.FullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') ||
+               data.event.FullPath.startsWith('/run/secrets/eks.amazonaws.com/serviceaccount') ||
+               data.event.FullPath.startsWith('/var/run/secrets/eks.amazonaws.com/serviceaccount')) &&
+              !ap.was_path_opened_with_prefix(data.event.Event.CommonData.Runtime.ContainerID, '/run/secrets/kubernetes.io/serviceaccount') &&
+              !ap.was_path_opened_with_prefix(data.event.Event.CommonData.Runtime.ContainerID, '/var/run/secrets/kubernetes.io/serviceaccount') &&
+              !ap.was_path_opened_with_prefix(data.event.Event.CommonData.Runtime.ContainerID, '/run/secrets/eks.amazonaws.com/serviceaccount') &&
+              !ap.was_path_opened_with_prefix(data.event.Event.CommonData.Runtime.ContainerID, '/var/run/secrets/eks.amazonaws.com/serviceaccount')
+      profile_dependency: 1
+      severity: 5
+      support_policy: false
+      tags:
+        - "anomaly"
+        - "serviceaccount"
+        - "applicationprofile" 
     - name: "Kubernetes Client Executed"
       enabled: true
       id: "R0007"
