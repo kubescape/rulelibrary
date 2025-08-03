@@ -255,6 +255,26 @@ spec:
         - "binary"
         - "base image"
         - "applicationprofile" 
+    - name: "Kernel Module Load"
+      enabled: true
+      id: "R1002"
+      description: "Detecting Kernel Module Load."
+      expressions:
+        message: "'Kernel module load syscall (' + data.event.SyscallName + ') was called'"
+        unique_id: "data.event.SyscallName"
+        rule_expression:
+          - event_type: "syscall"
+            expression: >
+              data.event.SyscallName == 'init_module' ||
+              data.event.SyscallName == 'finit_module'
+      profile_dependency: 2
+      severity: 8
+      support_policy: false
+      tags:
+        - "syscall"
+        - "kernel"
+        - "module"
+        - "load" 
     - name: "Symlink Created Over Sensitive File"
       enabled: true
       id: "R1010"
