@@ -268,7 +268,7 @@ spec:
               data.event.SyscallName == 'init_module' ||
               data.event.SyscallName == 'finit_module'
       profile_dependency: 2
-      severity: 8
+      severity: 10
       support_policy: false
       tags:
         - "syscall"
