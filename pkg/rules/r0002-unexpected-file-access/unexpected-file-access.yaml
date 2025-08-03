@@ -23,4 +23,5 @@ spec:
     tags:
       - "anomaly"
       - "file"
-      - "open" 
+      - "open"
+      - "applicationprofile"

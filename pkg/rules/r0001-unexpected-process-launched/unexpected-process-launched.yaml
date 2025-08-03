@@ -24,3 +24,4 @@ spec:
       - "anomaly"
       - "process"
       - "exec" 
+      - "applicationprofile"

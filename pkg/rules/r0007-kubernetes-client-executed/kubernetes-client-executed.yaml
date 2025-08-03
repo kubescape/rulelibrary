@@ -26,3 +26,4 @@ spec:
       - "exec"
       - "network"
       - "anomaly"
+      - "applicationprofile"
