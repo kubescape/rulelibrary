@@ -2,8 +2,10 @@ package r0001unexpectedprocesslaunched
 
 import (
 	"testing"
+	"time"
 
 	"github.com/goradd/maps"
+	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -11,6 +13,7 @@ import (
 	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	utils "github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
@@ -59,7 +62,12 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		},
 	})
 
-	celEngine, err := celengine.NewCEL(objCache)
+	celEngine, err := celengine.NewCEL(objCache, config.Config{
+		CelConfigCache: cache.FunctionCacheConfig{
+			MaxSize: 1000,
+			TTL:     1 * time.Microsecond,
+		},
+	})
 	if err != nil {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
@@ -85,7 +93,7 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		t.Fatalf("Message evaluation failed")
 	}
 
-	// Evaluate the unique id
+	// // Evaluate the unique id
 	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
@@ -93,6 +101,9 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 	if uniqueId != "test-process_1234_/usr/bin/test-process" {
 		t.Fatalf("Unique id evaluation failed")
 	}
+
+	// Sleep for 1 millisecond to make sure the cache is expired
+	time.Sleep(1 * time.Millisecond)
 
 	// Create profile
 	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
@@ -102,7 +113,7 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 			Name: "test",
 			Execs: []v1beta1.ExecCalls{
 				{
-					Path: "/usr/bin/test-process",
+					Path: "test-process",
 					Args: []string{"test-process", "arg1"},
 				},
 			},

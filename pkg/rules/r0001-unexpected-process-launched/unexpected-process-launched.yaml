@@ -16,7 +16,7 @@ spec:
       unique_id: "data.event.Comm + '_' + string(data.event.Pid) + '_' + data.event.ExePath"
       rule_expression:
         - event_type: "exec"
-          expression: "!ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, data.event.ExePath)"
+          expression: "!ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, parse.get_exec_path(data.event.Args, data.event.Comm))"
     profile_dependency: 0
     severity: 1
     support_policy: false

@@ -2,8 +2,10 @@ package r0002unexpectedfileaccess
 
 import (
 	"testing"
+	"time"
 
 	"github.com/goradd/maps"
+	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	"github.com/kubescape/node-agent/pkg/utils"
@@ -12,6 +14,7 @@ import (
 	traceropentype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/open/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
@@ -60,7 +63,12 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		},
 	})
 
-	celEngine, err := celengine.NewCEL(objCache)
+	celEngine, err := celengine.NewCEL(objCache, config.Config{
+		CelConfigCache: cache.FunctionCacheConfig{
+			MaxSize: 1000,
+			TTL:     1 * time.Microsecond,
+		},
+	})
 	if err != nil {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
@@ -94,6 +102,9 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	if uniqueId != "test_/test" {
 		t.Fatalf("Unique id evaluation failed %s", uniqueId)
 	}
+
+	// Sleep for 1 millisecond to make sure the cache is expired
+	time.Sleep(1 * time.Millisecond)
 
 	// Create profile
 	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
