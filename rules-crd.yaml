@@ -24,6 +24,7 @@ spec:
         - "anomaly"
         - "process"
         - "exec" 
+        - "applicationprofile"
     - name: "Unexpected file access"
       enabled: true
       id: "R0002"
@@ -40,7 +41,8 @@ spec:
       tags:
         - "anomaly"
         - "file"
-        - "open" 
+        - "open"
+        - "applicationprofile"
     - name: "Unexpected system call"
       enabled: true
       id: "R0003"
@@ -57,6 +59,7 @@ spec:
       tags:
         - "anomaly"
         - "syscall"
+        - "applicationprofile"
     - name: "Unexpected capability used"
       enabled: true
       id: "R0004"
@@ -73,6 +76,7 @@ spec:
       tags:
         - "anomaly"
         - "capabilities"
+        - "applicationprofile"
     - name: "Unexpected domain request"
       enabled: true
       id: "R0005"
@@ -89,6 +93,7 @@ spec:
       tags:
         - "dns"
         - "anomaly"
+        - "networkprofile"
     - name: "Kubernetes Client Executed"
       enabled: true
       id: "R0007"
@@ -108,6 +113,7 @@ spec:
         - "exec"
         - "network"
         - "anomaly"
+        - "applicationprofile"
     - name: "eBPF Program Load"
       enabled: true
       id: "R0009"
@@ -124,6 +130,7 @@ spec:
       tags:
         - "syscall"
         - "ebpf" 
+        - "applicationprofile"
     - name: "Unexpected Sensitive File Access"
       enabled: true
       id: "R0010"
@@ -140,6 +147,7 @@ spec:
       tags:
         - "files"
         - "anomaly"
+        - "applicationprofile"
     - name: "Symlink Created Over Sensitive File"
       enabled: true
       id: "R1010"
@@ -156,3 +164,4 @@ spec:
       tags:
         - "anomaly"
         - "symlink" 
+        - "applicationprofile"
