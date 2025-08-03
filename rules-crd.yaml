@@ -102,7 +102,7 @@ spec:
       description: "Detecting unexpected access to service account token."
       expressions:
         message: "'Unexpected access to service account token: ' + data.event.FullPath + ' with flags: ' + data.event.Flags.join(',')"
-        unique_id: "data.event.Comm + '_' + data.event.FullPath"
+        unique_id: "data.event.Comm"
         rule_expression:
           - event_type: "open"
             expression: >
@@ -233,6 +233,28 @@ spec:
         - "exec"
         - "signature"
         - "malicious" 
+    - name: "Exec Binary Not In Base Image"
+      enabled: true
+      id: "R1001"
+      description: "Detecting exec calls of binaries that are not included in the base image"
+      expressions:
+        message: "'Process (' + data.event.Comm + ') was executed and is not part of the image'"
+        unique_id: "data.event.Comm + '_' + data.event.ExePath + '_' + data.event.Pcomm"
+        rule_expression:
+          - event_type: "exec"
+            expression: >
+              (data.event.UpperLayer == true ||
+               data.event.PupperLayer == true) &&
+              !ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, parse.get_exec_path(data.event.Args, data.event.Comm))
+      profile_dependency: 1
+      severity: 8
+      support_policy: false
+      tags:
+        - "exec"
+        - "malicious"
+        - "binary"
+        - "base image"
+        - "applicationprofile" 
     - name: "Symlink Created Over Sensitive File"
       enabled: true
       id: "R1010"
