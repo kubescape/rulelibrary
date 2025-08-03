@@ -16,13 +16,14 @@ spec:
       unique_id: "data.event.Comm + '_' + data.event.Pcomm"
       rule_expression:
         - event_type: "exec"
-          expression: "(data.event.Comm == 'kubectl' || data.event.ExePath.endsWith('/kubectl')) && !ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, data.event.ExePath)"
+          expression: "(data.event.Comm == 'kubectl' || data.event.ExePath.endsWith('/kubectl')) && !ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, parse.get_exec_path(data.event.Args, data.event.Comm))"
         - event_type: "network"
-          expression: "k8s.is_api_server_address(data.event.DstEndpoint.Addr) && !nn.was_address_in_egress(data.event.Event.CommonData.Runtime.ContainerID, data.event.DstEndpoint.Addr)"
+          expression: "data.event.PktType == 'OUTGOING' && k8s.is_api_server_address(data.event.DstEndpoint.Addr) && !nn.was_address_in_egress(data.event.Event.CommonData.Runtime.ContainerID, data.event.DstEndpoint.Addr)"
     profile_dependency: 0
-    severity: 8 # High
+    severity: 5 # Medium
     support_policy: false
     tags:
       - "exec"
       - "network"
       - "anomaly"
+      - "applicationprofile"

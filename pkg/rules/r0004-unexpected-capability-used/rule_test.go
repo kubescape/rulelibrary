@@ -2,12 +2,15 @@ package r0004unexpectedcapabilityused
 
 import (
 	"testing"
+	"time"
 
 	"github.com/goradd/maps"
 	tracercapabilitiestype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/capabilities/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
+	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
@@ -56,7 +59,12 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 		},
 	})
 
-	celEngine, err := celengine.NewCEL(objCache)
+	celEngine, err := celengine.NewCEL(objCache, config.Config{
+		CelConfigCache: cache.FunctionCacheConfig{
+			MaxSize: 1000,
+			TTL:     1 * time.Microsecond,
+		},
+	})
 	if err != nil {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
@@ -91,6 +99,9 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 	if uniqueId != "test_test_cap" {
 		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
 	}
+
+	// Sleep for 1 millisecond to make sure the cache is expired
+	time.Sleep(1 * time.Millisecond)
 
 	// Create profile
 	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
