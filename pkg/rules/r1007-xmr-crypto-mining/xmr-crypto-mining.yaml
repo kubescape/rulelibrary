@@ -1,0 +1,26 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: xmr-crypto-mining-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+  - name: "XMR Crypto Mining Detection"
+    enabled: true
+    id: "R1007"
+    description: "Detecting XMR Crypto Miners by randomx algorithm usage."
+    expressions:
+      message: "'XMR Crypto Miner process: (' + data.event.ExePath + ') executed'"
+      unique_id: "data.event.ExePath + '_' + data.event.Comm"
+      rule_expression:
+        - event_type: "randomx"
+          expression: "true"
+    profile_dependency: 2
+    severity: 10
+    support_policy: false
+    tags:
+      - "crypto"
+      - "miners"
+      - "malicious" 
