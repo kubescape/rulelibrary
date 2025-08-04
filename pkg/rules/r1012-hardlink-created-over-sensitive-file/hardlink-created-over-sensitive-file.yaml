@@ -1,0 +1,26 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: hardlink-created-over-sensitive-file-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+  - name: "Hardlink Created Over Sensitive File"
+    enabled: true
+    id: "R1012"
+    description: "Detecting hardlink creation over sensitive files."
+    expressions:
+      message: "'Hardlink created over sensitive file: ' + data.event.OldPath + ' - ' + data.event.NewPath"
+      unique_id: "data.event.Comm + '_' + data.event.OldPath"
+      rule_expression:
+        - event_type: "hardlink"
+          expression: "(data.event.OldPath.startsWith('/etc/shadow') || data.event.OldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(data.event.Event.CommonData.Runtime.ContainerID, data.event.OldPath)"
+    profile_dependency: 1
+    severity: 5
+    support_policy: true
+    tags:
+      - "files"
+      - "malicious"
+      - "applicationprofile" 

@@ -15,7 +15,7 @@ spec:
       message: "'Unexpected io_uring operation detected: (opcode=' + string(data.event.Opcode) + ') flags=0x' + string(data.event.Flags) + ' in ' + data.event.Comm + '.'"
       unique_id: "string(data.event.Opcode) + '_' + data.event.Comm"
       rule_expression:
-        - event_type: "io_uring"
+        - event_type: "iouring"
           expression: "true"
     profile_dependency: 0
     severity: 5
