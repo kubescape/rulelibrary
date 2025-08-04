@@ -412,3 +412,72 @@ spec:
       - "anomaly"
       - "symlink"
       - "applicationprofile"
+  - name: "LD_PRELOAD Hook"
+    enabled: true
+    id: "R1011"
+    description: "Detecting ld_preload hook techniques."
+    expressions:
+      message: "'Process (' + data.event.Comm + ') was executed and is using the environment variable ' + process.get_ld_hook_var(data.event.Pid)"
+      unique_id: "data.event.Comm + '_' + data.event.ExePath + '_' + data.event.Pcomm"
+      rule_expression:
+        - event_type: "exec"
+          expression: "data.event.Comm != 'java' && data.event.Event.CommonData.K8s.BasicK8sMetadata.ContainerName != 'matlab' && process.get_ld_hook_var(data.event.Pid) != ''"
+        - event_type: "open"
+          expression: "data.event.FullPath == '/etc/ld.so.preload' && data.event.FlagsRaw > 0"
+    profile_dependency: 1
+    severity: 3
+    support_policy: true
+    tags:
+      - "exec"
+      - "malicious"
+      - "applicationprofile"
+  - name: "Hardlink Created Over Sensitive File"
+    enabled: true
+    id: "R1012"
+    description: "Detecting hardlink creation over sensitive files."
+    expressions:
+      message: "'Hardlink created over sensitive file: ' + data.event.OldPath + ' - ' + data.event.NewPath"
+      unique_id: "data.event.Comm + '_' + data.event.OldPath"
+      rule_expression:
+        - event_type: "hardlink"
+          expression: "(data.event.OldPath.startsWith('/etc/shadow') || data.event.OldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(data.event.Event.CommonData.Runtime.ContainerID, data.event.OldPath)"
+    profile_dependency: 1
+    severity: 5
+    support_policy: true
+    tags:
+      - "files"
+      - "malicious"
+      - "applicationprofile"
+  - name: "Malicious Ptrace Usage"
+    enabled: true
+    id: "R1015"
+    description: "Detecting potentially malicious ptrace usage."
+    expressions:
+      message: "'Malicious ptrace usage detected from: ' + data.event.Comm + ' on PID: ' + string(data.event.Pid)"
+      unique_id: "data.event.ExePath + '_' + data.event.Comm"
+      rule_expression:
+        - event_type: "ptrace"
+          expression: "true"
+    profile_dependency: 2
+    severity: 5
+    support_policy: false
+    tags:
+      - "process"
+      - "malicious"
+  - name: "Unexpected io_uring Operation Detected"
+    enabled: true
+    id: "R1030"
+    description: "Detects io_uring operations that were not recorded during the initial observation period, indicating potential unauthorized activity."
+    expressions:
+      message: "'Unexpected io_uring operation detected: (opcode=' + string(data.event.Opcode) + ') flags=0x' + string(data.event.Flags) + ' in ' + data.event.Comm + '.'"
+      unique_id: "string(data.event.Opcode) + '_' + data.event.Comm"
+      rule_expression:
+        - event_type: "iouring"
+          expression: "true"
+    profile_dependency: 0
+    severity: 5
+    support_policy: true
+    tags:
+      - "syscalls"
+      - "io_uring"
+      - "applicationprofile"
