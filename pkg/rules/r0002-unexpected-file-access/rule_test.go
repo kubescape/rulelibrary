@@ -41,8 +41,8 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 			},
 			Pid:      0,
 			Comm:     "test",
-			Path:     "/test",
-			FullPath: "/test",
+			Path:     "/etc/test",
+			FullPath: "/etc/test",
 			Flags:    []string{"O_RDONLY"},
 		},
 	}
@@ -90,7 +90,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected file access detected: test with PID 0 to /test" {
+	if message != "Unexpected file access detected: test with PID 0 to /etc/test" {
 		t.Fatalf("Message evaluation failed %s", message)
 	}
 
@@ -99,7 +99,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test_/test" {
+	if uniqueId != "test_/etc/test" {
 		t.Fatalf("Unique id evaluation failed %s", uniqueId)
 	}
 
@@ -114,7 +114,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 			Name: "test",
 			Opens: []v1beta1.OpenCalls{
 				{
-					Path:  "/test",
+					Path:  "/etc/test",
 					Flags: []string{"O_RDONLY"},
 				},
 			},
