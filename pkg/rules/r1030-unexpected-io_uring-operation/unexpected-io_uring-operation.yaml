@@ -1,0 +1,26 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: unexpected-io-uring-operation-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+  - name: "Unexpected io_uring Operation Detected"
+    enabled: true
+    id: "R1030"
+    description: "Detects io_uring operations that were not recorded during the initial observation period, indicating potential unauthorized activity."
+    expressions:
+      message: "'Unexpected io_uring operation detected: (opcode=' + string(data.event.Opcode) + ') flags=0x' + string(data.event.Flags) + ' in ' + data.event.Comm + '.'"
+      unique_id: "string(data.event.Opcode) + '_' + data.event.Comm"
+      rule_expression:
+        - event_type: "iouring"
+          expression: "true"
+    profile_dependency: 0
+    severity: 5
+    support_policy: true
+    tags:
+      - "syscalls"
+      - "io_uring"
+      - "applicationprofile" 

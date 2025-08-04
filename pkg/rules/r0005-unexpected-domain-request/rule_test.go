@@ -12,9 +12,9 @@ import (
 
 	tracerdnstype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/dns/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
+	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
 
@@ -44,7 +44,7 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 		Qr:      tracerdnstype.DNSPktTypeQuery,
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{
+	objCache := &objectcachev1.RuleObjectCacheMock{
 		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 	}
 

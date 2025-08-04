@@ -14,9 +14,9 @@ import (
 	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
 	tracernetworktype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/network/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
+	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
 
@@ -49,7 +49,7 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 		},
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{
+	objCache := &objectcachev1.RuleObjectCacheMock{
 		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 	}
 
@@ -172,7 +172,7 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 		Port: 80,
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{
+	objCache := &objectcachev1.RuleObjectCacheMock{
 		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 	}
 

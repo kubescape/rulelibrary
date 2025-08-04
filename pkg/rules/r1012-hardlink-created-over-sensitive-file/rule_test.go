@@ -1,4 +1,4 @@
-package r1010symlinkcreatedoversensitivefile
+package r1012hardlinkcreatedoversensitivefile
 
 import (
 	"testing"
@@ -7,9 +7,10 @@ import (
 	"github.com/goradd/maps"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
-	tracersymlinktype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/symlink/types"
+	tracerhardlinktype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/hardlink/types"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
+	"github.com/kubescape/node-agent/pkg/rulemanager"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
@@ -17,14 +18,14 @@ import (
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
-func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
-	ruleSpec, err := common.LoadRuleFromYAML("symlink-created-over-sensitive-file.yaml")
+func TestR1012HardlinkCreatedOverSensitiveFile(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("hardlink-created-over-sensitive-file.yaml")
 	if err != nil {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 
-	// Create a symlink event
-	e := &tracersymlinktype.Event{
+	// Create a hardlink event
+	e := &tracerhardlinktype.Event{
 		Event: eventtypes.Event{
 			CommonData: eventtypes.CommonData{
 				K8s: eventtypes.K8sMetadata{
@@ -38,8 +39,8 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 			},
 		},
 		Comm:    "test",
-		OldPath: "/etc/shadow",
-		NewPath: "/etc/abc",
+		OldPath: "test",
+		NewPath: "test",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -47,7 +48,6 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
-
 		ContainerType: objectcache.Container,
 		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 			objectcache.Container: {
@@ -72,13 +72,26 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	eventMap := celSerializer.Serialize(e)
 
-	// Evaluate the rule
-	ok, err := celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	// Evaluate the rule - should not trigger for non-sensitive file
+	ok, err := celEngine.EvaluateRule(eventMap, utils.HardlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if ok {
+		t.Fatalf("Rule evaluation should not trigger for non-sensitive file")
+	}
+
+	// Test with sensitive file path
+	e.OldPath = "/etc/shadow"
+	e.NewPath = "/etc/abc"
+	eventMap = celSerializer.Serialize(e)
+
+	ok, err = celEngine.EvaluateRule(eventMap, utils.HardlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if !ok {
-		t.Fatalf("Rule evaluation failed for sensitive file symlink")
+		t.Fatalf("Rule evaluation should trigger for sensitive file")
 	}
 
 	// Evaluate the message
@@ -86,7 +99,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	expectedMessage := "Symlink created over sensitive file: /etc/shadow -> /etc/abc"
+	expectedMessage := "Hardlink created over sensitive file: /etc/shadow - /etc/abc"
 	if message != expectedMessage {
 		t.Fatalf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 	}
@@ -101,33 +114,41 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 		t.Fatalf("Unique id evaluation failed. Expected: %s, Got: %s", expectedUniqueId, uniqueId)
 	}
 
-	// Sleep for 1 millisecond to make sure the cache is expired
-	time.Sleep(1 * time.Millisecond)
-
-	// Test with non-sensitive file path
-	e.OldPath = "/tmp/test"
-	e.NewPath = "/tmp/abc"
-
+	// Test with another sensitive file
+	e.OldPath = "/etc/sudoers"
+	e.NewPath = "/etc/xyz"
 	eventMap = celSerializer.Serialize(e)
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.HardlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if !ok {
+		t.Fatalf("Rule evaluation should trigger for /etc/sudoers")
+	}
+
+	// Test with non-sensitive file (should not trigger)
+	e.OldPath = "/etc/abc"
+	e.NewPath = "/etc/xyz"
+	eventMap = celSerializer.Serialize(e)
+
+	ok, err = celEngine.EvaluateRule(eventMap, utils.HardlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if ok {
-		t.Fatalf("Rule evaluation should have failed for non-sensitive file symlink")
+		t.Fatalf("Rule evaluation should not trigger for non-sensitive file")
 	}
 
-	// Create profile
+	// Test with profile - since profile is optional, we can test policy validation
 	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
 	if profile == nil {
 		profile = &v1beta1.ApplicationProfile{}
 		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
 			Name: "test",
-			Opens: []v1beta1.OpenCalls{
-				{
-					Path:  "/etc/shadow",
-					Flags: []string{"O_RDONLY"},
+			PolicyByRuleId: map[string]v1beta1.RulePolicy{
+				"R1012": {
+					AllowedProcesses: []string{"/usr/sbin/groupadd"},
 				},
 			},
 		})
@@ -135,11 +156,17 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	objCache.SetApplicationProfile(profile)
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	// Test with whitelisted process
+	e.Comm = "/usr/sbin/groupadd"
+	e.OldPath = "/etc/shadow"
+	e.NewPath = "/etc/abc"
+
+	v := rulemanager.NewRulePolicyValidator(objCache)
+	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &profile.Spec.Containers[0])
 	if err != nil {
-		t.Fatalf("Failed to evaluate rule: %v", err)
+		t.Fatalf("Failed to validate rule policy: %v", err)
 	}
-	if ok {
-		t.Fatalf("Rule evaluation should have failed")
+	if !ok {
+		t.Fatalf("Rule policy validation should return true for whitelisted process")
 	}
 }

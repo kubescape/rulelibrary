@@ -1,0 +1,28 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: ld-preload-hook-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+  - name: "LD_PRELOAD Hook"
+    enabled: true
+    id: "R1011"
+    description: "Detecting ld_preload hook techniques."
+    expressions:
+      message: "'Process (' + data.event.Comm + ') was executed and is using the environment variable ' + process.get_ld_hook_var(data.event.Pid)"
+      unique_id: "data.event.Comm + '_' + data.event.ExePath + '_' + data.event.Pcomm"
+      rule_expression:
+        - event_type: "exec"
+          expression: "data.event.Comm != 'java' && data.event.Event.CommonData.K8s.BasicK8sMetadata.ContainerName != 'matlab' && process.get_ld_hook_var(data.event.Pid) != ''"
+        - event_type: "open"
+          expression: "data.event.FullPath == '/etc/ld.so.preload' && data.event.FlagsRaw > 0"
+    profile_dependency: 1
+    severity: 3
+    support_policy: true
+    tags:
+      - "exec"
+      - "malicious"
+      - "applicationprofile" 

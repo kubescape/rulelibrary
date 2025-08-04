@@ -9,9 +9,9 @@ import (
 	"github.com/kubescape/node-agent/pkg/config"
 	tracerrandomxtype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/randomx/types"
 	"github.com/kubescape/node-agent/pkg/objectcache"
+	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
@@ -48,7 +48,7 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 		UpperLayer: true,
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{
+	objCache := &objectcachev1.RuleObjectCacheMock{
 		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 	}
 

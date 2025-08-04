@@ -10,9 +10,9 @@ import (
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
+	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -147,7 +147,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create object cache
-			objCache := &profilevalidator.RuleObjectCacheMock{
+			objCache := &objectcachev1.RuleObjectCacheMock{
 				ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 			}
 			objCache.SetSharedContainerData("container123", &objectcache.WatchedContainerData{
@@ -268,7 +268,7 @@ func TestR1001UpperLayerVariants(t *testing.T) {
 			event := createTestExecEvent("test", "container123", "test-process", "/tmp/test", "/", []string{"/tmp/test"}, tt.upperLayer, tt.pupperLayer)
 
 			// Create object cache
-			objCache := &profilevalidator.RuleObjectCacheMock{
+			objCache := &objectcachev1.RuleObjectCacheMock{
 				ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 			}
 			objCache.SetSharedContainerData("container123", &objectcache.WatchedContainerData{
