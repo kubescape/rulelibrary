@@ -8,9 +8,9 @@ import (
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/objectcache"
+	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
@@ -79,7 +79,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create object cache
-			objCache := &profilevalidator.RuleObjectCacheMock{
+			objCache := &objectcachev1.RuleObjectCacheMock{
 				ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 			}
 			objCache.SetSharedContainerData("container123", &objectcache.WatchedContainerData{

@@ -9,9 +9,9 @@ import (
 	"github.com/kubescape/node-agent/pkg/config"
 	tracersymlinktype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/symlink/types"
 	"github.com/kubescape/node-agent/pkg/objectcache"
+	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/profilevalidator"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -42,7 +42,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 		NewPath: "/etc/abc",
 	}
 
-	objCache := &profilevalidator.RuleObjectCacheMock{
+	objCache := &objectcachev1.RuleObjectCacheMock{
 		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
 	}
 

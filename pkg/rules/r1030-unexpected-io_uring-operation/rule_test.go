@@ -1,15 +1,16 @@
-package r0004unexpectedcapabilityused
+package r1030unexpectediouringoperation
 
 import (
 	"testing"
 	"time"
 
 	"github.com/goradd/maps"
-	tracercapabilitiestype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/capabilities/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
+	traceriouringtype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/iouring/tracer/types"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
+	"github.com/kubescape/node-agent/pkg/rulemanager"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
@@ -17,14 +18,14 @@ import (
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
-func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
-	ruleSpec, err := common.LoadRuleFromYAML("unexpected-capability-used.yaml")
+func TestR1030UnexpectedIouringOperation(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("unexpected-io_uring-operation.yaml")
 	if err != nil {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 
-	// Create a capabilities event
-	e := &tracercapabilitiestype.Event{
+	// Create an io_uring event
+	e := &traceriouringtype.Event{
 		Event: eventtypes.Event{
 			CommonData: eventtypes.CommonData{
 				K8s: eventtypes.K8sMetadata{
@@ -37,10 +38,11 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 				},
 			},
 		},
-		Comm:    "test",
-		CapName: "test_cap",
-		Syscall: "test_syscall",
-		Pid:     1234,
+		Identifier: "test-process",
+		Opcode:     1, // IORING_OP_NOP
+		Flags:      0x0,
+		UserData:   123,
+		Comm:       "test-process",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -48,7 +50,6 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 	}
 
 	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
-
 		ContainerType: objectcache.Container,
 		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 			objectcache.Container: {
@@ -73,13 +74,13 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 
 	eventMap := celSerializer.Serialize(e)
 
-	// Evaluate the rule
-	ok, err := celEngine.EvaluateRule(eventMap, utils.CapabilitiesEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	// Evaluate the rule - should always return true for io_uring events
+	ok, err := celEngine.EvaluateRule(eventMap, utils.IoUringEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if !ok {
-		t.Fatalf("Rule evaluation failed")
+		t.Fatalf("Rule evaluation should always return true for io_uring events")
 	}
 
 	// Evaluate the message
@@ -87,8 +88,9 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected capability used: test_cap in syscall test_syscall with PID 1234" {
-		t.Fatalf("Message evaluation failed: %s", message)
+	expectedMessage := "Unexpected io_uring operation detected: (opcode=1) flags=0x0 in test-process."
+	if message != expectedMessage {
+		t.Fatalf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 	}
 
 	// Evaluate the unique id
@@ -96,32 +98,46 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test_test_cap" {
-		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
+	expectedUniqueId := "1_test-process"
+	if uniqueId != expectedUniqueId {
+		t.Fatalf("Unique id evaluation failed. Expected: %s, Got: %s", expectedUniqueId, uniqueId)
 	}
 
-	// Sleep for 1 millisecond to make sure the cache is expired
-	time.Sleep(1 * time.Millisecond)
+	// Test with different opcode
+	e.Opcode = 2 // Different opcode
+	eventMap = celSerializer.Serialize(e)
 
-	// Create profile
+	ok, err = celEngine.EvaluateRule(eventMap, utils.IoUringEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	if err != nil {
+		t.Fatalf("Failed to evaluate rule: %v", err)
+	}
+	if !ok {
+		t.Fatalf("Rule evaluation should always return true for io_uring events regardless of opcode")
+	}
+
 	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
 	if profile == nil {
 		profile = &v1beta1.ApplicationProfile{}
 		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
 			Name: "test",
-			Capabilities: []string{
-				"test_cap",
+			PolicyByRuleId: map[string]v1beta1.RulePolicy{
+				"R1030": {
+					AllowedProcesses: []string{"/usr/bin/allowed-process"},
+				},
 			},
 		})
 	}
 
 	objCache.SetApplicationProfile(profile)
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.CapabilitiesEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	e.Comm = "/usr/bin/allowed-process"
+
+	v := rulemanager.NewRulePolicyValidator(objCache)
+	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &profile.Spec.Containers[0])
 	if err != nil {
-		t.Fatalf("Failed to evaluate rule: %v", err)
+		t.Fatalf("Failed to validate rule policy: %v", err)
 	}
-	if ok {
-		t.Fatalf("Rule evaluation should have failed")
+	if !ok {
+		t.Fatalf("Rule policy validation should return true for whitelisted process")
 	}
 }
