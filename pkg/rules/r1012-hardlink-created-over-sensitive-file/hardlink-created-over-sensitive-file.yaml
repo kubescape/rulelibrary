@@ -12,11 +12,11 @@ spec:
     id: "R1012"
     description: "Detecting hardlink creation over sensitive files."
     expressions:
-      message: "'Hardlink created over sensitive file: ' + data.event.OldPath + ' - ' + data.event.NewPath"
-      unique_id: "data.event.Comm + '_' + data.event.OldPath"
+      message: "'Hardlink created over sensitive file: ' + data.event.oldpath + ' - ' + data.event.newpath"
+      unique_id: "data.event.comm + '_' + data.event.oldpath"
       rule_expression:
         - event_type: "hardlink"
-          expression: "(data.event.OldPath.startsWith('/etc/shadow') || data.event.OldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(data.event.Event.CommonData.Runtime.ContainerID, data.event.OldPath)"
+          expression: "(data.event.oldpath.startsWith('/etc/shadow') || data.event.oldpath.startsWith('/etc/sudoers')) && !ap.was_path_opened(data.event.runtime.containerId, data.event.oldpath)"
     profile_dependency: 1
     severity: 5
     support_policy: true

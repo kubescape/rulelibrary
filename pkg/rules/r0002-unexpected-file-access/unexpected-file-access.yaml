@@ -12,36 +12,36 @@ spec:
     id: "R0002"
     description: "Detects unexpected file access that is not in the baseline"
     expressions:
-      message: "'Unexpected file access detected: ' + data.event.Comm + ' with PID ' + string(data.event.Pid) + ' to ' + data.event.FullPath"
-      unique_id: "data.event.Comm + '_' + data.event.FullPath"
+      message: "'Unexpected file access detected: ' + data.event.comm + ' with PID ' + string(data.event.pid) + ' to ' + data.event.fullPath"
+      unique_id: "data.event.comm + '_' + data.event.fullPath"
       rule_expression:
         - event_type: "open"
           expression: >
-            !ap.was_path_opened(data.event.Event.CommonData.Runtime.ContainerID, data.event.FullPath) &&
-            !(data.event.FullPath.startsWith('/proc') || 
-              data.event.FullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') || 
-              data.event.FullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') || 
-              data.event.FullPath.startsWith('/tmp')) &&
-            (data.event.FullPath.startsWith('/etc') || 
-             data.event.FullPath.startsWith('/var/spool/cron/') || 
-             data.event.FullPath.startsWith('/var/log/') || 
-             data.event.FullPath.startsWith('/var/run/') || 
-             data.event.FullPath.startsWith('/dev/shm/') || 
-             data.event.FullPath.startsWith('/run/') || 
-             data.event.FullPath.startsWith('/var/www/') || 
-             data.event.FullPath.startsWith('/var/lib/docker/') || 
-             data.event.FullPath.startsWith('/opt/') || 
-             data.event.FullPath.startsWith('/usr/local/') || 
-             data.event.FullPath.startsWith('/app/') || 
-             data.event.FullPath.startsWith('/.dockerenv') || 
-             data.event.FullPath.startsWith('/proc/self/environ') || 
-             data.event.FullPath.startsWith('/var/lib/kubelet/') || 
-             data.event.FullPath.startsWith('/etc/cni/net.d/') || 
-             data.event.FullPath.startsWith('/var/run/secrets/kubernetes.io/') || 
-             data.event.FullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount/') || 
-             data.event.FullPath.startsWith('/run/containerd/') || 
-             data.event.FullPath.startsWith('/run/flannel/') || 
-             data.event.FullPath.startsWith('/run/calico/'))
+            !ap.was_path_opened(data.event.runtime.containerId, data.event.fullPath) &&
+            !(data.event.fullPath.startsWith('/proc') || 
+              data.event.fullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') || 
+              data.event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') || 
+              data.event.fullPath.startsWith('/tmp')) &&
+            (data.event.fullPath.startsWith('/etc') || 
+             data.event.fullPath.startsWith('/var/spool/cron/') || 
+             data.event.fullPath.startsWith('/var/log/') || 
+             data.event.fullPath.startsWith('/var/run/') || 
+             data.event.fullPath.startsWith('/dev/shm/') || 
+             data.event.fullPath.startsWith('/run/') || 
+             data.event.fullPath.startsWith('/var/www/') || 
+             data.event.fullPath.startsWith('/var/lib/docker/') || 
+             data.event.fullPath.startsWith('/opt/') || 
+             data.event.fullPath.startsWith('/usr/local/') || 
+             data.event.fullPath.startsWith('/app/') || 
+             data.event.fullPath.startsWith('/.dockerenv') || 
+             data.event.fullPath.startsWith('/proc/self/environ') || 
+             data.event.fullPath.startsWith('/var/lib/kubelet/') || 
+             data.event.fullPath.startsWith('/etc/cni/net.d/') || 
+             data.event.fullPath.startsWith('/var/run/secrets/kubernetes.io/') || 
+             data.event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount/') || 
+             data.event.fullPath.startsWith('/run/containerd/') || 
+             data.event.fullPath.startsWith('/run/flannel/') || 
+             data.event.fullPath.startsWith('/run/calico/'))
     profile_dependency: 0
     severity: 1
     support_policy: false

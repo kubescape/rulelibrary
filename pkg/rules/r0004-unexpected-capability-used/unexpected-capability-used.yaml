@@ -12,11 +12,11 @@ spec:
     id: "R0004"
     description: "Detects unexpected capabilities that are not whitelisted by application profile"
     expressions:
-      message: "'Unexpected capability used: ' + data.event.CapName + ' in syscall ' + data.event.Syscall + ' with PID ' + string(data.event.Pid)"
-      unique_id: "data.event.Comm + '_' + data.event.CapName"
+      message: "'Unexpected capability used: ' + data.event.capName + ' in syscall ' + data.event.syscall + ' with PID ' + string(data.event.pid)"
+      unique_id: "data.event.comm + '_' + data.event.capName"
       rule_expression:
         - event_type: "capabilities"
-          expression: "!ap.was_capability_used(data.event.Event.CommonData.Runtime.ContainerID, data.event.CapName)"
+          expression: "!ap.was_capability_used(data.event.runtime.containerId, data.event.capName)"
     profile_dependency: 0
     severity: 1
     support_policy: false

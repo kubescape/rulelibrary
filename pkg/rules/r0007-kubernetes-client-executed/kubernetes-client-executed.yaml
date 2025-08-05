@@ -12,13 +12,13 @@ spec:
     id: "R0007"
     description: "Detecting execution of kubernetes client"
     expressions:
-      message: "'Kubernetes client ' + data.event.Comm + ' was executed with PID ' + string(data.event.Pid)"
-      unique_id: "data.event.Comm + '_' + data.event.Pcomm"
+      message: "'Kubernetes client ' + data.event.comm + ' was executed with PID ' + string(data.event.pid)"
+      unique_id: "data.event.comm + '_' + data.event.pcomm"
       rule_expression:
         - event_type: "exec"
-          expression: "(data.event.Comm == 'kubectl' || data.event.ExePath.endsWith('/kubectl')) && !ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, parse.get_exec_path(data.event.Args, data.event.Comm))"
+          expression: "(data.event.comm == 'kubectl' || data.event.exepath.endsWith('/kubectl')) && !ap.was_executed(data.event.runtime.containerId, parse.get_exec_path(data.event.args, data.event.comm))"
         - event_type: "network"
-          expression: "data.event.PktType == 'OUTGOING' && k8s.is_api_server_address(data.event.DstEndpoint.Addr) && !nn.was_address_in_egress(data.event.Event.CommonData.Runtime.ContainerID, data.event.DstEndpoint.Addr)"
+          expression: "data.event.pktType == 'OUTGOING' && k8s.is_api_server_address(data.event.dst.addr) && !nn.was_address_in_egress(data.event.runtime.containerId, data.event.dst.addr)"
     profile_dependency: 0
     severity: 5 # Medium
     support_policy: false

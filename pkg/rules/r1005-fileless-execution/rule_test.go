@@ -43,6 +43,7 @@ func TestR1005FilelessExecution(t *testing.T) {
 			},
 			Comm:    "/memfd:test",
 			ExePath: "/memfd:test",
+			Pcomm:   "/memfd:test",
 			Args:    []string{"/memfd:test", "arg1"},
 			Pid:     1234,
 			Uid:     1000,
@@ -102,7 +103,7 @@ func TestR1005FilelessExecution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "/memfd:test_/memfd:test_" {
+	if uniqueId != "/memfd:test_/memfd:test_/memfd:test" {
 		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 

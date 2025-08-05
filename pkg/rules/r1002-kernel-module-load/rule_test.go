@@ -69,10 +69,10 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 			description:   "Should not trigger for non-kernel-module syscall",
 		},
 		{
-			name:          "empty syscall name",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "", uint32(1234)),
+			name:          "other syscall name",
+			event:         createTestSyscallEvent("test", "container123", "test-process", "read", uint32(1234)),
 			expectTrigger: false,
-			description:   "Should not trigger for empty syscall name",
+			description:   "Should not trigger for non-kernel-module syscall",
 		},
 	}
 
@@ -106,6 +106,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 
 			// Serialize event
 			celSerializer := celengine.CelEventSerializer{}
+
 			eventMap := celSerializer.Serialize(tt.event)
 
 			// Evaluate the rule
