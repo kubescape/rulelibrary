@@ -93,12 +93,12 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		t.Fatalf("Message evaluation failed")
 	}
 
-	// // Evaluate the unique id
+	// Evaluate the unique id
 	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test-process_1234_/usr/bin/test-process" {
+	if uniqueId != "test-process_/usr/bin/test-process" {
 		t.Fatalf("Unique id evaluation failed")
 	}
 
