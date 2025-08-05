@@ -67,9 +67,9 @@ for rule_file in $RULE_FILES; do
     echo -e "${YELLOW}Processing: $(basename "$rule_file")${NC}"
     
     # Extract the spec.rules array content from each rule file
-    if command -v yq >/dev/null 2>&1; then
-        # Use yq to extract each rule and format it as an array item
-        yq eval '.spec.rules[]' "$rule_file" | sed '1s/^/  - /' | sed '2,$s/^/    /' >> "$OUTPUT_FILE"
+    if [ -f "$HOME/go/bin/yq" ]; then
+        # Use Go yq to extract each rule and format it as an array item
+        "$HOME/go/bin/yq" eval '.spec.rules[]' "$rule_file" | sed '1s/^/  - /' | sed '2,$s/^/    /' >> "$OUTPUT_FILE"
     else
         # Fallback to awk if yq is not available
         # Extract everything after "rules:" and format as array items
@@ -107,9 +107,9 @@ echo -e "${GREEN}Successfully generated $OUTPUT_FILE with $(echo "$RULE_FILES" |
 echo -e "${GREEN}Output file: $OUTPUT_FILE${NC}"
 
 # Validate the generated YAML
-if command -v yq >/dev/null 2>&1; then
+if [ -f "$HOME/go/bin/yq" ]; then
     echo -e "${YELLOW}Validating generated YAML...${NC}"
-    if yq eval '.' "$OUTPUT_FILE" >/dev/null 2>&1; then
+    if "$HOME/go/bin/yq" eval '.' "$OUTPUT_FILE" >/dev/null 2>&1; then
         echo -e "${GREEN}✓ YAML validation passed${NC}"
     else
         echo -e "${RED}✗ YAML validation failed${NC}"
