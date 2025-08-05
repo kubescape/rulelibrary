@@ -12,11 +12,11 @@ spec:
     id: "R1004"
     description: "Detecting exec calls from mounted paths."
     expressions:
-      message: "'Process (' + data.event.Comm + ') was executed from a mounted path'"
-      unique_id: "data.event.Comm + '_' + data.event.ExePath + '_' + data.event.Pcomm"
+      message: "'Process (' + data.event.comm + ') was executed from a mounted path'"
+      unique_id: "data.event.comm + '_' + data.event.exepath + '_'"
       rule_expression:
         - event_type: "exec"
-          expression: "!ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, parse.get_exec_path(data.event.Args, data.event.Comm)) && k8s.get_container_mount_paths(data.event.Event.CommonData.K8s.BasicK8sMetadata.Namespace, data.event.Event.CommonData.K8s.BasicK8sMetadata.PodName, data.event.Event.CommonData.K8s.BasicK8sMetadata.ContainerName).exists(mount, data.event.ExePath.startsWith(mount) || parse.get_exec_path(data.event.Args, data.event.Comm).startsWith(mount))"
+          expression: "!ap.was_executed(data.event.runtime.containerId, parse.get_exec_path(data.event.args, data.event.comm)) && k8s.get_container_mount_paths(data.event.k8s.namespace, data.event.k8s.podName, data.event.k8s.containerName).exists(mount, data.event.exepath.startsWith(mount) || parse.get_exec_path(data.event.args, data.event.comm).startsWith(mount))"
     profile_dependency: 1
     severity: 5
     support_policy: false

@@ -39,7 +39,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 					},
 				},
 			},
-			Pid:      0,
+			Pid:      1234,
 			Comm:     "test",
 			Path:     "/etc/test",
 			FullPath: "/etc/test",
@@ -90,7 +90,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected file access detected: test with PID 0 to /etc/test" {
+	if message != "Unexpected file access detected: test with PID 1234 to /etc/test" {
 		t.Fatalf("Message evaluation failed %s", message)
 	}
 

@@ -75,6 +75,7 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	}
 
 	celSerializer := celengine.CelEventSerializer{}
+
 	eventMap := celSerializer.Serialize(e)
 
 	// Test without profile - should trigger alert

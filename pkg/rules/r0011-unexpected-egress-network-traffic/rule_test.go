@@ -73,6 +73,7 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 	}
 
 	celSerializer := celengine.CelEventSerializer{}
+
 	eventMap := celSerializer.Serialize(e)
 
 	// Test without network neighborhood - should trigger alert

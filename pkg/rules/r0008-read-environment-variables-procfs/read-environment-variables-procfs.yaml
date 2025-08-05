@@ -12,14 +12,14 @@ spec:
     id: "R0008"
     description: "Detecting reading environment variables from procfs."
     expressions:
-      message: "'Reading environment variables from procfs: ' + data.event.FullPath + ' by process ' + data.event.Comm"
-      unique_id: "data.event.Comm + '_' + data.event.FullPath"
+      message: "'Reading environment variables from procfs: ' + data.event.fullPath + ' by process ' + data.event.comm"
+      unique_id: "data.event.comm + '_' + data.event.fullPath"
       rule_expression:
         - event_type: "open"
           expression: >
-            data.event.FullPath.startsWith('/proc/') && 
-            data.event.FullPath.endsWith('/environ') &&
-            !ap.was_path_opened_with_suffix(data.event.Event.CommonData.Runtime.ContainerID, '/environ')
+            data.event.fullPath.startsWith('/proc/') && 
+            data.event.fullPath.endsWith('/environ') &&
+            !ap.was_path_opened_with_suffix(data.event.runtime.containerId, '/environ')
     profile_dependency: 0 # Required
     severity: 3
     support_policy: false

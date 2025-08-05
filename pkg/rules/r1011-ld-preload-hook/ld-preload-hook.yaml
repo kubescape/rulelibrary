@@ -12,13 +12,13 @@ spec:
     id: "R1011"
     description: "Detecting ld_preload hook techniques."
     expressions:
-      message: "'Process (' + data.event.Comm + ') was executed and is using the environment variable ' + process.get_ld_hook_var(data.event.Pid)"
-      unique_id: "data.event.Comm + '_' + data.event.ExePath + '_' + data.event.Pcomm"
+      message: "'Process (' + data.event.comm + ') was executed and is using the environment variable ' + process.get_ld_hook_var(data.event.pid)"
+      unique_id: "data.event.comm + '_' + data.event.exepath + '_' + data.event.pcomm"
       rule_expression:
         - event_type: "exec"
-          expression: "data.event.Comm != 'java' && data.event.Event.CommonData.K8s.BasicK8sMetadata.ContainerName != 'matlab' && process.get_ld_hook_var(data.event.Pid) != ''"
+          expression: "data.event.comm != 'java' && data.event.k8s.containerName != 'matlab' && process.get_ld_hook_var(data.event.pid) != ''"
         - event_type: "open"
-          expression: "data.event.FullPath == '/etc/ld.so.preload' && data.event.FlagsRaw > 0"
+          expression: "data.event.fullPath == '/etc/ld.so.preload' && has(data.event.flagsRaw)"
     profile_dependency: 1
     severity: 3
     support_policy: true

@@ -12,11 +12,11 @@ spec:
     id: "R0001"
     description: "Detects unexpected process launches that are not in the baseline"
     expressions:
-      message: "'Unexpected process launched: ' + data.event.Comm + ' with PID ' + string(data.event.Pid)"
-      unique_id: "data.event.Comm + '_' + data.event.ExePath"
+      message: "'Unexpected process launched: ' + data.event.comm + ' with PID ' + string(data.event.pid)"
+      unique_id: "data.event.comm + '_' + data.event.exepath"
       rule_expression:
         - event_type: "exec"
-          expression: "!ap.was_executed(data.event.Event.CommonData.Runtime.ContainerID, parse.get_exec_path(data.event.Args, data.event.Comm))"
+          expression: "!ap.was_executed(data.event.runtime.containerId, parse.get_exec_path(data.event.args, data.event.comm))"
     profile_dependency: 0
     severity: 1
     support_policy: false

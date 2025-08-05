@@ -77,6 +77,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	}
 
 	celSerializer := celengine.CelEventSerializer{}
+
 	eventMap := celSerializer.Serialize(e)
 
 	// Test without network neighborhood - should trigger alert for disallowed port
