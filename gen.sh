@@ -68,8 +68,14 @@ for rule_file in $RULE_FILES; do
     
     # Extract the spec.rules array content from each rule file
     if command -v yq >/dev/null 2>&1; then
-        # Use yq to extract each rule and format it as an array item
-        yq eval '.spec.rules[]' "$rule_file" | sed '1s/^/  - /' | sed '2,$s/^/    /' >> "$OUTPUT_FILE"
+        # Detect which version of yq we have and use appropriate syntax
+        if yq --help 2>&1 | grep -q "eval"; then
+            # Mike Farah's yq (Go-based) - uses eval
+            yq eval '.spec.rules[]' "$rule_file" | sed '1s/^/  - /' | sed '2,$s/^/    /' >> "$OUTPUT_FILE"
+        else
+            # Andrey Kislyuk's yq (Python-based) - direct syntax
+            yq '.spec.rules[]' "$rule_file" | sed '1s/^/  - /' | sed '2,$s/^/    /' >> "$OUTPUT_FILE"
+        fi
     else
         # Fallback to awk if yq is not available
         # Extract everything after "rules:" and format as array items
@@ -109,11 +115,23 @@ echo -e "${GREEN}Output file: $OUTPUT_FILE${NC}"
 # Validate the generated YAML
 if command -v yq >/dev/null 2>&1; then
     echo -e "${YELLOW}Validating generated YAML...${NC}"
-    if yq eval '.' "$OUTPUT_FILE" >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ YAML validation passed${NC}"
+    # Use appropriate syntax based on yq version
+    if yq --help 2>&1 | grep -q "eval"; then
+        # Mike Farah's yq (Go-based) - uses eval
+        if yq eval '.' "$OUTPUT_FILE" >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ YAML validation passed${NC}"
+        else
+            echo -e "${RED}✗ YAML validation failed${NC}"
+            exit 1
+        fi
     else
-        echo -e "${RED}✗ YAML validation failed${NC}"
-        exit 1
+        # Andrey Kislyuk's yq (Python-based) - direct syntax
+        if yq '.' "$OUTPUT_FILE" >/dev/null 2>&1; then
+            echo -e "${GREEN}✓ YAML validation passed${NC}"
+        else
+            echo -e "${RED}✗ YAML validation failed${NC}"
+            exit 1
+        fi
     fi
 else
     echo -e "${YELLOW}Note: yq not found, skipping YAML validation${NC}"
