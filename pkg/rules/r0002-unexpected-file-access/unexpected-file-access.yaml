@@ -16,7 +16,32 @@ spec:
       unique_id: "data.event.Comm + '_' + data.event.FullPath"
       rule_expression:
         - event_type: "open"
-          expression: "!ap.was_path_opened(data.event.Event.CommonData.Runtime.ContainerID, data.event.FullPath)"
+          expression: >
+            !ap.was_path_opened(data.event.Event.CommonData.Runtime.ContainerID, data.event.FullPath) &&
+            !(data.event.FullPath.startsWith('/proc') || 
+              data.event.FullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') || 
+              data.event.FullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') || 
+              data.event.FullPath.startsWith('/tmp')) &&
+            (data.event.FullPath.startsWith('/etc') || 
+             data.event.FullPath.startsWith('/var/spool/cron/') || 
+             data.event.FullPath.startsWith('/var/log/') || 
+             data.event.FullPath.startsWith('/var/run/') || 
+             data.event.FullPath.startsWith('/dev/shm/') || 
+             data.event.FullPath.startsWith('/run/') || 
+             data.event.FullPath.startsWith('/var/www/') || 
+             data.event.FullPath.startsWith('/var/lib/docker/') || 
+             data.event.FullPath.startsWith('/opt/') || 
+             data.event.FullPath.startsWith('/usr/local/') || 
+             data.event.FullPath.startsWith('/app/') || 
+             data.event.FullPath.startsWith('/.dockerenv') || 
+             data.event.FullPath.startsWith('/proc/self/environ') || 
+             data.event.FullPath.startsWith('/var/lib/kubelet/') || 
+             data.event.FullPath.startsWith('/etc/cni/net.d/') || 
+             data.event.FullPath.startsWith('/var/run/secrets/kubernetes.io/') || 
+             data.event.FullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount/') || 
+             data.event.FullPath.startsWith('/run/containerd/') || 
+             data.event.FullPath.startsWith('/run/flannel/') || 
+             data.event.FullPath.startsWith('/run/calico/'))
     profile_dependency: 0
     severity: 1
     support_policy: false
