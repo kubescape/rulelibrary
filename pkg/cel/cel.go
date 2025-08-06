@@ -1,0 +1,202 @@
+package cel
+
+import (
+	"fmt"
+	"sync"
+
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
+	"github.com/google/cel-go/ext"
+	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
+	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/objectcache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/applicationprofile"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/k8s"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/net"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/networkneighborhood"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/parse"
+	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/process"
+	typesv1 "github.com/kubescape/node-agent/pkg/rulemanager/types/v1"
+	"github.com/kubescape/node-agent/pkg/utils"
+	"github.com/picatz/xcel"
+)
+
+type CEL struct {
+	env          *cel.Env
+	objectCache  objectcache.ObjectCache
+	programCache map[string]cel.Program
+	cacheMutex   sync.RWMutex
+}
+
+var event = &tracerexectype.Event{}
+
+func NewCEL(objectCache objectcache.ObjectCache, cfg config.Config) (*CEL, error) {
+	ta, tp := xcel.NewTypeAdapter(), xcel.NewTypeProvider()
+	obj, typ := xcel.NewObject(event)
+	//xcel.RegisterObject(ta, tp, obj, typ, xcel.NewFields(obj))
+	xcel.RegisterObject(ta, tp, obj, typ, map[string]*types.FieldType{
+		//"event": {
+		//	Type: tracerexectypeTyp,
+		//	IsSet: func(target any) bool {
+		//		x := target.(*xcel.Object[*events.ExecEvent])
+		//		if x.Raw == nil {
+		//			return false
+		//		}
+		//		return true
+		//	},
+		//	GetFrom: func(target any) (any, error) {
+		//		x := target.(*xcel.Object[*events.ExecEvent])
+		//		if x.Raw == nil {
+		//			return nil, fmt.Errorf("celval: object is nil")
+		//		}
+		//		obj, _ := xcel.NewObject(x.Raw.Event)
+		//		return obj, nil
+		//	},
+		//},
+		"args": {
+			Type: types.NewListType(types.StringType),
+			IsSet: func(target any) bool {
+				x := target.(*xcel.Object[*tracerexectype.Event])
+				if x.Raw == nil || x.Raw.Args == nil {
+					return false
+				}
+				return true
+			},
+			GetFrom: func(target any) (any, error) {
+				x := target.(*xcel.Object[*tracerexectype.Event])
+				if x.Raw == nil {
+					return nil, fmt.Errorf("celval: object is nil")
+				}
+				return types.NewStringList(ta, x.Raw.Args), nil
+			},
+		},
+		"comm": {
+			Type: types.StringType,
+			IsSet: func(target any) bool {
+				x := target.(*xcel.Object[*tracerexectype.Event])
+				if x.Raw == nil || x.Raw.Comm == "" {
+					return false
+				}
+				return true
+			},
+			GetFrom: func(target any) (any, error) {
+				x := target.(*xcel.Object[*tracerexectype.Event])
+				if x.Raw == nil {
+					return nil, fmt.Errorf("celval: object is nil")
+				}
+				return x.Raw.Comm, nil
+			},
+		},
+	})
+	env, err := cel.NewEnv(
+		cel.Types(typ),
+		cel.Variable("event", typ),
+		cel.CustomTypeAdapter(ta),
+		cel.CustomTypeProvider(tp),
+		k8s.K8s(objectCache.K8sObjectCache(), cfg),
+		applicationprofile.AP(objectCache, cfg),
+		networkneighborhood.NN(objectCache, cfg),
+		parse.Parse(cfg),
+		net.Net(cfg),
+		ext.Strings(),
+		process.Process(cfg),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &CEL{
+		env:          env,
+		objectCache:  objectCache,
+		programCache: make(map[string]cel.Program),
+	}, nil
+}
+
+func (c *CEL) registerExpression(expression string) error {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	// Check if already compiled
+	if _, exists := c.programCache[expression]; exists {
+		return nil
+	}
+
+	ast, issues := c.env.Compile(expression)
+	if issues != nil {
+		return fmt.Errorf("failed to compile expression: %s", issues.Err())
+	}
+
+	program, err := c.env.Program(ast, cel.EvalOptions(cel.OptOptimize))
+	if err != nil {
+		return fmt.Errorf("failed to create program: %s", err)
+	}
+
+	c.programCache[expression] = program
+	return nil
+}
+
+func (c *CEL) getOrCreateProgram(expression string) (cel.Program, error) {
+	c.cacheMutex.RLock()
+	if program, exists := c.programCache[expression]; exists {
+		c.cacheMutex.RUnlock()
+		return program, nil
+	}
+	c.cacheMutex.RUnlock()
+
+	// If not in cache, compile and cache it
+	if err := c.registerExpression(expression); err != nil {
+		return nil, err
+	}
+
+	c.cacheMutex.RLock()
+	program := c.programCache[expression]
+	c.cacheMutex.RUnlock()
+	return program, nil
+}
+
+func (c *CEL) EvaluateRule(event *tracerexectype.Event, eventType utils.EventType, expressions []typesv1.RuleExpression) (bool, error) {
+	for _, expression := range expressions {
+		if expression.EventType != eventType {
+			continue
+		}
+
+		program, err := c.getOrCreateProgram(expression.Expression)
+		if err != nil {
+			return false, err
+		}
+
+		obj, _ := xcel.NewObject(event)
+		out, _, err := program.Eval(map[string]any{"event": obj})
+		if err != nil {
+			return false, err
+		}
+
+		if !out.Value().(bool) {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (c *CEL) EvaluateExpression(event map[string]any, expression string) (string, error) {
+	program, err := c.getOrCreateProgram(expression)
+	if err != nil {
+		return "", err
+	}
+
+	out, _, err := program.Eval(map[string]any{"data": event})
+	if err != nil {
+		return "", fmt.Errorf("failed to evaluate expression: %s", err)
+	}
+
+	return out.Value().(string), nil
+}
+
+func (c *CEL) RegisterHelper(function cel.EnvOption) error {
+	extendedEnv, err := c.env.Extend(function)
+	if err != nil {
+		return err
+	}
+	c.env = extendedEnv
+	return nil
+}
