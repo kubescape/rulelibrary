@@ -8,7 +8,6 @@ import (
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
@@ -73,19 +72,12 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
-
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-
-	adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter: %v", err)
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.OpenEventType,
+		Event:     e,
 	}
 
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
-
-	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -94,7 +86,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -103,7 +95,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
@@ -131,7 +123,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		objCache.SetApplicationProfile(profile)
 	}
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}

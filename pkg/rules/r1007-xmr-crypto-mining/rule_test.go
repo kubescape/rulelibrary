@@ -13,7 +13,6 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
@@ -76,17 +75,13 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 	}
 
 	// Serialize event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.RandomXEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.RandomXEventType,
+		Event:     e,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
 	// Test with RandomX event - should trigger alert
-	ok, err = celEngine.EvaluateRule(eventMap, utils.RandomXEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -95,7 +90,7 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -105,7 +100,7 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
@@ -116,17 +111,8 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 	// Test with different crypto miner process
 	e.Comm = "xmr-stak"
 	e.ExePath = "/usr/local/bin/xmr-stak"
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.RandomXEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -137,17 +123,8 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 	// Test with different executable path
 	e.Comm = "monero-miner"
 	e.ExePath = "/opt/miner/monero-miner"
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.RandomXEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -157,17 +134,8 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 
 	// Test with different PID
 	e.Pid = 5678
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.RandomXEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -178,17 +146,8 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 	// Test with different UID/GID
 	e.Uid = 2000
 	e.Gid = 2000
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.RandomXEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}

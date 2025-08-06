@@ -13,7 +13,6 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -71,17 +70,13 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	// Serialize event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.SymlinkEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.SymlinkEventType,
+		Event:     e,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
 	// Evaluate the rule
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -90,7 +85,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -100,7 +95,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
@@ -116,11 +111,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	e.OldPath = "/tmp/test"
 	e.NewPath = "/tmp/abc"
 
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
-
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -145,7 +136,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	objCache.SetApplicationProfile(profile)
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}

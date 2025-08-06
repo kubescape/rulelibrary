@@ -12,17 +12,17 @@ spec:
     id: "R1011"
     description: "Detecting ld_preload hook techniques."
     expressions:
-      message: "'Process (' + event.comm + ') was executed and is using the environment variable ' + process.get_ld_hook_var(event.pid)"
-      unique_id: "event.comm"
+      message: "dfasdfsdf"
+      unique_id: "sdfsdffs"
       rule_expression:
         - event_type: "exec"
-          expression: "event.comm != 'java' && event.k8s.containerName != 'matlab' && process.get_ld_hook_var(event.pid) != ''"
+          expression: "exec.comm != 'java' && exec.k8s.container_name != 'matlab' && process.get_ld_hook_var(exec.pid) != ''"
         - event_type: "open"
-          expression: "event.fullPath == '/etc/ld.so.preload' && has(event.flagsRaw) && event.flagsRaw != 0"
+          expression: "open.full_path == '/etc/ld.so.preload' && has(open.flags_raw) && open.flags_raw != 0"
     profile_dependency: 1
     severity: 3
     support_policy: true
     tags:
       - "exec"
       - "malicious"
-      - "applicationprofile" 
+      - "applicationprofile"
