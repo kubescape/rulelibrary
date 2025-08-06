@@ -13,7 +13,6 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -184,17 +183,13 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 			}
 
 			// Serialize event
-			adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-			adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
-			if !ok {
-				t.Fatalf("Failed to get event adapter: %v", err)
+			enrichedEvent := &events.EnrichedEvent{
+				EventType: utils.OpenEventType,
+				Event:     tt.event,
 			}
-			eventMap := adapter.ToMap(&events.EnrichedEvent{
-				Event: tt.event,
-			})
 
 			// Evaluate the rule
-			triggered, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 			if err != nil {
 				t.Fatalf("Failed to evaluate rule: %v", err)
 			}
@@ -207,7 +202,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 			// If the rule was triggered, also test message and unique ID generation
 			if triggered {
 				// Test message evaluation
-				message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+				message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
@@ -217,7 +212,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 				}
 
 				// Test unique ID evaluation
-				uniqueID, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+				uniqueID, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
@@ -296,16 +291,12 @@ func TestR0006WithTimestampPaths(t *testing.T) {
 			}
 
 			// Serialize event and evaluate
-			adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-			adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
-			if !ok {
-				t.Fatalf("Failed to get event adapter: %v", err)
+			enrichedEvent := &events.EnrichedEvent{
+				EventType: utils.OpenEventType,
+				Event:     event,
 			}
-			eventMap := adapter.ToMap(&events.EnrichedEvent{
-				Event: event,
-			})
 
-			triggered, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 			if err != nil {
 				t.Fatalf("Failed to evaluate rule: %v", err)
 			}

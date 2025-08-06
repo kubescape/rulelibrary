@@ -12,11 +12,11 @@ spec:
     id: "R0005"
     description: "Detecting unexpected domain requests that are not whitelisted by application profile."
     expressions:
-      message: "'Unexpected domain communication: ' + event.name + ' from: ' + event.k8s.containerName"
-      unique_id: "event.comm + '_' + event.name"
+      message: "'Unexpected domain communication: ' + dns.dns_name + ' from: ' + dns.k8s.container_name"
+      unique_id: "dns.comm + '_' + dns.dns_name"
       rule_expression:
         - event_type: "dns"
-          expression: "!event.name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(event.runtime.containerId, event.name)"
+          expression: "!dns.dns_name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(dns.runtime.container_id, dns.dns_name)"
     profile_dependency: 0
     severity: 1
     support_policy: false

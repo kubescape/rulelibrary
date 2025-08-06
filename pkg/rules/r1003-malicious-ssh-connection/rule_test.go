@@ -13,7 +13,6 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 
@@ -79,17 +78,13 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	}
 
 	// Serialize event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.SSHEventType,
+		Event:     e,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
 	// Test without network neighborhood - should trigger alert for disallowed port
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -98,7 +93,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -108,7 +103,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
@@ -118,17 +113,8 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Test with allowed port (22) - should not trigger
 	e.DstPort = 22
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -138,17 +124,8 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Test with another allowed port (2022) - should not trigger
 	e.DstPort = 2022
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -159,17 +136,8 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	// Test with non-ephemeral source port - should not trigger
 	e.DstPort = 1234 // Disallowed port
 	e.SrcPort = 22   // Non-ephemeral port
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -202,17 +170,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 		objCache.SetNetworkNeighborhood(nn)
 	}
 
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
-
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -222,17 +180,8 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Test with non-whitelisted address
 	e.DstIP = "3.3.3.3"
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -242,17 +191,8 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Test with different disallowed port
 	e.DstPort = 2222
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -263,17 +203,8 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	// Test with different process name
 	e.Comm = "openssh"
 	e.DstPort = 1234
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.SSHEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}

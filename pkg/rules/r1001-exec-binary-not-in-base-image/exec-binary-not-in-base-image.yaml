@@ -12,14 +12,14 @@ spec:
     id: "R1001"
     description: "Detecting exec calls of binaries that are not included in the base image"
     expressions:
-      message: "'Process (' + event.comm + ') was executed and is not part of the image'"
-      unique_id: "event.comm + '_' + event.exepath + '_' + event.pcomm"
+      message: "'Process (' + exec.comm + ') was executed and is not part of the image'"
+      unique_id: "exec.comm + '_' + exec.exe_path + '_' + exec.pcomm"
       rule_expression:
         - event_type: "exec"
           expression: >
-            (event.upperlayer == true ||
-             event.pupperlayer == true) &&
-            !ap.was_executed(event.runtime.containerId, parse.get_exec_path(event.args, event.comm))
+            (exec.upper_layer == true ||
+             exec.pupper_layer == true) &&
+            !ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm))
     profile_dependency: 1
     severity: 8
     support_policy: false
@@ -28,4 +28,4 @@ spec:
       - "malicious"
       - "binary"
       - "base image"
-      - "applicationprofile" 
+      - "applicationprofile"

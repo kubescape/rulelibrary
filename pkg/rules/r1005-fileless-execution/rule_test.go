@@ -13,7 +13,6 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
@@ -78,17 +77,13 @@ func TestR1005FilelessExecution(t *testing.T) {
 	}
 
 	// Serialize event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.ExecveEventType,
+		Event:     e,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
 	// Test with memfd execution - should trigger alert
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -97,7 +92,7 @@ func TestR1005FilelessExecution(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -107,7 +102,7 @@ func TestR1005FilelessExecution(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
@@ -119,17 +114,8 @@ func TestR1005FilelessExecution(t *testing.T) {
 	e.Comm = "/proc/self/fd/3"
 	e.ExePath = "/proc/self/fd/3"
 	e.Args = []string{"/proc/self/fd/3", "arg1"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -141,17 +127,8 @@ func TestR1005FilelessExecution(t *testing.T) {
 	e.Comm = "/proc/1234/fd/5"
 	e.ExePath = "/proc/1234/fd/5"
 	e.Args = []string{"/proc/1234/fd/5", "arg1"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -163,17 +140,8 @@ func TestR1005FilelessExecution(t *testing.T) {
 	e.Comm = "/usr/bin/ls"
 	e.ExePath = "/usr/bin/ls"
 	e.Args = []string{"/usr/bin/ls", "-la"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -185,17 +153,8 @@ func TestR1005FilelessExecution(t *testing.T) {
 	e.Comm = "/proc/self/maps"
 	e.ExePath = "/proc/self/maps"
 	e.Args = []string{"/proc/self/maps"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -207,17 +166,8 @@ func TestR1005FilelessExecution(t *testing.T) {
 	e.Comm = "/proc/1234/status"
 	e.ExePath = "/proc/1234/status"
 	e.Args = []string{"/proc/1234/status"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -229,17 +179,8 @@ func TestR1005FilelessExecution(t *testing.T) {
 	e.Comm = "/memfd:malware"
 	e.ExePath = "/memfd:malware"
 	e.Args = []string{"/memfd:malware"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -251,17 +192,8 @@ func TestR1005FilelessExecution(t *testing.T) {
 	e.Comm = "/proc/5678/fd/10"
 	e.ExePath = "/proc/5678/fd/10"
 	e.Args = []string{"/proc/5678/fd/10"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
