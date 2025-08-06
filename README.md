@@ -181,13 +181,13 @@ Rules use Common Expression Language (CEL) for expressions. Key concepts:
 ### Message Expression
 Defines the alert message format:
 ```cel
-"'Unexpected process launched: ' + data.event.Comm + ' with PID ' + string(data.event.Pid)"
+"'Unexpected process launched: ' + event.Comm + ' with PID ' + string(event.Pid)"
 ```
 
 ### Unique ID Expression
 Creates a unique identifier for deduplication:
 ```cel
-"data.event.Comm + '_' + string(data.event.Pid) + '_' + data.event.ExePath"
+"event.Comm + '_' + string(event.Pid) + '_' + event.ExePath"
 ```
 
 ### Rule Expression

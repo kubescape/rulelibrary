@@ -16,6 +16,7 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
 
@@ -73,11 +74,18 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-	eventMap := celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Test without profile - should trigger alert for sensitive file
-	ok, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -134,7 +142,15 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 	// Test with non-sensitive file (should not trigger)
 	e.Event.Path = "/tmp/test.txt"
 	e.Event.FullPath = "/tmp/test.txt"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.OpenEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

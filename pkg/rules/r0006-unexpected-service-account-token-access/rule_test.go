@@ -13,6 +13,7 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -183,8 +184,14 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 			}
 
 			// Serialize event
-			celSerializer := celengine.CelEventSerializer{}
-			eventMap := celSerializer.Serialize(tt.event)
+			adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+			adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
+			if !ok {
+				t.Fatalf("Failed to get event adapter: %v", err)
+			}
+			eventMap := adapter.ToMap(&events.EnrichedEvent{
+				Event: tt.event,
+			})
 
 			// Evaluate the rule
 			triggered, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
@@ -289,8 +296,14 @@ func TestR0006WithTimestampPaths(t *testing.T) {
 			}
 
 			// Serialize event and evaluate
-			celSerializer := celengine.CelEventSerializer{}
-			eventMap := celSerializer.Serialize(event)
+			adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+			adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
+			if !ok {
+				t.Fatalf("Failed to get event adapter: %v", err)
+			}
+			eventMap := adapter.ToMap(&events.EnrichedEvent{
+				Event: event,
+			})
 
 			triggered, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 			if err != nil {
