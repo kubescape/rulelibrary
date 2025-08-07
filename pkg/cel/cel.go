@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/ext"
 	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
 	"github.com/kubescape/node-agent/pkg/config"
@@ -33,61 +32,7 @@ var event = &tracerexectype.Event{}
 func NewCEL(objectCache objectcache.ObjectCache, cfg config.Config) (*CEL, error) {
 	ta, tp := xcel.NewTypeAdapter(), xcel.NewTypeProvider()
 	obj, typ := xcel.NewObject(event)
-	//xcel.RegisterObject(ta, tp, obj, typ, xcel.NewFields(obj))
-	xcel.RegisterObject(ta, tp, obj, typ, map[string]*types.FieldType{
-		//"event": {
-		//	Type: tracerexectypeTyp,
-		//	IsSet: func(target any) bool {
-		//		x := target.(*xcel.Object[*events.ExecEvent])
-		//		if x.Raw == nil {
-		//			return false
-		//		}
-		//		return true
-		//	},
-		//	GetFrom: func(target any) (any, error) {
-		//		x := target.(*xcel.Object[*events.ExecEvent])
-		//		if x.Raw == nil {
-		//			return nil, fmt.Errorf("celval: object is nil")
-		//		}
-		//		obj, _ := xcel.NewObject(x.Raw.Event)
-		//		return obj, nil
-		//	},
-		//},
-		"args": {
-			Type: types.NewListType(types.StringType),
-			IsSet: func(target any) bool {
-				x := target.(*xcel.Object[*tracerexectype.Event])
-				if x.Raw == nil || x.Raw.Args == nil {
-					return false
-				}
-				return true
-			},
-			GetFrom: func(target any) (any, error) {
-				x := target.(*xcel.Object[*tracerexectype.Event])
-				if x.Raw == nil {
-					return nil, fmt.Errorf("celval: object is nil")
-				}
-				return types.NewStringList(ta, x.Raw.Args), nil
-			},
-		},
-		"comm": {
-			Type: types.StringType,
-			IsSet: func(target any) bool {
-				x := target.(*xcel.Object[*tracerexectype.Event])
-				if x.Raw == nil || x.Raw.Comm == "" {
-					return false
-				}
-				return true
-			},
-			GetFrom: func(target any) (any, error) {
-				x := target.(*xcel.Object[*tracerexectype.Event])
-				if x.Raw == nil {
-					return nil, fmt.Errorf("celval: object is nil")
-				}
-				return x.Raw.Comm, nil
-			},
-		},
-	})
+	xcel.RegisterObject(ta, tp, obj, typ, xcel.NewFields(obj))
 	env, err := cel.NewEnv(
 		cel.Types(typ),
 		cel.Variable("event", typ),

@@ -8,7 +8,6 @@ require (
 	github.com/google/cel-go v0.23.2
 	github.com/goradd/maps v1.0.0
 	github.com/inspektor-gadget/inspektor-gadget v0.41.0
-	github.com/kubescape/go-logger v0.0.24
 	github.com/kubescape/node-agent v0.0.0-00010101000000-000000000000
 	github.com/kubescape/storage v0.0.200
 	github.com/picatz/xcel v0.0.0-20240703014152-86a29892ecae
@@ -112,6 +111,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/kubescape/go-logger v0.0.24 // indirect
 	github.com/kubescape/k8s-interface v0.0.197 // indirect
 	github.com/mackerelio/go-osstat v0.2.5 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
@@ -247,3 +247,5 @@ replace github.com/mholt/archiver/v3 v3.5.1 => github.com/anchore/archiver/v3 v3
 replace github.com/inspektor-gadget/inspektor-gadget => github.com/amirmalka/inspektor-gadget v0.39.1-0.20250511132413-c7a2a761237a
 
 replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.355-0.20250805115642-f1466cc92948
+
+replace github.com/picatz/xcel => github.com/matthyx/xcel v0.0.0-20250807134912-87d7bf793c2d

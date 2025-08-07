@@ -16,7 +16,7 @@ spec:
       unique_id: "event.comm + '_' + event.exepath"
       rule_expression:
         - event_type: "exec"
-          expression: "!ap.was_executed('containerId', parse.get_exec_path(event.args, event.comm))"
+          expression: "!ap.was_executed(event.containerid, parse.get_exec_path(event.args, event.comm))"
     profile_dependency: 0
     severity: 1
     support_policy: false
