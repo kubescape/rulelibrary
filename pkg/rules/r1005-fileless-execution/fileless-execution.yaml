@@ -12,11 +12,11 @@ spec:
     id: "R1005"
     description: "Detecting Fileless Execution"
     expressions:
-      message: "'Fileless execution detected: exec call \"' + data.event.comm + '\" is from a malicious source'"
-      unique_id: "data.event.comm + '_' + data.event.exepath + '_' + data.event.pcomm"
+      message: "'Fileless execution detected: exec call \"' + event.comm + '\" is from a malicious source'"
+      unique_id: "event.comm + '_' + event.exepath + '_' + event.pcomm"
       rule_expression:
         - event_type: "exec"
-          expression: "data.event.exepath.contains('memfd') || data.event.exepath.startsWith('/proc/self/fd') || data.event.exepath.matches('/proc/[0-9]+/fd/[0-9]+')"
+          expression: "event.exepath.contains('memfd') || event.exepath.startsWith('/proc/self/fd') || event.exepath.matches('/proc/[0-9]+/fd/[0-9]+')"
     profile_dependency: 2
     severity: 8
     support_policy: false

@@ -5,15 +5,18 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
+
+	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 )
 
 // createTestSyscallEvent creates a test SyscallEvent
@@ -105,9 +108,14 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 			}
 
 			// Serialize event
-			celSerializer := celengine.CelEventSerializer{}
-
-			eventMap := celSerializer.Serialize(tt.event)
+			adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+			adapter, ok := adapterFactory.GetAdapter(utils.SyscallEventType)
+			if !ok {
+				t.Fatalf("Failed to get event adapter")
+			}
+			eventMap := adapter.ToMap(&events.EnrichedEvent{
+				Event: tt.event,
+			})
 
 			// Evaluate the rule
 			triggered, err := celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)

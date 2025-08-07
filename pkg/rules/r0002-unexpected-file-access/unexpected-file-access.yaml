@@ -12,36 +12,36 @@ spec:
     id: "R0002"
     description: "Detects unexpected file access that is not in the baseline"
     expressions:
-      message: "'Unexpected file access detected: ' + data.event.comm + ' with PID ' + string(data.event.pid) + ' to ' + data.event.fullPath"
-      unique_id: "data.event.comm + '_' + data.event.fullPath"
+      message: "'Unexpected file access detected: ' + event.comm + ' with PID ' + string(event.pid) + ' to ' + event.fullPath"
+      unique_id: "event.comm + '_' + event.fullPath"
       rule_expression:
         - event_type: "open"
           expression: >
-            !ap.was_path_opened(data.event.runtime.containerId, data.event.fullPath) &&
-            !(data.event.fullPath.startsWith('/proc') || 
-              data.event.fullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') || 
-              data.event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') || 
-              data.event.fullPath.startsWith('/tmp')) &&
-            (data.event.fullPath.startsWith('/etc') || 
-             data.event.fullPath.startsWith('/var/spool/cron/') || 
-             data.event.fullPath.startsWith('/var/log/') || 
-             data.event.fullPath.startsWith('/var/run/') || 
-             data.event.fullPath.startsWith('/dev/shm/') || 
-             data.event.fullPath.startsWith('/run/') || 
-             data.event.fullPath.startsWith('/var/www/') || 
-             data.event.fullPath.startsWith('/var/lib/docker/') || 
-             data.event.fullPath.startsWith('/opt/') || 
-             data.event.fullPath.startsWith('/usr/local/') || 
-             data.event.fullPath.startsWith('/app/') || 
-             data.event.fullPath.startsWith('/.dockerenv') || 
-             data.event.fullPath.startsWith('/proc/self/environ') || 
-             data.event.fullPath.startsWith('/var/lib/kubelet/') || 
-             data.event.fullPath.startsWith('/etc/cni/net.d/') || 
-             data.event.fullPath.startsWith('/var/run/secrets/kubernetes.io/') || 
-             data.event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount/') || 
-             data.event.fullPath.startsWith('/run/containerd/') || 
-             data.event.fullPath.startsWith('/run/flannel/') || 
-             data.event.fullPath.startsWith('/run/calico/'))
+            !ap.was_path_opened(event.runtime.containerId, event.fullPath) &&
+            !(event.fullPath.startsWith('/proc') || 
+              event.fullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') || 
+              event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') || 
+              event.fullPath.startsWith('/tmp')) &&
+            (event.fullPath.startsWith('/etc') || 
+             event.fullPath.startsWith('/var/spool/cron/') || 
+             event.fullPath.startsWith('/var/log/') || 
+             event.fullPath.startsWith('/var/run/') || 
+             event.fullPath.startsWith('/dev/shm/') || 
+             event.fullPath.startsWith('/run/') || 
+             event.fullPath.startsWith('/var/www/') || 
+             event.fullPath.startsWith('/var/lib/docker/') || 
+             event.fullPath.startsWith('/opt/') || 
+             event.fullPath.startsWith('/usr/local/') || 
+             event.fullPath.startsWith('/app/') || 
+             event.fullPath.startsWith('/.dockerenv') || 
+             event.fullPath.startsWith('/proc/self/environ') || 
+             event.fullPath.startsWith('/var/lib/kubelet/') || 
+             event.fullPath.startsWith('/etc/cni/net.d/') || 
+             event.fullPath.startsWith('/var/run/secrets/kubernetes.io/') || 
+             event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount/') || 
+             event.fullPath.startsWith('/run/containerd/') || 
+             event.fullPath.startsWith('/run/flannel/') || 
+             event.fullPath.startsWith('/run/calico/'))
     profile_dependency: 0
     severity: 1
     support_policy: false

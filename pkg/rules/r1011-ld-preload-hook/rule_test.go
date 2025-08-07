@@ -15,6 +15,7 @@ import (
 	"github.com/kubescape/node-agent/pkg/rulemanager"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -51,8 +52,6 @@ func TestR1011LdPreloadHook(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-
 	// Test open event with ld.so.preload file opened with write flag - SHOULD TRIGGER
 	openEvent := &events.OpenEvent{
 		Event: traceropentype.Event{
@@ -76,10 +75,18 @@ func TestR1011LdPreloadHook(t *testing.T) {
 		},
 	}
 
-	eventMap := celSerializer.Serialize(openEvent)
+	// Serialize open event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: openEvent,
+	})
 
 	// Evaluate the rule for open event - should trigger for write access to ld.so.preload
-	ok, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -89,7 +96,9 @@ func TestR1011LdPreloadHook(t *testing.T) {
 
 	// Test with read flag - SHOULD NOT TRIGGER
 	openEvent.FlagsRaw = 0
-	eventMap = celSerializer.Serialize(openEvent)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: openEvent,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -102,7 +111,9 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	// Test with different file - SHOULD NOT TRIGGER
 	openEvent.FullPath = "/etc/passwd"
 	openEvent.FlagsRaw = 1
-	eventMap = celSerializer.Serialize(openEvent)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: openEvent,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -134,7 +145,15 @@ func TestR1011LdPreloadHook(t *testing.T) {
 		},
 	}
 
-	eventMap = celSerializer.Serialize(execEvent)
+	// Serialize exec event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: execEvent,
+	})
 
 	// For exec events, just verify the expression compiles and returns false
 	// (since we can't mock process.get_ld_hook_var for a real PID)
@@ -150,7 +169,9 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	// Test exec event with matlab container - should not trigger due to container check
 	execEvent.Comm = "test-process"
 	execEvent.Event.CommonData.K8s.BasicK8sMetadata.ContainerName = "matlab"
-	eventMap = celSerializer.Serialize(execEvent)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: execEvent,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

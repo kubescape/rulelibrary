@@ -12,13 +12,13 @@ spec:
     id: "R0007"
     description: "Detecting execution of kubernetes client"
     expressions:
-      message: "'Kubernetes client ' + data.event.comm + ' was executed with PID ' + string(data.event.pid)"
-      unique_id: "data.event.comm + '_' + data.event.pcomm"
+      message: "'Kubernetes client ' + event.comm + ' was executed with PID ' + string(event.pid)"
+      unique_id: "event.comm + '_' + event.pcomm"
       rule_expression:
         - event_type: "exec"
-          expression: "(data.event.comm == 'kubectl' || data.event.exepath.endsWith('/kubectl')) && !ap.was_executed(data.event.runtime.containerId, parse.get_exec_path(data.event.args, data.event.comm))"
+          expression: "(event.comm == 'kubectl' || event.exepath.endsWith('/kubectl')) && !ap.was_executed(event.runtime.containerId, parse.get_exec_path(event.args, event.comm))"
         - event_type: "network"
-          expression: "data.event.pktType == 'OUTGOING' && k8s.is_api_server_address(data.event.dst.addr) && !nn.was_address_in_egress(data.event.runtime.containerId, data.event.dst.addr)"
+          expression: "event.pktType == 'OUTGOING' && k8s.is_api_server_address(event.dst.addr) && !nn.was_address_in_egress(event.runtime.containerId, event.dst.addr)"
     profile_dependency: 0
     severity: 5 # Medium
     support_policy: false

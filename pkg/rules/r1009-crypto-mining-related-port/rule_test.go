@@ -8,10 +8,12 @@ import (
 	tracernetworktype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/network/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -77,11 +79,18 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-	eventMap := celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.NetworkEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Test with crypto mining port - should trigger alert
-	ok, err := celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -112,7 +121,15 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 	e.Port = 45700
 	e.Comm = "xmr-stak"
 	e.DstEndpoint.Addr = "2.2.2.2"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -126,7 +143,15 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 	e.Port = 80
 	e.Comm = "curl"
 	e.DstEndpoint.Addr = "3.3.3.3"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -140,7 +165,15 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 	e.Port = 3333
 	e.Proto = "UDP"
 	e.Comm = "xmrig"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -153,7 +186,15 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 	// Test with incoming packet - should not trigger
 	e.Proto = "TCP"
 	e.PktType = "INCOMING"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -188,7 +229,9 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 		objCache.SetNetworkNeighborhood(nn)
 	}
 
-	eventMap = celSerializer.Serialize(e)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -200,7 +243,9 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 
 	// Test with non-whitelisted address
 	e.DstEndpoint.Addr = "5.5.5.5"
-	eventMap = celSerializer.Serialize(e)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
