@@ -79,7 +79,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 
 	// Serialize event
 	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok := adapterFactory.GetAdapter(utils.DnsEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -120,7 +120,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	e.Comm = "xmr-stak"
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -141,7 +141,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	e.Comm = "ethminer"
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -162,7 +162,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	e.Comm = "curl"
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -182,7 +182,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	e.DNSName = "github.com"
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -203,7 +203,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	e.Comm = "monero-miner"
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}

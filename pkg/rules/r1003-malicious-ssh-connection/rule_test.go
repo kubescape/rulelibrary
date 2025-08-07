@@ -80,7 +80,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Serialize event
 	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok := adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -120,7 +120,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	e.DstPort = 22
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -140,7 +140,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	e.DstPort = 2022
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -161,7 +161,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	e.SrcPort = 22   // Non-ephemeral port
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -204,7 +204,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -224,7 +224,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	e.DstIP = "3.3.3.3"
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -244,7 +244,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	e.DstPort = 2222
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
@@ -265,7 +265,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	e.DstPort = 1234
 	// Serialize event
 	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.NetworkEventType)
+	adapter, ok = adapterFactory.GetAdapter(utils.SSHEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}

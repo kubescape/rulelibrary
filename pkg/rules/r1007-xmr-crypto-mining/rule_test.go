@@ -77,7 +77,7 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 
 	// Serialize event
 	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.ExecveEventType)
+	adapter, ok := adapterFactory.GetAdapter(utils.RandomXEventType)
 	if !ok {
 		t.Fatalf("Failed to get event adapter")
 	}
