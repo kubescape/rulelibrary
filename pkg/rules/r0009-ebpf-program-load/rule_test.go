@@ -7,10 +7,12 @@ import (
 	"github.com/goradd/maps"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
@@ -67,11 +69,18 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-	eventMap := celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.SyscallEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Test without profile - should trigger alert
-	ok, err := celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -122,7 +131,15 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 
 	// Test with non-bpf syscall (should not trigger)
 	e.SyscallName = "open"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.SyscallEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.SyscallEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

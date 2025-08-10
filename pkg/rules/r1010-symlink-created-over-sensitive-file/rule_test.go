@@ -7,11 +7,13 @@ import (
 	"github.com/goradd/maps"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	tracersymlinktype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/symlink/types"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -68,12 +70,18 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-
-	eventMap := celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.SymlinkEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Evaluate the rule
-	ok, err := celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -108,7 +116,9 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 	e.OldPath = "/tmp/test"
 	e.NewPath = "/tmp/abc"
 
-	eventMap = celSerializer.Serialize(e)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.SymlinkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

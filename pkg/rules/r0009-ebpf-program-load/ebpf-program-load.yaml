@@ -12,11 +12,11 @@ spec:
     id: "R0009"
     description: "Detecting eBPF program load."
     expressions:
-      message: "'bpf system call executed in ' + data.event.k8s.containerName"
-      unique_id: "data.event.comm + '_' + data.event.syscallName"
+      message: "'bpf system call executed in ' + event.k8s.containerName"
+      unique_id: "event.comm + '_' + event.syscallName"
       rule_expression:
         - event_type: "syscall"
-          expression: "data.event.syscallName == 'bpf' && !ap.was_syscall_used(data.event.runtime.containerId, data.event.syscallName)"
+          expression: "event.syscallName == 'bpf' && !ap.was_syscall_used(event.runtime.containerId, event.syscallName)"
     profile_dependency: 1
     severity: 5
     support_policy: false

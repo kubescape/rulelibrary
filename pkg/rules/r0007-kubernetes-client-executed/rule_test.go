@@ -8,6 +8,7 @@ import (
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
@@ -74,12 +75,18 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-
-	eventMap := celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.ExecveEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Test without profile - should trigger alert
-	ok, err := celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -136,7 +143,9 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	// Test with non-kubectl process (should not trigger)
 	e.Event.Comm = "nginx"
 	e.Event.ExePath = "/usr/bin/nginx"
-	eventMap = celSerializer.Serialize(e)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -198,13 +207,20 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-	eventMap := celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.NetworkEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Sleep for 1 millisecond to make sure the cache is expired
 	time.Sleep(1 * time.Millisecond)
 
-	ok, err := celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}

@@ -12,11 +12,11 @@ spec:
     id: "R0010"
     description: "Detecting access to sensitive files."
     expressions:
-      message: "'Unexpected sensitive file access: ' + data.event.fullPath + ' by process ' + data.event.comm"
-      unique_id: "data.event.comm + '_' + data.event.fullPath"
+      message: "'Unexpected sensitive file access: ' + event.fullPath + ' by process ' + event.comm"
+      unique_id: "event.comm + '_' + event.fullPath"
       rule_expression:
         - event_type: "open"
-          expression: "data.event.fullPath.startsWith('/etc/shadow') && !ap.was_path_opened(data.event.runtime.containerId, data.event.fullPath)"
+          expression: "event.fullPath.startsWith('/etc/shadow') && !ap.was_path_opened(event.runtime.containerId, event.fullPath)"
     profile_dependency: 1
     severity: 5
     support_policy: false

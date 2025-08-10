@@ -6,7 +6,9 @@ import (
 
 	"github.com/goradd/maps"
 	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
@@ -69,12 +71,19 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
 
-	eventMap := celSerializer.Serialize(e)
+	adapter, ok := adapterFactory.GetAdapter(utils.DnsEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter: %v", err)
+	}
+
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Test without profile - should trigger alert
-	ok, err := celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -129,7 +138,9 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 
 	// Test with in-cluster communication (should be ignored)
 	e.DNSName = "kubernetes.default.svc.cluster.local."
-	eventMap = celSerializer.Serialize(e)
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

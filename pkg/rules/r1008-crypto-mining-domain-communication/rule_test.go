@@ -8,10 +8,12 @@ import (
 	tracerdnstype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/dns/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 )
@@ -75,11 +77,18 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
-	eventMap := celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.DnsEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Test with crypto mining domain - should trigger alert
-	ok, err := celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -109,7 +118,15 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	// Test with different crypto mining domain
 	e.DNSName = "pool.minexmr.com."
 	e.Comm = "xmr-stak"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -122,7 +139,15 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	// Test with another crypto mining domain
 	e.DNSName = "eth.antpool.com."
 	e.Comm = "ethminer"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -135,7 +160,15 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	// Test with legitimate domain - should not trigger
 	e.DNSName = "google.com"
 	e.Comm = "curl"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -147,7 +180,15 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 
 	// Test with another legitimate domain
 	e.DNSName = "github.com"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -160,7 +201,15 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	// Test with different process but same crypto mining domain
 	e.DNSName = "xmr.2miners.com."
 	e.Comm = "monero-miner"
-	eventMap = celSerializer.Serialize(e)
+	// Serialize event
+	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok = adapterFactory.GetAdapter(utils.DnsEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter")
+	}
+	eventMap = adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	ok, err = celEngine.EvaluateRule(eventMap, utils.DnsEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

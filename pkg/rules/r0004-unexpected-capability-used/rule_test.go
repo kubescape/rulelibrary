@@ -4,10 +4,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
+
 	"github.com/goradd/maps"
 	tracercapabilitiestype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/capabilities/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
@@ -69,12 +72,19 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 
-	celSerializer := celengine.CelEventSerializer{}
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
 
-	eventMap := celSerializer.Serialize(e)
+	adapter, ok := adapterFactory.GetAdapter(utils.CapabilitiesEventType)
+	if !ok {
+		t.Fatalf("Failed to get event adapter: %v", err)
+	}
+
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
 
 	// Evaluate the rule
-	ok, err := celEngine.EvaluateRule(eventMap, utils.CapabilitiesEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(eventMap, utils.CapabilitiesEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
