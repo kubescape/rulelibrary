@@ -17,31 +17,24 @@ spec:
       rule_expression:
         - event_type: "open"
           expression: >
-            !ap.was_path_opened(event.runtime.containerId, event.fullPath) &&
-            !(event.fullPath.startsWith('/proc') || 
-              event.fullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') || 
-              event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') || 
-              event.fullPath.startsWith('/tmp')) &&
-            (event.fullPath.startsWith('/etc') || 
-             event.fullPath.startsWith('/var/spool/cron/') || 
-             event.fullPath.startsWith('/var/log/') || 
-             event.fullPath.startsWith('/var/run/') || 
-             event.fullPath.startsWith('/dev/shm/') || 
-             event.fullPath.startsWith('/run/') || 
-             event.fullPath.startsWith('/var/www/') || 
-             event.fullPath.startsWith('/var/lib/docker/') || 
-             event.fullPath.startsWith('/opt/') || 
-             event.fullPath.startsWith('/usr/local/') || 
-             event.fullPath.startsWith('/app/') || 
-             event.fullPath.startsWith('/.dockerenv') || 
-             event.fullPath.startsWith('/proc/self/environ') || 
-             event.fullPath.startsWith('/var/lib/kubelet/') || 
-             event.fullPath.startsWith('/etc/cni/net.d/') || 
-             event.fullPath.startsWith('/var/run/secrets/kubernetes.io/') || 
-             event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount/') || 
-             event.fullPath.startsWith('/run/containerd/') || 
-             event.fullPath.startsWith('/run/flannel/') || 
-             event.fullPath.startsWith('/run/calico/'))
+            (event.fullPath.startsWith('/etc/') ||
+            event.fullPath.startsWith('/var/log/') ||
+            event.fullPath.startsWith('/var/run/') ||
+            event.fullPath.startsWith('/run/') ||
+            event.fullPath.startsWith('/var/spool/cron/') ||
+            event.fullPath.startsWith('/var/www/') ||
+            event.fullPath.startsWith('/var/lib/') ||
+            event.fullPath.startsWith('/opt/') ||
+            event.fullPath.startsWith('/usr/local/') ||
+            event.fullPath.startsWith('/app/') ||
+            event.fullPath == '/.dockerenv' ||
+            event.fullPath == '/proc/self/environ')
+            &&
+            !(event.fullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') ||
+              event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') ||
+              event.fullPath.startsWith('/tmp'))
+            &&
+            !ap.was_path_opened(event.runtime.containerId, event.fullPath)
     profile_dependency: 0
     severity: 1
     support_policy: false
