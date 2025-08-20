@@ -215,3 +215,91 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 		t.Fatalf("Rule evaluation failed - should have detected unexpected egress traffic with UDP")
 	}
 }
+
+// BenchmarkR0011CELEvaluation benchmarks the CEL rule evaluation performance
+func BenchmarkR0011CELEvaluation(b *testing.B) {
+	ruleSpec, err := common.LoadRuleFromYAML("unexpected-egress-network-traffic.yaml")
+	if err != nil {
+		b.Fatalf("Failed to load rule: %v", err)
+	}
+
+	// Create a network event for egress traffic
+	e := &tracernetworktype.Event{
+		Event: eventtypes.Event{
+			CommonData: eventtypes.CommonData{
+				K8s: eventtypes.K8sMetadata{
+					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
+						ContainerName: "test",
+					},
+				},
+				Runtime: eventtypes.BasicRuntimeMetadata{
+					ContainerID: "test",
+				},
+			},
+		},
+		PktType: "OUTGOING",
+		Proto:   "TCP",
+		Port:    80,
+		DstEndpoint: eventtypes.L3Endpoint{
+			Addr: "8.8.8.8",
+		},
+	}
+
+	objCache := &objectcachev1.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+
+	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
+		ContainerType: objectcache.Container,
+		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+			objectcache.Container: {
+				{
+					Name: "test",
+				},
+			},
+		},
+	})
+
+	celEngine, err := celengine.NewCEL(objCache, config.Config{
+		CelConfigCache: cache.FunctionCacheConfig{
+			MaxSize: 1000,
+			TTL:     1 * time.Microsecond,
+		},
+	})
+	if err != nil {
+		b.Fatalf("Failed to create CEL engine: %v", err)
+	}
+
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.NetworkEventType)
+	if !ok {
+		b.Fatalf("Failed to get event adapter")
+	}
+
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
+
+	// Reset timer to exclude setup time
+	b.ResetTimer()
+
+	// Run the benchmark
+	for i := 0; i < b.N; i++ {
+		// Benchmark CEL rule evaluation
+		_, err := celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+		if err != nil {
+			b.Fatalf("Failed to evaluate rule: %v", err)
+		}
+
+		// Also benchmark message and unique ID expressions
+		_, err = celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+		if err != nil {
+			b.Fatalf("Failed to evaluate message: %v", err)
+		}
+
+		_, err = celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+		if err != nil {
+			b.Fatalf("Failed to evaluate unique id: %v", err)
+		}
+	}
+}

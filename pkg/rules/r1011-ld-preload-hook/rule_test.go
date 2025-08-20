@@ -211,3 +211,90 @@ func TestR1011LdPreloadHook(t *testing.T) {
 		t.Fatalf("Rule policy validation should return true for whitelisted process")
 	}
 }
+
+// BenchmarkR1011CELEvaluation benchmarks the CEL rule evaluation performance
+func BenchmarkR1011CELEvaluation(b *testing.B) {
+	ruleSpec, err := common.LoadRuleFromYAML("ld-preload-hook.yaml")
+	if err != nil {
+		b.Fatalf("Failed to load rule: %v", err)
+	}
+
+	// Create an open event for ld.so.preload
+	e := &events.OpenEvent{
+		Event: traceropentype.Event{
+			Event: eventtypes.Event{
+				CommonData: eventtypes.CommonData{
+					K8s: eventtypes.K8sMetadata{
+						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
+							ContainerName: "test",
+						},
+					},
+					Runtime: eventtypes.BasicRuntimeMetadata{
+						ContainerID: "test",
+					},
+				},
+			},
+			Comm:     "test",
+			FullPath: "/etc/ld.so.preload",
+			FlagsRaw: 1,
+		},
+	}
+
+	objCache := &objectcachev1.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+
+	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
+		ContainerType: objectcache.Container,
+		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+			objectcache.Container: {
+				{
+					Name: "test",
+				},
+			},
+		},
+	})
+
+	celEngine, err := celengine.NewCEL(objCache, config.Config{
+		CelConfigCache: cache.FunctionCacheConfig{
+			MaxSize: 1000,
+			TTL:     1 * time.Microsecond,
+		},
+	})
+	if err != nil {
+		b.Fatalf("Failed to create CEL engine: %v", err)
+	}
+
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
+	if !ok {
+		b.Fatalf("Failed to get event adapter")
+	}
+
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
+
+	// Reset timer to exclude setup time
+	b.ResetTimer()
+
+	// Run the benchmark
+	for i := 0; i < b.N; i++ {
+		// Benchmark CEL rule evaluation
+		_, err := celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+		if err != nil {
+			b.Fatalf("Failed to evaluate rule: %v", err)
+		}
+
+		// Also benchmark message and unique ID expressions
+		_, err = celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+		if err != nil {
+			b.Fatalf("Failed to evaluate message: %v", err)
+		}
+
+		_, err = celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+		if err != nil {
+			b.Fatalf("Failed to evaluate unique id: %v", err)
+		}
+	}
+}
