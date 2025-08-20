@@ -5,6 +5,7 @@ go 1.24.0
 toolchain go1.24.5
 
 require (
+	github.com/google/cel-go v0.23.2
 	github.com/goradd/maps v1.0.0
 	github.com/inspektor-gadget/inspektor-gadget v0.41.0
 	github.com/kubescape/node-agent v0.0.0-00010101000000-000000000000
@@ -54,6 +55,7 @@ require (
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
 	github.com/containers/common v0.63.0 // indirect
 	github.com/coreos/go-oidc/v3 v3.14.1 // indirect
+	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/crewjam/rfc5424 v0.1.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -61,7 +63,7 @@ require (
 	github.com/dghubble/trie v0.1.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v28.2.1+incompatible // indirect
-	github.com/docker/docker v28.2.1+incompatible // indirect
+	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
@@ -90,10 +92,10 @@ require (
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/go-openapi/validate v0.24.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/google/cel-go v0.23.2 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.20.3 // indirect
@@ -241,6 +243,6 @@ replace github.com/vishvananda/netns => github.com/inspektor-gadget/netns v0.0.5
 
 replace github.com/mholt/archiver/v3 v3.5.1 => github.com/anchore/archiver/v3 v3.5.2
 
-replace github.com/inspektor-gadget/inspektor-gadget => github.com/amirmalka/inspektor-gadget v0.39.1-0.20250511132413-c7a2a761237a
+replace github.com/inspektor-gadget/inspektor-gadget => github.com/amirmalka/inspektor-gadget v0.40.1-0.20250814111737-3a58864c8d86
 
-replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.362-0.20250807102617-1ef40266db3b
+replace github.com/kubescape/node-agent => github.com/kubescape/node-agent v0.2.375-0.20250818082235-0ba8a1de9cfa

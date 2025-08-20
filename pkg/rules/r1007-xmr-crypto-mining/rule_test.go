@@ -196,3 +196,95 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 		t.Fatalf("Rule evaluation failed - should have detected XMR crypto mining with different UID/GID")
 	}
 }
+
+// BenchmarkR1007CELEvaluation benchmarks the CEL rule evaluation performance
+func BenchmarkR1007CELEvaluation(b *testing.B) {
+	ruleSpec, err := common.LoadRuleFromYAML("xmr-crypto-mining.yaml")
+	if err != nil {
+		b.Fatalf("Failed to load rule: %v", err)
+	}
+
+	// Create a RandomX event for crypto mining detection
+	e := &tracerrandomxtype.Event{
+		Event: eventtypes.Event{
+			CommonData: eventtypes.CommonData{
+				K8s: eventtypes.K8sMetadata{
+					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
+						ContainerName: "test",
+						PodName:       "test-pod",
+						Namespace:     "test-namespace",
+					},
+				},
+				Runtime: eventtypes.BasicRuntimeMetadata{
+					ContainerID:   "test-container",
+					ContainerName: "test",
+				},
+			},
+		},
+		Comm:       "xmrig",
+		ExePath:    "/usr/bin/xmrig",
+		Pid:        1234,
+		Uid:        1000,
+		Gid:        1000,
+		PPid:       1,
+		UpperLayer: true,
+	}
+
+	objCache := &objectcachev1.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+
+	objCache.SetSharedContainerData("test-container", &objectcache.WatchedContainerData{
+		ContainerType: objectcache.Container,
+		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+			objectcache.Container: {
+				{
+					Name: "test",
+				},
+			},
+		},
+	})
+
+	celEngine, err := celengine.NewCEL(objCache, config.Config{
+		CelConfigCache: cache.FunctionCacheConfig{
+			MaxSize: 1000,
+			TTL:     1 * time.Microsecond,
+		},
+	})
+	if err != nil {
+		b.Fatalf("Failed to create CEL engine: %v", err)
+	}
+
+	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
+	adapter, ok := adapterFactory.GetAdapter(utils.RandomXEventType)
+	if !ok {
+		b.Fatalf("Failed to get event adapter")
+	}
+
+	eventMap := adapter.ToMap(&events.EnrichedEvent{
+		Event: e,
+	})
+
+	// Reset timer to exclude setup time
+	b.ResetTimer()
+
+	// Run the benchmark
+	for i := 0; i < b.N; i++ {
+		// Benchmark CEL rule evaluation
+		_, err := celEngine.EvaluateRule(eventMap, utils.RandomXEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+		if err != nil {
+			b.Fatalf("Failed to evaluate rule: %v", err)
+		}
+
+		// Also benchmark message and unique ID expressions
+		_, err = celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+		if err != nil {
+			b.Fatalf("Failed to evaluate message: %v", err)
+		}
+
+		_, err = celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+		if err != nil {
+			b.Fatalf("Failed to evaluate unique id: %v", err)
+		}
+	}
+}
