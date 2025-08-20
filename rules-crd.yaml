@@ -444,7 +444,7 @@ spec:
       description: "Detecting ld_preload hook techniques."
       expressions:
         message: "'Process (' + event.comm + ') was executed and is using the environment variable ' + process.get_ld_hook_var(event.pid)"
-        unique_id: "event.comm + '_' + event.exepath + '_' + event.pcomm"
+        unique_id: "event.comm"
         rule_expression:
           - event_type: "exec"
             expression: "event.comm != 'java' && event.k8s.containerName != 'matlab' && process.get_ld_hook_var(event.pid) != ''"
