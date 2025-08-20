@@ -16,7 +16,7 @@ spec:
       unique_id: "event.comm + '_' + event.name"
       rule_expression:
         - event_type: "dns"
-          expression: "!nn.is_domain_in_egress(event.runtime.containerId, event.name) && !event.name.endsWith('.svc.cluster.local.')"
+          expression: "!event.name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(event.runtime.containerId, event.name)"
     profile_dependency: 0
     severity: 1
     support_policy: false
