@@ -197,7 +197,11 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
+<<<<<<< HEAD
 	if message != "The dynamic linker configuration file (/etc/ld.so.preload) was modified by process (test)" {
+=======
+	if message != "Unexpected process launched: test-process with PID 1234" {
+>>>>>>> bf2c532fccc02e652fda18944370a705b33dc0b4
 		t.Fatalf("Message evaluation failed")
 	}
 
@@ -206,7 +210,11 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
+<<<<<<< HEAD
 	if uniqueId != "open_/etc/ld.so.preload_test" {
+=======
+	if uniqueId != "test-process_/usr/bin/test-process" {
+>>>>>>> bf2c532fccc02e652fda18944370a705b33dc0b4
 		t.Fatalf("Unique id evaluation failed")
 	}
 }
