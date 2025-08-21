@@ -12,8 +12,8 @@ spec:
     id: "R0007"
     description: "Detecting execution of kubernetes client"
     expressions:
-      message: "'Kubernetes client ' + exec.comm + ' was executed with PID ' + string(exec.pid)"
-      unique_id: "exec.comm + '_' + exec.pcomm"
+      message: "event_type == 'exec' ? 'Kubernetes client (' + exec.comm + ') was executed with PID ' + string(exec.pid) : 'Network connection to Kubernetes API server from ' + network.runtime.container_id"
+      unique_id: "event_type == 'exec' ? 'exec_' + exec.comm : 'network_' + network.dst_endpoint.addr"
       rule_expression:
         - event_type: "exec"
           expression: "(exec.comm == 'kubectl' || exec.exe_path.endsWith('/kubectl')) && !ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm))"

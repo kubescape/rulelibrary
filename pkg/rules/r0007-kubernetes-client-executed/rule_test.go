@@ -92,7 +92,7 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Kubernetes client kubectl was executed with PID 1234" {
+	if message != "Kubernetes client (kubectl) was executed with PID 1234" {
 		t.Fatalf("Message evaluation failed, got: %s", message)
 	}
 
@@ -101,7 +101,7 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "kubectl_test-process" {
+	if uniqueId != "exec_kubectl" {
 		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 
@@ -219,7 +219,7 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected process launched: test-process with PID 1234" {
+	if message != "Network connection to Kubernetes API server from test" {
 		t.Fatalf("Message evaluation failed")
 	}
 
@@ -228,7 +228,7 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test-process_/usr/bin/test-process" {
+	if uniqueId != "network_1.1.1.1" {
 		t.Fatalf("Unique id evaluation failed")
 	}
 }
