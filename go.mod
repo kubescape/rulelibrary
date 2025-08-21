@@ -7,7 +7,7 @@ toolchain go1.24.5
 require (
 	github.com/goradd/maps v1.0.0
 	github.com/inspektor-gadget/inspektor-gadget v0.41.0
-	github.com/kubescape/node-agent v0.2.375-0.20250821094640-efa3bda0d877
+	github.com/kubescape/node-agent v0.2.375-0.20250821104243-5acd899ceaff
 	github.com/kubescape/storage v0.0.200
 	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v3 v3.0.1
