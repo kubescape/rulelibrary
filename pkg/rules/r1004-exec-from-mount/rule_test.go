@@ -13,7 +13,6 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -118,17 +117,13 @@ func TestR1004ExecFromMount(t *testing.T) {
 	}
 
 	// Serialize event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.ExecveEventType,
+		Event:     e,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
 	// Test without application profile - should trigger alert for exec from mounted path
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -137,7 +132,7 @@ func TestR1004ExecFromMount(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
@@ -147,7 +142,7 @@ func TestR1004ExecFromMount(t *testing.T) {
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
@@ -177,7 +172,7 @@ func TestR1004ExecFromMount(t *testing.T) {
 	// Sleep for 1 millisecond to make sure the cache is expired
 	time.Sleep(1 * time.Millisecond)
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -189,17 +184,8 @@ func TestR1004ExecFromMount(t *testing.T) {
 	e.Comm = "/usr/bin/ls"
 	e.ExePath = "/usr/bin/ls"
 	e.Args = []string{"/usr/bin/ls", "-la"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -211,17 +197,8 @@ func TestR1004ExecFromMount(t *testing.T) {
 	e.Comm = "/var/test2/another"
 	e.ExePath = "/var/test2/another"
 	e.Args = []string{"/var/test2/another"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -233,17 +210,8 @@ func TestR1004ExecFromMount(t *testing.T) {
 	e.Comm = "/var/test1/subdir/script"
 	e.ExePath = "/var/test1/subdir/script"
 	e.Args = []string{"/var/test1/subdir/script"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -255,17 +223,8 @@ func TestR1004ExecFromMount(t *testing.T) {
 	e.Comm = "/bin/bash"
 	e.ExePath = "/bin/bash"
 	e.Args = []string{"/bin/bash", "-c", "echo hello"}
-	// Serialize event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
-	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}

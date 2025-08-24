@@ -8,7 +8,6 @@ import (
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
@@ -74,19 +73,13 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
-
-	// Serialize event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.ExecveEventType,
+		Event:     e,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
 	// Test without profile - should trigger alert
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -95,20 +88,20 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	}
 
 	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.Message)
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Kubernetes client kubectl was executed with PID 1234" {
+	if message != "Kubernetes client (kubectl) was executed with PID 1234" {
 		t.Fatalf("Message evaluation failed, got: %s", message)
 	}
 
 	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(eventMap, ruleSpec.Rules[0].Expressions.UniqueID)
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "kubectl_test-process" {
+	if uniqueId != "exec_kubectl" {
 		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 
@@ -132,7 +125,7 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 		objCache.SetApplicationProfile(profile)
 	}
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -143,11 +136,8 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	// Test with non-kubectl process (should not trigger)
 	e.Event.Comm = "nginx"
 	e.Event.ExePath = "/usr/bin/nginx"
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -208,23 +198,37 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 	}
 
 	// Serialize event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.NetworkEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.NetworkEventType,
+		Event:     e,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: e,
-	})
 
 	// Sleep for 1 millisecond to make sure the cache is expired
 	time.Sleep(1 * time.Millisecond)
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.NetworkEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if ok {
 		t.Fatalf("Rule evaluation should have failed")
+	}
+
+	// Evaluate the message
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
+	if err != nil {
+		t.Fatalf("Failed to evaluate message: %v", err)
+	}
+	if message != "Network connection to Kubernetes API server from test" {
+		t.Fatalf("Message evaluation failed")
+	}
+
+	// Evaluate the unique id
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
+	if err != nil {
+		t.Fatalf("Failed to evaluate unique id: %v", err)
+	}
+	if uniqueId != "network_1.1.1.1" {
+		t.Fatalf("Unique id evaluation failed")
 	}
 }

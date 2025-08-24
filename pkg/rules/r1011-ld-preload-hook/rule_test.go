@@ -15,7 +15,6 @@ import (
 	"github.com/kubescape/node-agent/pkg/rulemanager"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/ruleadapters"
 	"github.com/kubescape/node-agent/pkg/utils"
 	common "github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
@@ -76,17 +75,13 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	}
 
 	// Serialize open event
-	adapterFactory := ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok := adapterFactory.GetAdapter(utils.OpenEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent := &events.EnrichedEvent{
+		EventType: utils.OpenEventType,
+		Event:     openEvent,
 	}
-	eventMap := adapter.ToMap(&events.EnrichedEvent{
-		Event: openEvent,
-	})
 
 	// Evaluate the rule for open event - should trigger for write access to ld.so.preload
-	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -96,11 +91,8 @@ func TestR1011LdPreloadHook(t *testing.T) {
 
 	// Test with read flag - SHOULD NOT TRIGGER
 	openEvent.FlagsRaw = 0
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: openEvent,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -111,11 +103,8 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	// Test with different file - SHOULD NOT TRIGGER
 	openEvent.FullPath = "/etc/passwd"
 	openEvent.FlagsRaw = 1
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: openEvent,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.OpenEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -145,19 +134,14 @@ func TestR1011LdPreloadHook(t *testing.T) {
 		},
 	}
 
-	// Serialize exec event
-	adapterFactory = ruleadapters.NewEventRuleAdapterFactory()
-	adapter, ok = adapterFactory.GetAdapter(utils.ExecveEventType)
-	if !ok {
-		t.Fatalf("Failed to get event adapter")
+	enrichedEvent2 := &events.EnrichedEvent{
+		EventType: utils.ExecveEventType,
+		Event:     execEvent,
 	}
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: execEvent,
-	})
 
 	// For exec events, just verify the expression compiles and returns false
 	// (since we can't mock process.get_ld_hook_var for a real PID)
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent2, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate exec rule expression: %v", err)
 	}
@@ -169,11 +153,8 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	// Test exec event with matlab container - should not trigger due to container check
 	execEvent.Comm = "test-process"
 	execEvent.Event.CommonData.K8s.BasicK8sMetadata.ContainerName = "matlab"
-	eventMap = adapter.ToMap(&events.EnrichedEvent{
-		Event: execEvent,
-	})
 
-	ok, err = celEngine.EvaluateRule(eventMap, utils.ExecveEventType, ruleSpec.Rules[0].Expressions.RuleExpression)
+	ok, err = celEngine.EvaluateRule(enrichedEvent2, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
@@ -209,5 +190,23 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	}
 	if !ok {
 		t.Fatalf("Rule policy validation should return true for whitelisted process")
+	}
+
+	// Evaluate the message
+	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
+	if err != nil {
+		t.Fatalf("Failed to evaluate message: %v", err)
+	}
+	if message != "The dynamic linker configuration file (/etc/ld.so.preload) was modified by process (test)" {
+		t.Fatalf("Message evaluation failed")
+	}
+
+	// Evaluate the unique id
+	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
+	if err != nil {
+		t.Fatalf("Failed to evaluate unique id: %v", err)
+	}
+	if uniqueId != "open_/etc/ld.so.preload_test" {
+		t.Fatalf("Unique id evaluation failed")
 	}
 }

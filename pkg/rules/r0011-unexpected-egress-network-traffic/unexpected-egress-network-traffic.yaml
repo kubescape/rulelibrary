@@ -12,11 +12,11 @@ spec:
     id: "R0011"
     description: "Detecting unexpected egress network traffic that is not whitelisted by application profile."
     expressions:
-      message: "'Unexpected egress network communication to: ' + event.dst.addr + ':' + string(event.port) + ' using ' + event.proto + ' from: ' + event.k8s.containerName"
-      unique_id: "event.dst.addr + '_' + string(event.port) + '_' + event.proto"
+      message: "'Unexpected egress network communication to: ' + network.dst_endpoint.addr + ':' + string(dyn(network.port)) + ' using ' + network.proto + ' from: ' + network.k8s.container_name"
+      unique_id: "network.dst_endpoint.addr + '_' + string(dyn(network.port)) + '_' + network.proto"
       rule_expression:
         - event_type: "network"
-          expression: "event.pktType == 'OUTGOING' && !net.is_private_ip(event.dst.addr) && !nn.was_address_in_egress(event.runtime.containerId, event.dst.addr)"
+          expression: "network.pkt_type == 'OUTGOING' && !net.is_private_ip(network.dst_endpoint.addr) && !nn.was_address_in_egress(network.runtime.container_id, network.dst_endpoint.addr)"
     profile_dependency: 0
     severity: 5 # Medium
     support_policy: false
@@ -24,4 +24,4 @@ spec:
       - "whitelisted"
       - "network"
       - "anomaly"
-      - "networkprofile" 
+      - "networkprofile"
