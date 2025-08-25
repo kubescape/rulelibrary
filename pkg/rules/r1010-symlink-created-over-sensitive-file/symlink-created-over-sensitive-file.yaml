@@ -19,7 +19,7 @@ spec:
           expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.runtime.container_id, symlink.old_path)"
     profile_dependency: 0
     severity: 5
-    support_policy: true
+    support_policy: false
     tags:
       - "anomaly"
       - "symlink"
