@@ -12,7 +12,7 @@ spec:
     id: "R1015"
     description: "Detecting potentially malicious ptrace usage."
     expressions:
-      message: "'Malicious ptrace usage detected from: ' + ptrace.comm + ' on PID: ' + string(ptrace.pid)"
+      message: "'Malicious ptrace usage detected from: ' + ptrace.comm"
       unique_id: "ptrace.exe_path + '_' + ptrace.comm"
       rule_expression:
         - event_type: "ptrace"

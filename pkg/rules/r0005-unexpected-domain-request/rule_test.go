@@ -88,7 +88,7 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected domain communication: test.com from: test" {
+	if message != "Unexpected domain communication: test.com" {
 		t.Fatalf("Message evaluation failed, got: %s", message)
 	}
 

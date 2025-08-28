@@ -98,7 +98,7 @@ func TestR1015MaliciousPtraceUsage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	expectedMessage := "Malicious ptrace usage detected from: malicious_process on PID: 1234"
+	expectedMessage := "Malicious ptrace usage detected from: malicious_process"
 	if message != expectedMessage {
 		t.Fatalf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 	}

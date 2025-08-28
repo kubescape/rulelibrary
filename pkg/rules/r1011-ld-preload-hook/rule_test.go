@@ -206,7 +206,7 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "open_/etc/ld.so.preload_test" {
+	if uniqueId != "open_/etc/ld.so.preload" {
 		t.Fatalf("Unique id evaluation failed")
 	}
 }

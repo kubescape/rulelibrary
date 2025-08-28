@@ -146,7 +146,7 @@ func TestR1004ExecFromMount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "/var/test1/test_/var/test1/test_" {
+	if uniqueId != "/var/test1/test_/var/test1/test" {
 		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 
