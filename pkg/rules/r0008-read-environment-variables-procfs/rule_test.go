@@ -210,7 +210,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
-				expectedUniqueID := tt.event.Comm + "_" + tt.event.FullPath
+				expectedUniqueID := tt.event.Comm
 				if uniqueID != expectedUniqueID {
 					t.Errorf("Unique ID evaluation failed. Expected: %s, Got: %s", expectedUniqueID, uniqueID)
 				}

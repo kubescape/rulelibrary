@@ -13,7 +13,7 @@ spec:
     description: "Detecting reading environment variables from procfs."
     expressions:
       message: "'Reading environment variables from procfs: ' + open.full_path + ' by process ' + open.comm"
-      unique_id: "open.comm + '_' + open.full_path"
+      unique_id: "open.comm"
       rule_expression:
         - event_type: "open"
           expression: >
@@ -21,7 +21,7 @@ spec:
             open.full_path.endsWith('/environ') &&
             !ap.was_path_opened_with_suffix(open.runtime.container_id, '/environ')
     profile_dependency: 0 # Required
-    severity: 3
+    severity: 5 # Medium
     support_policy: false
     tags:
       - "anomaly"

@@ -10,7 +10,7 @@ spec:
   - name: "Exec from malicious source"
     enabled: true
     id: "R1000"
-    description: "Detecting exec calls that are from malicious source like: /dev/shm, /proc/self"
+    description: "Detecting exec calls that are from malicious source like: /dev/shm"
     expressions:
       message: "'Execution from malicious source: ' + exec.exe_path + ' in directory ' + exec.cwd"
       unique_id: "exec.comm + '_' + exec.exe_path + '_' + exec.pcomm"
@@ -22,7 +22,7 @@ spec:
             (parse.get_exec_path(exec.args, exec.comm).startsWith('/dev/shm/')))
     profile_dependency: 2
     severity: 8
-    support_policy: true
+    support_policy: false
     tags:
       - "exec"
       - "signature"

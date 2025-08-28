@@ -13,7 +13,7 @@ spec:
     description: "Detecting exec calls from mounted paths."
     expressions:
       message: "'Process (' + exec.comm + ') was executed from a mounted path'"
-      unique_id: "exec.comm + '_' + exec.exe_path + '_'"
+      unique_id: "exec.comm + '_' + exec.exe_path"
       rule_expression:
         - event_type: "exec"
           expression: "!ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm)) && k8s.get_container_mount_paths(exec.k8s.namespace, exec.k8s.pod_name, exec.k8s.container_name).exists(mount, exec.exe_path.startsWith(mount) || parse.get_exec_path(exec.args, exec.comm).startsWith(mount))"

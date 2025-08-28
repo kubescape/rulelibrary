@@ -12,7 +12,7 @@ spec:
     id: "R0005"
     description: "Detecting unexpected domain requests that are not whitelisted by application profile."
     expressions:
-      message: "'Unexpected domain communication: ' + dns.dns_name + ' from: ' + dns.k8s.container_name"
+      message: "'Unexpected domain communication: ' + dns.dns_name"
       unique_id: "dns.comm + '_' + dns.dns_name"
       rule_expression:
         - event_type: "dns"
