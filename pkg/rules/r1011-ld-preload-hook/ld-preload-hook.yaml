@@ -7,8 +7,8 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "LD_PRELOAD Hook"
-    enabled: true
+  - name: "ld_preload hooks technique detected"
+    enabled: false
     id: "R1011"
     description: "Detecting ld_preload hook techniques."
     expressions:

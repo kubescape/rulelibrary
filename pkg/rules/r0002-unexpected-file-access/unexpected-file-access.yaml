@@ -7,8 +7,8 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Unexpected file access"
-    enabled: true
+  - name: "Files Access Anomalies in container"
+    enabled: false
     id: "R0002"
     description: "Detects unexpected file access that is not in the baseline"
     expressions:

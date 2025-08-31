@@ -7,7 +7,7 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Kernel Module Load"
+  - name: "Process tries to load a kernel module"
     enabled: true
     id: "R1002"
     description: "Detecting Kernel Module Load."

@@ -7,7 +7,7 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Symlink Created Over Sensitive File"
+  - name: "Soft link created over sensitive file"
     enabled: true
     id: "R1010"
     description: "Detects symlink creation over sensitive files"
@@ -17,7 +17,7 @@ spec:
       rule_expression:
         - event_type: "symlink"
           expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.runtime.container_id, symlink.old_path)"
-    profile_dependency: 0
+    profile_dependency: 1
     severity: 5
     support_policy: true
     tags:

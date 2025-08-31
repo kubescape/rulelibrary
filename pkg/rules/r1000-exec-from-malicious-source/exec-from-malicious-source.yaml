@@ -7,7 +7,7 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Exec from malicious source"
+  - name: "Process executed from malicious source"
     enabled: true
     id: "R1000"
     description: "Detecting exec calls that are from malicious source like: /dev/shm"

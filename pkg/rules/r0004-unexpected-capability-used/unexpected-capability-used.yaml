@@ -7,7 +7,7 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Unexpected capability used"
+  - name: "Linux Capabilities Anomalies in container"
     enabled: true
     id: "R0004"
     description: "Detects unexpected capabilities that are not whitelisted by application profile"
