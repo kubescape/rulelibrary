@@ -7,7 +7,7 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "XMR Crypto Mining Detection"
+  - name: "Crypto miner launched"
     enabled: true
     id: "R1007"
     description: "Detecting XMR Crypto Miners by randomx algorithm usage."

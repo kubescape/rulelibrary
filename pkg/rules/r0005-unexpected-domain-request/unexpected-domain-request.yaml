@@ -7,7 +7,7 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Unexpected domain request"
+  - name: "DNS Anomalies in container"
     enabled: true
     id: "R0005"
     description: "Detecting unexpected domain requests that are not whitelisted by application profile."
