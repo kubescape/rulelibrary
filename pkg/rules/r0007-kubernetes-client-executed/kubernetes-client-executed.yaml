@@ -12,7 +12,7 @@ spec:
     id: "R0007"
     description: "Detecting execution of kubernetes client"
     expressions:
-      message: "event_type == 'exec' ? 'Kubernetes client (' + exec.comm + ') was executed with PID ' + string(exec.pid) : 'Network connection to Kubernetes API server from ' + network.runtime.container_id"
+      message: "event_type == 'exec' ? 'Kubernetes client (' + exec.comm + ') was executed with PID ' + string(exec.pid) : 'Network connection to Kubernetes API server from container ' + network.k8s.container_name"
       unique_id: "event_type == 'exec' ? 'exec_' + exec.comm : 'network_' + network.dst_endpoint.addr"
       rule_expression:
         - event_type: "exec"
