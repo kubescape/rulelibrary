@@ -219,7 +219,7 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Network connection to Kubernetes API server from test" {
+	if message != "Network connection to Kubernetes API server from container test" {
 		t.Fatalf("Message evaluation failed")
 	}
 

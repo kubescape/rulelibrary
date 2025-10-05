@@ -8,7 +8,7 @@ metadata:
 spec:
   rules:
   - name: "Disallowed ssh connection"
-    enabled: true
+    enabled: false
     id: "R1003"
     description: "Detecting ssh connection to disallowed port"
     expressions:
