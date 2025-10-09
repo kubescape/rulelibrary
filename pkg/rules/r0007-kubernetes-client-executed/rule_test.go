@@ -11,13 +11,11 @@ import (
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
-	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
-	tracernetworktype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/network/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR0007KubernetesClientExecuted(t *testing.T) {
@@ -27,26 +25,14 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	}
 
 	// Create a kubectl exec event
-	e := &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Pid:     1234,
-			Comm:    "kubectl",
-			Pcomm:   "test-process",
-			ExePath: "/usr/bin/kubectl",
-			Args:    []string{"kubectl", "get", "pods"},
-		},
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		Pid:         1234,
+		Comm:        "kubectl",
+		Pcomm:       "test-process",
+		ExePath:     "/usr/bin/kubectl",
+		Args:        []string{"kubectl", "get", "pods"},
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -134,8 +120,8 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	}
 
 	// Test with non-kubectl process (should not trigger)
-	e.Event.Comm = "nginx"
-	e.Event.ExePath = "/usr/bin/nginx"
+	e.Comm = "nginx"
+	e.ExePath = "/usr/bin/nginx"
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
@@ -152,24 +138,14 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 
-	e := &tracernetworktype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		PktType: "OUTGOING",
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		PktType:     "OUTGOING",
 		DstEndpoint: eventtypes.L3Endpoint{
 			Addr: "1.1.1.1",
 		},
-		Port: 80,
+		DstPort: 80,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{

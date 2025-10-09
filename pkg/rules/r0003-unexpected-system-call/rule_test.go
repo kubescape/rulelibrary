@@ -5,16 +5,14 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -25,21 +23,11 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	}
 
 	// Create a syscall event
-	e := &types.SyscallEvent{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
 		Comm:        "test",
-		SyscallName: "test_syscall",
+		Syscall:     "test_syscall",
 		Pid:         1234,
 	}
 

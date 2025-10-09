@@ -12,11 +12,11 @@ spec:
     id: "R1010"
     description: "Detects symlink creation over sensitive files"
     expressions:
-      message: "'Symlink created over sensitive file: ' + symlink.old_path + ' -> ' + symlink.new_path"
-      unique_id: "symlink.comm + '_' + symlink.old_path"
+      message: "'Symlink created over sensitive file: ' + event.oldPath + ' -> ' + event.newPath"
+      unique_id: "event.comm + '_' + event.oldPath"
       rule_expression:
         - event_type: "symlink"
-          expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.runtime.container_id, symlink.old_path)"
+          expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
     profile_dependency: 1
     severity: 5
     support_policy: true

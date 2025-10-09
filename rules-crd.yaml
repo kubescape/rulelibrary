@@ -18,7 +18,7 @@ spec:
         unique_id: "exec.comm + '_' + exec.exe_path"
         rule_expression:
           - event_type: "exec"
-            expression: "!ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm))"
+            expression: "!ap.was_executed(exec.containerId, parse.get_exec_path(exec.args, exec.comm))"
       profile_dependency: 0
       severity: 1
       support_policy: false
@@ -54,7 +54,7 @@ spec:
                 open.full_path.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') ||
                 open.full_path.startsWith('/tmp'))
               &&
-              !ap.was_path_opened(open.runtime.container_id, open.full_path)
+              !ap.was_path_opened(open.containerId, open.full_path)
       profile_dependency: 0
       severity: 1
       support_policy: false
@@ -72,7 +72,7 @@ spec:
         unique_id: "syscall.syscall_name"
         rule_expression:
           - event_type: "syscall"
-            expression: "!ap.was_syscall_used(syscall.runtime.container_id, syscall.syscall_name)"
+            expression: "!ap.was_syscall_used(syscall.containerId, syscall.syscall_name)"
       profile_dependency: 0
       severity: 1
       support_policy: false
@@ -89,7 +89,7 @@ spec:
         unique_id: "capabilities.comm + '_' + capabilities.cap_name"
         rule_expression:
           - event_type: "capabilities"
-            expression: "!ap.was_capability_used(capabilities.runtime.container_id, capabilities.cap_name)"
+            expression: "!ap.was_capability_used(capabilities.containerId, capabilities.cap_name)"
       profile_dependency: 0
       severity: 1
       support_policy: false
@@ -106,7 +106,7 @@ spec:
         unique_id: "dns.comm + '_' + dns.dns_name"
         rule_expression:
           - event_type: "dns"
-            expression: "!dns.dns_name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(dns.runtime.container_id, dns.dns_name)"
+            expression: "!dns.dns_name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(dns.containerId, dns.dns_name)"
       profile_dependency: 0
       severity: 1
       support_policy: false
@@ -128,10 +128,10 @@ spec:
                (open.full_path.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') && open.full_path.endsWith('/token')) ||
                (open.full_path.startsWith('/run/secrets/eks.amazonaws.com/serviceaccount') && open.full_path.endsWith('/token')) ||
                (open.full_path.startsWith('/var/run/secrets/eks.amazonaws.com/serviceaccount') && open.full_path.endsWith('/token'))) &&
-              !ap.was_path_opened_with_prefix(open.runtime.container_id, '/run/secrets/kubernetes.io/serviceaccount') &&
-              !ap.was_path_opened_with_prefix(open.runtime.container_id, '/var/run/secrets/kubernetes.io/serviceaccount') &&
-              !ap.was_path_opened_with_prefix(open.runtime.container_id, '/run/secrets/eks.amazonaws.com/serviceaccount') &&
-              !ap.was_path_opened_with_prefix(open.runtime.container_id, '/var/run/secrets/eks.amazonaws.com/serviceaccount')
+              !ap.was_path_opened_with_prefix(open.containerId, '/run/secrets/kubernetes.io/serviceaccount') &&
+              !ap.was_path_opened_with_prefix(open.containerId, '/var/run/secrets/kubernetes.io/serviceaccount') &&
+              !ap.was_path_opened_with_prefix(open.containerId, '/run/secrets/eks.amazonaws.com/serviceaccount') &&
+              !ap.was_path_opened_with_prefix(open.containerId, '/var/run/secrets/eks.amazonaws.com/serviceaccount')
       profile_dependency: 1
       severity: 5
       support_policy: false
@@ -148,9 +148,9 @@ spec:
         unique_id: "event_type == 'exec' ? 'exec_' + exec.comm : 'network_' + network.dst_endpoint.addr"
         rule_expression:
           - event_type: "exec"
-            expression: "(exec.comm == 'kubectl' || exec.exe_path.endsWith('/kubectl')) && !ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm))"
+            expression: "(exec.comm == 'kubectl' || exec.exe_path.endsWith('/kubectl')) && !ap.was_executed(exec.containerId, parse.get_exec_path(exec.args, exec.comm))"
           - event_type: "network"
-            expression: "network.pkt_type == 'OUTGOING' && k8s.is_api_server_address(network.dst_endpoint.addr) && !nn.was_address_in_egress(network.runtime.container_id, network.dst_endpoint.addr)"
+            expression: "network.pkt_type == 'OUTGOING' && k8s.is_api_server_address(network.dst_endpoint.addr) && !nn.was_address_in_egress(network.containerId, network.dst_endpoint.addr)"
       profile_dependency: 0
       severity: 5 # Medium
       support_policy: false
@@ -171,7 +171,7 @@ spec:
             expression: >
               open.full_path.startsWith('/proc/') && 
               open.full_path.endsWith('/environ') &&
-              !ap.was_path_opened_with_suffix(open.runtime.container_id, '/environ')
+              !ap.was_path_opened_with_suffix(open.containerId, '/environ')
       profile_dependency: 0 # Required
       severity: 5 # Medium
       support_policy: false
@@ -189,7 +189,7 @@ spec:
         unique_id: "syscall.comm + '_' + syscall.syscall_name"
         rule_expression:
           - event_type: "syscall"
-            expression: "syscall.syscall_name == 'bpf' && !ap.was_syscall_used(syscall.runtime.container_id, syscall.syscall_name)"
+            expression: "syscall.syscall_name == 'bpf' && !ap.was_syscall_used(syscall.containerId, syscall.syscall_name)"
       profile_dependency: 1
       severity: 5
       support_policy: false
@@ -206,7 +206,7 @@ spec:
         unique_id: "open.comm + '_' + open.full_path"
         rule_expression:
           - event_type: "open"
-            expression: "open.full_path.startsWith('/etc/shadow') && !ap.was_path_opened(open.runtime.container_id, open.full_path)"
+            expression: "open.full_path.startsWith('/etc/shadow') && !ap.was_path_opened(open.containerId, open.full_path)"
       profile_dependency: 1
       severity: 5
       support_policy: false
@@ -223,7 +223,7 @@ spec:
         unique_id: "network.dst_endpoint.addr + '_' + string(dyn(network.port)) + '_' + network.proto"
         rule_expression:
           - event_type: "network"
-            expression: "network.pkt_type == 'OUTGOING' && !net.is_private_ip(network.dst_endpoint.addr) && !nn.was_address_in_egress(network.runtime.container_id, network.dst_endpoint.addr)"
+            expression: "network.pkt_type == 'OUTGOING' && !net.is_private_ip(network.dst_endpoint.addr) && !nn.was_address_in_egress(network.containerId, network.dst_endpoint.addr)"
       profile_dependency: 0
       severity: 5 # Medium
       support_policy: false
@@ -264,7 +264,7 @@ spec:
             expression: >
               (exec.upper_layer == true ||
                exec.pupper_layer == true) &&
-              !ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm))
+              !ap.was_executed(exec.containerId, parse.get_exec_path(exec.args, exec.comm))
       profile_dependency: 1
       severity: 8
       support_policy: false
@@ -303,7 +303,7 @@ spec:
         unique_id: "ssh.comm + '_' + ssh.dst_ip + '_' + string(dyn(ssh.dst_port))"
         rule_expression:
           - event_type: "ssh"
-            expression: "dyn(ssh.src_port) >= 32768 && dyn(ssh.src_port) <= 60999 && !(dyn(ssh.dst_port) in [22, 2022]) && !nn.was_address_in_egress(ssh.runtime.container_id, ssh.dst_ip)"
+            expression: "dyn(ssh.src_port) >= 32768 && dyn(ssh.src_port) <= 60999 && !(dyn(ssh.dst_port) in [22, 2022]) && !nn.was_address_in_egress(ssh.containerId, ssh.dst_ip)"
       profile_dependency: 1
       severity: 5
       support_policy: false
@@ -322,7 +322,7 @@ spec:
         unique_id: "exec.comm + '_' + exec.exe_path"
         rule_expression:
           - event_type: "exec"
-            expression: "!ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm)) && k8s.get_container_mount_paths(exec.k8s.namespace, exec.k8s.pod_name, exec.k8s.container_name).exists(mount, exec.exe_path.startsWith(mount) || parse.get_exec_path(exec.args, exec.comm).startsWith(mount))"
+            expression: "!ap.was_executed(exec.containerId, parse.get_exec_path(exec.args, exec.comm)) && k8s.get_container_mount_paths(exec.k8s.namespace, exec.k8s.pod_name, exec.k8s.container_name).exists(mount, exec.exe_path.startsWith(mount) || parse.get_exec_path(exec.args, exec.comm).startsWith(mount))"
       profile_dependency: 1
       severity: 5
       support_policy: false
@@ -356,7 +356,7 @@ spec:
         unique_id: "syscall.syscall_name"
         rule_expression:
           - event_type: "syscall"
-            expression: "syscall.syscall_name == 'unshare' && !ap.was_syscall_used(syscall.runtime.container_id, syscall.syscall_name)"
+            expression: "syscall.syscall_name == 'unshare' && !ap.was_syscall_used(syscall.containerId, syscall.syscall_name)"
       profile_dependency: 2
       severity: 5
       support_policy: false
@@ -411,7 +411,7 @@ spec:
         unique_id: "network.comm + '_' + string(dyn(network.port))"
         rule_expression:
           - event_type: "network"
-            expression: "network.proto == 'TCP' && network.pkt_type == 'OUTGOING' && dyn(network.port) in [3333, 45700] && !nn.was_address_in_egress(network.runtime.container_id, network.dst_endpoint.addr)"
+            expression: "network.proto == 'TCP' && network.pkt_type == 'OUTGOING' && dyn(network.port) in [3333, 45700] && !nn.was_address_in_egress(network.containerId, network.dst_endpoint.addr)"
       profile_dependency: 1
       severity: 3
       support_policy: false
@@ -430,7 +430,7 @@ spec:
         unique_id: "symlink.comm + '_' + symlink.old_path"
         rule_expression:
           - event_type: "symlink"
-            expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.runtime.container_id, symlink.old_path)"
+            expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.containerId, symlink.old_path)"
       profile_dependency: 1
       severity: 5
       support_policy: true
@@ -466,7 +466,7 @@ spec:
         unique_id: "hardlink.comm + '_' + hardlink.old_path"
         rule_expression:
           - event_type: "hardlink"
-            expression: "(hardlink.old_path.startsWith('/etc/shadow') || hardlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(hardlink.runtime.container_id, hardlink.old_path)"
+            expression: "(hardlink.old_path.startsWith('/etc/shadow') || hardlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(hardlink.containerId, hardlink.old_path)"
       profile_dependency: 1
       severity: 5
       support_policy: true

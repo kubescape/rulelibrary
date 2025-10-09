@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
@@ -18,31 +16,19 @@ import (
 )
 
 // createTestExecEvent creates a test ExecEvent
-func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, args []string) *events.ExecEvent {
-	return &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: containerID,
-					},
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: containerName,
-						},
-					},
-				},
-			},
-			Comm:    comm,
-			ExePath: exePath,
-			Cwd:     cwd,
-			Args:    args,
-			Pid:     1234,
-			Ppid:    123,
-			Pcomm:   "parent-process",
-			Uid:     0,
-			Gid:     0,
-		},
+func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, args []string) *utils.StructEvent {
+	return &utils.StructEvent{
+		Container:   containerName,
+		ContainerID: containerID,
+		Comm:        comm,
+		ExePath:     exePath,
+		Cwd:         cwd,
+		Args:        args,
+		Pid:         1234,
+		Ppid:        123,
+		Pcomm:       "parent-process",
+		Uid:         0,
+		Gid:         0,
 	}
 }
 
@@ -55,7 +41,7 @@ func TestR1000ExecFromMaliciousSource(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		event         *events.ExecEvent
+		event         *utils.StructEvent
 		expectTrigger bool
 		description   string
 	}{

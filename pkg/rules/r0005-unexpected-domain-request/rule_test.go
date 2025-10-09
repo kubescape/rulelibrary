@@ -11,12 +11,10 @@ import (
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
-	tracerdnstype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/dns/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR0005UnexpectedDomainRequest(t *testing.T) {
@@ -26,23 +24,13 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 	}
 
 	// Create a DNS event
-	e := &tracerdnstype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		Pid:     1234,
-		Comm:    "test-process",
-		DNSName: "test.com",
-		Qr:      tracerdnstype.DNSPktTypeQuery,
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		Pid:         1234,
+		Comm:        "test-process",
+		DNSName:     "test.com",
+		Qr:          utils.DNSPktTypeQuery,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -88,7 +76,7 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected domain communication: test.com" {
+	if message != "Unexpected domain communication: test.com from: test" {
 		t.Fatalf("Message evaluation failed, got: %s", message)
 	}
 

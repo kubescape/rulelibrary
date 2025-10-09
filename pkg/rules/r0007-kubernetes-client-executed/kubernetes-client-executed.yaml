@@ -12,13 +12,13 @@ spec:
     id: "R0007"
     description: "Detecting execution of kubernetes client"
     expressions:
-      message: "event_type == 'exec' ? 'Kubernetes client (' + exec.comm + ') was executed with PID ' + string(exec.pid) : 'Network connection to Kubernetes API server from container ' + network.k8s.container_name"
-      unique_id: "event_type == 'exec' ? 'exec_' + exec.comm : 'network_' + network.dst_endpoint.addr"
+      message: "event_type == 'exec' ? 'Kubernetes client (' + event.comm + ') was executed with PID ' + string(event.pid) : 'Network connection to Kubernetes API server from container ' + event.containerName"
+      unique_id: "event_type == 'exec' ? 'exec_' + event.comm : 'network_' + event.dstAddr"
       rule_expression:
         - event_type: "exec"
-          expression: "(exec.comm == 'kubectl' || exec.exe_path.endsWith('/kubectl')) && !ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm))"
+          expression: "(event.comm == 'kubectl' || event.exepath.endsWith('/kubectl')) && !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))"
         - event_type: "network"
-          expression: "network.pkt_type == 'OUTGOING' && k8s.is_api_server_address(network.dst_endpoint.addr) && !nn.was_address_in_egress(network.runtime.container_id, network.dst_endpoint.addr)"
+          expression: "event.pktType == 'OUTGOING' && k8s.is_api_server_address(event.dstAddr) && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
     profile_dependency: 0
     severity: 5 # Medium
     support_policy: false

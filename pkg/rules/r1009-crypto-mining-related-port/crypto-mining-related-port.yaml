@@ -12,11 +12,11 @@ spec:
     id: "R1009"
     description: "Detecting Crypto Miners by suspicious port usage."
     expressions:
-      message: "'Detected crypto mining related port communication on port ' + string(dyn(network.port)) + ' to ' + network.dst_endpoint.addr + ' with protocol ' + network.proto"
-      unique_id: "network.comm + '_' + string(dyn(network.port))"
+      message: "'Detected crypto mining related port communication on port ' + string(event.dstPort) + ' to ' + event.dstAddr + ' with protocol ' + event.proto"
+      unique_id: "event.comm + '_' + string(event.dstPort)"
       rule_expression:
         - event_type: "network"
-          expression: "network.proto == 'TCP' && network.pkt_type == 'OUTGOING' && dyn(network.port) in [3333, 45700] && !nn.was_address_in_egress(network.runtime.container_id, network.dst_endpoint.addr)"
+          expression: "event.proto == 'TCP' && event.pktType == 'OUTGOING' && event.dstPort in [3333, 45700] && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
     profile_dependency: 1
     severity: 3
     support_policy: false

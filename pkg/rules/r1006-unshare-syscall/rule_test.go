@@ -5,16 +5,14 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -25,21 +23,10 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	}
 
 	// Create a syscall event for unshare
-	e := &types.SyscallEvent{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		Comm:        "test",
-		SyscallName: "unshare",
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		Syscall:     "unshare",
 		Pid:         1234,
 	}
 
@@ -125,7 +112,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	}
 
 	// Test with different syscall - should not trigger
-	e.SyscallName = "open"
+	e.Syscall = "open"
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
