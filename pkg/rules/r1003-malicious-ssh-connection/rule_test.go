@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	tracersshtype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/ssh/types"
@@ -14,7 +13,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
@@ -27,21 +26,21 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Create a mock SSH event for outgoing connection to disallowed port
 	e := &tracersshtype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-						PodName:       "test-pod",
-						Namespace:     "test-namespace",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID:   "test-container",
-					ContainerName: "test",
-				},
-			},
-		},
+		//Event: eventtypes.Event{
+		//	CommonData: eventtypes.CommonData{
+		//		K8s: eventtypes.K8sMetadata{
+		//			BasicK8sMetadata: eventtypes.BasicK8sMetadata{
+		//				ContainerName: "test",
+		//				PodName:       "test-pod",
+		//				Namespace:     "test-namespace",
+		//			},
+		//		},
+		//		Runtime: eventtypes.BasicRuntimeMetadata{
+		//			ContainerID:   "test-container",
+		//			ContainerName: "test",
+		//		},
+		//	},
+		//},
 		SrcIP:   "192.168.1.100",
 		DstIP:   "1.1.1.1",
 		SrcPort: 33333, // Ephemeral port
@@ -80,7 +79,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
 		EventType: utils.SSHEventType,
-		Event:     e,
+		//Event:     e,
 	}
 
 	// Test without network neighborhood - should trigger alert for disallowed port

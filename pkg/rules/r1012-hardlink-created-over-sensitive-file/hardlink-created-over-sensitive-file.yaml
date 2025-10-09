@@ -16,7 +16,7 @@ spec:
       unique_id: "hardlink.comm + '_' + hardlink.old_path"
       rule_expression:
         - event_type: "hardlink"
-          expression: "(hardlink.old_path.startsWith('/etc/shadow') || hardlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(hardlink.runtime.container_id, hardlink.old_path)"
+          expression: "(hardlink.old_path.startsWith('/etc/shadow') || hardlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(hardlink.containerId, hardlink.old_path)"
     profile_dependency: 1
     severity: 5
     support_policy: true

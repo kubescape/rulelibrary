@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
@@ -14,7 +12,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR1005FilelessExecution(t *testing.T) {
@@ -24,31 +22,18 @@ func TestR1005FilelessExecution(t *testing.T) {
 	}
 
 	// Create a mock exec event for fileless execution via memfd
-	e := &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-							PodName:       "test-pod",
-							Namespace:     "test-namespace",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID:   "test-container",
-						ContainerName: "test",
-					},
-				},
-			},
-			Comm:    "/memfd:test",
-			ExePath: "/memfd:test",
-			Pcomm:   "/memfd:test",
-			Args:    []string{"/memfd:test", "arg1"},
-			Pid:     1234,
-			Uid:     1000,
-			Gid:     1000,
-		},
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test-container",
+		Pod:         "test-pod",
+		Namespace:   "test-namespace",
+		Comm:        "/memfd:test",
+		ExePath:     "/memfd:test",
+		Pcomm:       "/memfd:test",
+		Args:        []string{"/memfd:test", "arg1"},
+		Pid:         1234,
+		Uid:         1000,
+		Gid:         1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{

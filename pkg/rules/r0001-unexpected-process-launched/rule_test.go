@@ -12,13 +12,11 @@ import (
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 	"github.com/stretchr/testify/require"
 
-	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	utils "github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/node-agent/pkg/utils"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR0001UnexpectedProcessLaunched(t *testing.T) {
@@ -27,26 +25,14 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 	// Create a process exec event
-	e := &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Pid:     1234,
-			Comm:    "test-process",
-			Pcomm:   "test-process",
-			ExePath: "/usr/bin/test-process",
-			Args:    []string{"test-process", "arg1"},
-		},
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		Pid:         1234,
+		Comm:        "test-process",
+		Pcomm:       "test-process",
+		ExePath:     "/usr/bin/test-process",
+		Args:        []string{"test-process", "arg1"},
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -154,26 +140,14 @@ func BenchmarkEvaluateRuleNative(b *testing.B) {
 			TTL:     1 * time.Microsecond,
 		},
 	})
-	e := &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Pid:     1234,
-			Comm:    "test-process",
-			Pcomm:   "test-process",
-			ExePath: "/usr/bin/test-process",
-			Args:    []string{"test-process", "arg1"},
-		},
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		Pid:         1234,
+		Comm:        "test-process",
+		Pcomm:       "test-process",
+		ExePath:     "/usr/bin/test-process",
+		Args:        []string{"test-process", "arg1"},
 	}
 	enrichedEvent := &events.EnrichedEvent{
 		EventType: utils.ExecveEventType,

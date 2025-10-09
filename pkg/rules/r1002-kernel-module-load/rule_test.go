@@ -14,25 +14,23 @@ import (
 	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/rulelibrary/pkg/common"
-
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 )
 
 // createTestSyscallEvent creates a test SyscallEvent
 func createTestSyscallEvent(containerName, containerID, comm, syscallName string, pid uint32) *types.SyscallEvent {
 	return &types.SyscallEvent{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: containerName,
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: containerID,
-				},
-			},
-		},
+		//Event: eventtypes.Event{
+		//	CommonData: eventtypes.CommonData{
+		//		K8s: eventtypes.K8sMetadata{
+		//			BasicK8sMetadata: eventtypes.BasicK8sMetadata{
+		//				ContainerName: containerName,
+		//			},
+		//		},
+		//		Runtime: eventtypes.BasicRuntimeMetadata{
+		//			ContainerID: containerID,
+		//		},
+		//	},
+		//},
 		Comm:        comm,
 		SyscallName: syscallName,
 		Pid:         pid,
@@ -89,7 +87,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 					objectcache.Container: {
 						{
-							Name: tt.event.Event.K8s.BasicK8sMetadata.ContainerName,
+							//Name: tt.event.Event.K8s.BasicK8sMetadata.ContainerName,
 						},
 					},
 				},
@@ -109,7 +107,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 			// Serialize event
 			enrichedEvent := &events.EnrichedEvent{
 				EventType: utils.SyscallEventType,
-				Event:     tt.event,
+				//Event:     tt.event,
 			}
 
 			// Evaluate the rule

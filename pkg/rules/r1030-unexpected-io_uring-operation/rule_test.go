@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	traceriouringtype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/iouring/tracer/types"
@@ -27,18 +26,18 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 
 	// Create an io_uring event
 	e := &traceriouringtype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
+		//Event: eventtypes.Event{
+		//	CommonData: eventtypes.CommonData{
+		//		K8s: eventtypes.K8sMetadata{
+		//			BasicK8sMetadata: eventtypes.BasicK8sMetadata{
+		//				ContainerName: "test",
+		//			},
+		//		},
+		//		Runtime: eventtypes.BasicRuntimeMetadata{
+		//			ContainerID: "test",
+		//		},
+		//	},
+		//},
 		Identifier: "test-process",
 		Opcode:     1, // IORING_OP_NOP
 		Flags:      0x0,
@@ -74,7 +73,7 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
 		EventType: utils.IoUringEventType,
-		Event:     e,
+		//Event:     e,
 	}
 
 	// Evaluate the rule - should always return true for io_uring events

@@ -5,18 +5,15 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
-	traceropentype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/open/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
-	events "github.com/kubescape/node-agent/pkg/ebpf/events"
+	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	"github.com/kubescape/node-agent/pkg/rulemanager"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -52,26 +49,15 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	}
 
 	// Test open event with ld.so.preload file opened with write flag - SHOULD TRIGGER
-	openEvent := &events.OpenEvent{
-		Event: traceropentype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-							Namespace:     "default",
-							PodName:       "test-pod",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Comm:     "test",
-			FullPath: "/etc/ld.so.preload",
-			FlagsRaw: 1, // Write flag
-		},
+	openEvent := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		Pod:         "test-pod",
+		Namespace:   "default",
+		Comm:        "test",
+		FullPath:    "/etc/ld.so.preload",
+		FlagsRaw:    1, // Write flag
+		EventType:   utils.OpenEventType,
 	}
 
 	// Serialize open event
@@ -113,25 +99,14 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	}
 
 	// Test exec events - just verify expression compiles and returns false (can't mock PID)
-	execEvent := &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-							Namespace:     "default",
-							PodName:       "test-pod",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Comm: "java",
-			Pid:  1234,
-		},
+	execEvent := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		Pod:         "test-pod",
+		Namespace:   "default",
+		Comm:        "java",
+		Pid:         1234,
+		EventType:   utils.ExecveEventType,
 	}
 
 	enrichedEvent2 := &events.EnrichedEvent{
@@ -152,7 +127,7 @@ func TestR1011LdPreloadHook(t *testing.T) {
 
 	// Test exec event with matlab container - should not trigger due to container check
 	execEvent.Comm = "test-process"
-	execEvent.Event.CommonData.K8s.BasicK8sMetadata.ContainerName = "matlab"
+	execEvent.Container = "matlab"
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent2, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

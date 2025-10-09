@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracernetworktype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/network/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
@@ -14,7 +13,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -25,20 +24,10 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 	}
 
 	// Create a network event for outgoing traffic to external IP
-	e := &tracernetworktype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		PktType: "OUTGOING",
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		PktType:     "OUTGOING",
 		DstEndpoint: eventtypes.L3Endpoint{
 			Addr: "1.1.1.1", // External IP
 		},

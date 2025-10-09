@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracernetworktype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/network/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
@@ -14,7 +13,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -25,29 +24,18 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 	}
 
 	// Create a network event for crypto mining port communication
-	e := &tracernetworktype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-						PodName:       "test-pod",
-						Namespace:     "test-namespace",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID:   "test-container",
-					ContainerName: "test",
-				},
-			},
-		},
-		Proto:   "TCP",
-		PktType: "OUTGOING",
-		Port:    3333,
-		Comm:    "xmrig",
-		Pid:     1234,
-		Uid:     1000,
-		Gid:     1000,
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test-container",
+		Pod:         "test-pod",
+		Namespace:   "test-namespace",
+		Proto:       "TCP",
+		PktType:     "OUTGOING",
+		Port:        3333,
+		Comm:        "xmrig",
+		Pid:         1234,
+		Uid:         1000,
+		Gid:         1000,
 		DstEndpoint: eventtypes.L3Endpoint{
 			Addr: "1.1.1.1",
 		},

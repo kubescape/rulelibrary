@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	traceropentype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/open/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
@@ -19,29 +17,17 @@ import (
 )
 
 // createTestEvent creates a test OpenEvent
-func createTestEvent(containerName, containerID, path string, flags []string) *events.OpenEvent {
-	return &events.OpenEvent{
-		Event: traceropentype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: containerID,
-					},
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: containerName,
-						},
-					},
-				},
-			},
-			Comm:     "test-process",
-			Path:     path,
-			FullPath: path,
-			Flags:    flags,
-			Pid:      1234,
-			Uid:      0,
-			Gid:      0,
-		},
+func createTestEvent(containerName, containerID, path string, flags []string) *utils.StructEvent {
+	return &utils.StructEvent{
+		Container:   containerName,
+		ContainerID: containerID,
+		Comm:        "test-process",
+		Path:        path,
+		FullPath:    path,
+		Flags:       flags,
+		Pid:         1234,
+		Uid:         0,
+		Gid:         0,
 	}
 }
 
@@ -68,7 +54,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		event         *events.OpenEvent
+		event         *utils.StructEvent
 		profile       *v1beta1.ApplicationProfile
 		expectTrigger bool
 		description   string

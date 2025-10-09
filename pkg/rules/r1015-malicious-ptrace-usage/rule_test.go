@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	tracerptracetype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/ptrace/tracer/types"
@@ -14,7 +13,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 const (
@@ -32,18 +31,18 @@ func TestR1015MaliciousPtraceUsage(t *testing.T) {
 
 	// Create a ptrace event
 	e := &tracerptracetype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
+		//Event: eventtypes.Event{
+		//	CommonData: eventtypes.CommonData{
+		//		K8s: eventtypes.K8sMetadata{
+		//			BasicK8sMetadata: eventtypes.BasicK8sMetadata{
+		//				ContainerName: "test",
+		//			},
+		//		},
+		//		Runtime: eventtypes.BasicRuntimeMetadata{
+		//			ContainerID: "test",
+		//		},
+		//	},
+		//},
 		Comm:    "malicious_process",
 		Pid:     1234,
 		PPid:    5678,
@@ -81,7 +80,7 @@ func TestR1015MaliciousPtraceUsage(t *testing.T) {
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
 		EventType: utils.PtraceEventType,
-		Event:     e,
+		//Event:     e,
 	}
 
 	// Evaluate the rule - should always return true for ptrace events

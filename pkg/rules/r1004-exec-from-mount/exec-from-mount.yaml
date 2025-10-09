@@ -12,11 +12,11 @@ spec:
     id: "R1004"
     description: "Detecting exec calls from mounted paths."
     expressions:
-      message: "'Process (' + exec.comm + ') was executed from a mounted path'"
-      unique_id: "exec.comm + '_' + exec.exe_path"
+      message: "'Process (' + event.comm + ') was executed from a mounted path'"
+      unique_id: "event.comm + '_' + event.exepath + '_'"
       rule_expression:
         - event_type: "exec"
-          expression: "!ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm)) && k8s.get_container_mount_paths(exec.k8s.namespace, exec.k8s.pod_name, exec.k8s.container_name).exists(mount, exec.exe_path.startsWith(mount) || parse.get_exec_path(exec.args, exec.comm).startsWith(mount))"
+          expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && k8s.get_container_mount_paths(event.namespace, event.podName, event.containerName).exists(mount, event.exepath.startsWith(mount) || parse.get_exec_path(event.args, event.comm).startsWith(mount))"
     profile_dependency: 1
     severity: 5
     support_policy: false

@@ -16,7 +16,7 @@ spec:
       unique_id: "symlink.comm + '_' + symlink.old_path"
       rule_expression:
         - event_type: "symlink"
-          expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.runtime.container_id, symlink.old_path)"
+          expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.containerId, symlink.old_path)"
     profile_dependency: 1
     severity: 5
     support_policy: true

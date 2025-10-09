@@ -16,7 +16,7 @@ spec:
       unique_id: "syscall.comm + '_' + syscall.syscall_name"
       rule_expression:
         - event_type: "syscall"
-          expression: "syscall.syscall_name == 'bpf' && !ap.was_syscall_used(syscall.runtime.container_id, syscall.syscall_name)"
+          expression: "syscall.syscall_name == 'bpf' && !ap.was_syscall_used(syscall.containerId, syscall.syscall_name)"
     profile_dependency: 1
     severity: 5
     support_policy: false
