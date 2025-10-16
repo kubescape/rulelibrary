@@ -12,13 +12,13 @@ spec:
     id: "R1011"
     description: "Detecting ld_preload hook techniques."
     expressions:
-      message: "event_type == 'exec' ? 'Process (' + event.comm + ') is using a dynamic linker hook: ' + process.get_ld_hook_var(event.pid) : 'The dynamic linker configuration file (' + event.fullPath + ') was modified by process (' + event.comm + ')'"
-      unique_id: "event_type == 'exec' ? 'exec_' + event.comm : 'open_' + event.fullPath"
+      message: "event_type == 'exec' ? 'Process (' + event.comm + ') is using a dynamic linker hook: ' + process.get_ld_hook_var(event.pid) : 'The dynamic linker configuration file (' + event.path + ') was modified by process (' + event.comm + ')'"
+      unique_id: "event_type == 'exec' ? 'exec_' + event.comm : 'open_' + event.path"
       rule_expression:
         - event_type: "exec"
           expression: "event.comm != 'java' && event.containerName != 'matlab' && process.get_ld_hook_var(event.pid) != ''"
         - event_type: "open"
-          expression: "event.fullPath == '/etc/ld.so.preload' && has(event.flagsRaw) && event.flagsRaw != 0"
+          expression: "event.path == '/etc/ld.so.preload' && has(event.flagsRaw) && event.flagsRaw != 0"
     profile_dependency: 1
     severity: 5
     support_policy: true

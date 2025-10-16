@@ -29,7 +29,6 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		Pid:         1234,
 		Comm:        "test",
 		Path:        "/etc/test",
-		FullPath:    "/etc/test",
 		Flags:       []string{"O_RDONLY"},
 	}
 

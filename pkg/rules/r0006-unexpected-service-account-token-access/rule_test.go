@@ -23,7 +23,6 @@ func createTestEvent(containerName, containerID, path string, flags []string) *u
 		ContainerID: containerID,
 		Comm:        "test-process",
 		Path:        path,
-		FullPath:    path,
 		Flags:       flags,
 		Pid:         1234,
 		Uid:         0,
@@ -192,7 +191,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Unexpected access to service account token: " + tt.event.FullPath + " with flags: " + tt.event.Flags[0]
+				expectedMessage := "Unexpected access to service account token: " + tt.event.Path + " with flags: " + tt.event.Flags[0]
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}

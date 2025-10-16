@@ -12,29 +12,29 @@ spec:
     id: "R0002"
     description: "Detects unexpected file access that is not in the baseline"
     expressions:
-      message: "'Unexpected file access detected: ' + event.comm + ' with PID ' + string(event.pid) + ' to ' + event.fullPath"
-      unique_id: "event.comm + '_' + event.fullPath"
+      message: "'Unexpected file access detected: ' + event.comm + ' with PID ' + string(event.pid) + ' to ' + event.path"
+      unique_id: "event.comm + '_' + event.path"
       rule_expression:
         - event_type: "open"
           expression: >
-            (event.fullPath.startsWith('/etc/') ||
-            event.fullPath.startsWith('/var/log/') ||
-            event.fullPath.startsWith('/var/run/') ||
-            event.fullPath.startsWith('/run/') ||
-            event.fullPath.startsWith('/var/spool/cron/') ||
-            event.fullPath.startsWith('/var/www/') ||
-            event.fullPath.startsWith('/var/lib/') ||
-            event.fullPath.startsWith('/opt/') ||
-            event.fullPath.startsWith('/usr/local/') ||
-            event.fullPath.startsWith('/app/') ||
-            event.fullPath == '/.dockerenv' ||
-            event.fullPath == '/proc/self/environ')
+            (event.path.startsWith('/etc/') ||
+            event.path.startsWith('/var/log/') ||
+            event.path.startsWith('/var/run/') ||
+            event.path.startsWith('/run/') ||
+            event.path.startsWith('/var/spool/cron/') ||
+            event.path.startsWith('/var/www/') ||
+            event.path.startsWith('/var/lib/') ||
+            event.path.startsWith('/opt/') ||
+            event.path.startsWith('/usr/local/') ||
+            event.path.startsWith('/app/') ||
+            event.path == '/.dockerenv' ||
+            event.path == '/proc/self/environ')
             &&
-            !(event.fullPath.startsWith('/run/secrets/kubernetes.io/serviceaccount') ||
-              event.fullPath.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') ||
-              event.fullPath.startsWith('/tmp'))
+            !(event.path.startsWith('/run/secrets/kubernetes.io/serviceaccount') ||
+              event.path.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') ||
+              event.path.startsWith('/tmp'))
             &&
-            !ap.was_path_opened(event.containerId, event.fullPath)
+            !ap.was_path_opened(event.containerId, event.path)
     profile_dependency: 0
     severity: 1
     support_policy: false

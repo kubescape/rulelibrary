@@ -30,7 +30,6 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 		Pid:         1234,
 		Comm:        "test-process",
 		Path:        "/etc/shadow",
-		FullPath:    "/etc/shadow",
 		Flags:       []string{"O_RDONLY"},
 	}
 
@@ -122,7 +121,6 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 
 	// Test with non-sensitive file (should not trigger)
 	e.Path = "/tmp/test.txt"
-	e.FullPath = "/tmp/test.txt"
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

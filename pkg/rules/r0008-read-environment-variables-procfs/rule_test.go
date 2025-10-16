@@ -24,7 +24,6 @@ func createTestEvent(containerName, containerID, path string, flags []string) *u
 		ContainerID: containerID,
 		Comm:        "test-process",
 		Path:        path,
-		FullPath:    path,
 		Flags:       flags,
 		Pid:         1234,
 		Uid:         0,
@@ -186,7 +185,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Reading environment variables from procfs: " + tt.event.FullPath + " by process " + tt.event.Comm
+				expectedMessage := "Reading environment variables from procfs: " + tt.event.Path + " by process " + tt.event.Comm
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}
@@ -196,7 +195,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
-				expectedUniqueID := tt.event.Comm + "_" + tt.event.FullPath
+				expectedUniqueID := tt.event.Comm + "_" + tt.event.Path
 				if uniqueID != expectedUniqueID {
 					t.Errorf("Unique ID evaluation failed. Expected: %s, Got: %s", expectedUniqueID, uniqueID)
 				}

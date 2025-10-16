@@ -531,8 +531,8 @@ github.com/kubescape/go-logger v0.0.24 h1:JRNlblY16Ty7hD6MSYNPvWYDxNzVAufsDDX/sZ
 github.com/kubescape/go-logger v0.0.24/go.mod h1:sMPVCr3VpW/e+SeMaXig5kClGvmZbDXN8YktUeNU4nY=
 github.com/kubescape/k8s-interface v0.0.199 h1:D+YBL69q1Dc2idus6jwd/vQcNhRoNZ6tE0m5Miz7TSg=
 github.com/kubescape/k8s-interface v0.0.199/go.mod h1:j9snZbH+RxOaa1yG/bWgTClj90q7To0rGgQepxy4b+k=
-github.com/kubescape/node-agent v0.2.387-0.20251016064604-515cf49dff50 h1:dkvBNXEyly5hBf2jofJmm+y+zjzKfihQ1kj3JanoCfI=
-github.com/kubescape/node-agent v0.2.387-0.20251016064604-515cf49dff50/go.mod h1:HN5jZ99TL+DF3rt3JTn1X4NfcOtSMqGFntA1a7i60HI=
+github.com/kubescape/node-agent v0.2.387-0.20251016091756-5b7b07f69bd3 h1:joW6U4769QIO9klMr2R9SdRcO9BS43xHMSORurh6dtU=
+github.com/kubescape/node-agent v0.2.387-0.20251016091756-5b7b07f69bd3/go.mod h1:HN5jZ99TL+DF3rt3JTn1X4NfcOtSMqGFntA1a7i60HI=
 github.com/kubescape/storage v0.0.221 h1:HLWnNokkKgKo9ka/p797fFQdsbzKxSXT5/RpUWrKWzI=
 github.com/kubescape/storage v0.0.221/go.mod h1:L/fF3teor8cUj80TVujqy9E1rKsf+Dox2hZtkS1vjOU=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=

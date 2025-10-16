@@ -55,7 +55,7 @@ func TestR1011LdPreloadHook(t *testing.T) {
 		Pod:         "test-pod",
 		Namespace:   "default",
 		Comm:        "test",
-		FullPath:    "/etc/ld.so.preload",
+		Path:        "/etc/ld.so.preload",
 		FlagsRaw:    1, // Write flag
 		EventType:   utils.OpenEventType,
 	}
@@ -87,7 +87,7 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	}
 
 	// Test with different file - SHOULD NOT TRIGGER
-	openEvent.FullPath = "/etc/passwd"
+	openEvent.Path = "/etc/passwd"
 	openEvent.FlagsRaw = 1
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
@@ -155,7 +155,7 @@ func TestR1011LdPreloadHook(t *testing.T) {
 
 	// Test policy validation with whitelisted process
 	openEvent.Comm = "test"
-	openEvent.FullPath = "/etc/ld.so.preload"
+	openEvent.Path = "/etc/ld.so.preload"
 	openEvent.FlagsRaw = 1
 
 	v := rulemanager.NewRulePolicyValidator(objCache)
