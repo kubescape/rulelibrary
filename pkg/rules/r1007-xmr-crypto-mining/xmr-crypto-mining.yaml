@@ -12,8 +12,8 @@ spec:
     id: "R1007"
     description: "Detecting XMR Crypto Miners by randomx algorithm usage."
     expressions:
-      message: "'XMR Crypto Miner process: (' + randomx.exe_path + ') executed'"
-      unique_id: "randomx.exe_path + '_' + randomx.comm"
+      message: "'XMR Crypto Miner process: (' + event.exepath + ') executed'"
+      unique_id: "event.exepath + '_' + event.comm"
       rule_expression:
         - event_type: "randomx"
           expression: "true"

@@ -12,11 +12,11 @@ spec:
     id: "R1003"
     description: "Detecting ssh connection to disallowed port"
     expressions:
-      message: "'Malicious SSH connection attempt to ' + ssh.dst_ip + ':' + string(dyn(ssh.dst_port))"
-      unique_id: "ssh.comm + '_' + ssh.dst_ip + '_' + string(dyn(ssh.dst_port))"
+      message: "'Malicious SSH connection attempt to ' + event.dstIp + ':' + string(dyn(event.dstPort))"
+      unique_id: "event.comm + '_' + event.dstIp + '_' + string(dyn(event.dstPort))"
       rule_expression:
         - event_type: "ssh"
-          expression: "dyn(ssh.src_port) >= 32768 && dyn(ssh.src_port) <= 60999 && !(dyn(ssh.dst_port) in [22, 2022]) && !nn.was_address_in_egress(ssh.runtime.container_id, ssh.dst_ip)"
+          expression: "dyn(event.srcPort) >= 32768 && dyn(event.srcPort) <= 60999 && !(dyn(event.dstPort) in [22, 2022]) && !nn.was_address_in_egress(event.containerId, event.dstIp)"
     profile_dependency: 1
     severity: 5
     support_policy: false

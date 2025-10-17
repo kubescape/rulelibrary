@@ -5,16 +5,14 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
-	tracerrandomxtype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/randomx/types"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR1007XMRCryptoMining(t *testing.T) {
@@ -24,29 +22,19 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 	}
 
 	// Create a RandomX event for crypto mining detection
-	e := &tracerrandomxtype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-						PodName:       "test-pod",
-						Namespace:     "test-namespace",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID:   "test-container",
-					ContainerName: "test",
-				},
-			},
-		},
-		Comm:       "xmrig",
-		ExePath:    "/usr/bin/xmrig",
-		Pid:        1234,
-		Uid:        1000,
-		Gid:        1000,
-		PPid:       1,
-		UpperLayer: true,
+	e := &utils.StructEvent{
+		Comm:        "xmrig",
+		Container:   "test",
+		ContainerID: "test-container",
+		EventType:   utils.RandomXEventType,
+		ExePath:     "/usr/bin/xmrig",
+		Gid:         1000,
+		Namespace:   "test-namespace",
+		Pid:         1234,
+		Pod:         "test-pod",
+		Ppid:        1,
+		Uid:         1000,
+		UpperLayer:  true,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -76,8 +64,7 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.RandomXEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test with RandomX event - should trigger alert

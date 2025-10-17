@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
@@ -19,33 +17,22 @@ import (
 )
 
 // createTestExecEvent creates a test ExecEvent
-func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, args []string, upperLayer, pupperLayer bool) *events.ExecEvent {
-	return &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: containerID,
-					},
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: containerName,
-						},
-					},
-				},
-			},
-			Comm:        comm,
-			ExePath:     exePath,
-			Cwd:         cwd,
-			Args:        args,
-			Pid:         1234,
-			Ppid:        123,
-			Pcomm:       "parent-process",
-			Uid:         0,
-			Gid:         0,
-			UpperLayer:  upperLayer,
-			PupperLayer: pupperLayer,
-		},
+func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, args []string, upperLayer, pupperLayer bool) *utils.StructEvent {
+	return &utils.StructEvent{
+		Args:        args,
+		Comm:        comm,
+		Container:   containerName,
+		ContainerID: containerID,
+		Cwd:         cwd,
+		EventType:   utils.ExecveEventType,
+		ExePath:     exePath,
+		Gid:         0,
+		Pcomm:       "parent-process",
+		Pid:         1234,
+		Ppid:        123,
+		PupperLayer: pupperLayer,
+		Uid:         0,
+		UpperLayer:  upperLayer,
 	}
 }
 
@@ -72,7 +59,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		event         *events.ExecEvent
+		event         *utils.StructEvent
 		profile       *v1beta1.ApplicationProfile
 		expectTrigger bool
 		description   string
@@ -155,7 +142,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 					objectcache.Container: {
 						{
-							Name: tt.event.Event.K8s.BasicK8sMetadata.ContainerName,
+							Name: tt.event.Container,
 						},
 					},
 				},
@@ -179,8 +166,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 
 			// Serialize event
 			enrichedEvent := &events.EnrichedEvent{
-				EventType: utils.ExecveEventType,
-				Event:     tt.event,
+				Event: tt.event,
 			}
 
 			// Evaluate the rule
@@ -278,7 +264,7 @@ func TestR1001UpperLayerVariants(t *testing.T) {
 				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 					objectcache.Container: {
 						{
-							Name: event.Event.K8s.BasicK8sMetadata.ContainerName,
+							Name: event.Container,
 						},
 					},
 				},
@@ -297,8 +283,7 @@ func TestR1001UpperLayerVariants(t *testing.T) {
 
 			// Serialize event and evaluate
 			enrichedEvent := &events.EnrichedEvent{
-				EventType: utils.ExecveEventType,
-				Event:     event,
+				Event: event,
 			}
 
 			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

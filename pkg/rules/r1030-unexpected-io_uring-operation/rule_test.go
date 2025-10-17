@@ -5,10 +5,8 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
-	traceriouringtype "github.com/kubescape/node-agent/pkg/ebpf/gadgets/iouring/tracer/types"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	"github.com/kubescape/node-agent/pkg/rulemanager"
@@ -26,24 +24,15 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 	}
 
 	// Create an io_uring event
-	e := &traceriouringtype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		Identifier: "test-process",
-		Opcode:     1, // IORING_OP_NOP
-		Flags:      0x0,
-		UserData:   123,
-		Comm:       "test-process",
+	e := &utils.StructEvent{
+		Comm:        "test-process",
+		Container:   "test",
+		ContainerID: "test",
+		EventType:   utils.IoUringEventType,
+		FlagsRaw:    0x0,
+		Identifier:  "test-process",
+		Opcode:      1, // IORING_OP_NOP
+		UserData:    123,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -73,8 +62,7 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.IoUringEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule - should always return true for io_uring events

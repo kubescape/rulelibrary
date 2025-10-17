@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracernetworktype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/network/types"
 	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
@@ -14,7 +13,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -25,27 +24,18 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 	}
 
 	// Create a network event for outgoing traffic to external IP
-	e := &tracernetworktype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		PktType: "OUTGOING",
+	e := &utils.StructEvent{
+		Comm:        "curl",
+		Container:   "test",
+		ContainerID: "test",
 		DstEndpoint: eventtypes.L3Endpoint{
 			Addr: "1.1.1.1", // External IP
 		},
-		Port:  80,
-		Proto: "TCP",
-		Comm:  "curl",
-		Pid:   1234,
+		DstPort:   80,
+		EventType: utils.NetworkEventType,
+		Pid:       1234,
+		PktType:   "OUTGOING",
+		Proto:     "TCP",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -75,8 +65,7 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.NetworkEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without network neighborhood - should trigger alert
@@ -172,7 +161,7 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 
 	// Test with different port and protocol
 	e.DstEndpoint.Addr = "3.3.3.3" // External IP
-	e.Port = 443
+	e.DstPort = 443
 	e.Proto = "TCP"
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
@@ -185,7 +174,7 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 
 	// Test with UDP protocol
 	e.Proto = "UDP"
-	e.Port = 53
+	e.DstPort = 53
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

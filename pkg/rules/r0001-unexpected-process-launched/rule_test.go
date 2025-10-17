@@ -12,13 +12,11 @@ import (
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 	"github.com/stretchr/testify/require"
 
-	tracerexectype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/exec/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	utils "github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/node-agent/pkg/utils"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR0001UnexpectedProcessLaunched(t *testing.T) {
@@ -27,26 +25,15 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 	// Create a process exec event
-	e := &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Pid:     1234,
-			Comm:    "test-process",
-			Pcomm:   "test-process",
-			ExePath: "/usr/bin/test-process",
-			Args:    []string{"test-process", "arg1"},
-		},
+	e := &utils.StructEvent{
+		Args:        []string{"test-process", "arg1"},
+		Comm:        "test-process",
+		Container:   "test",
+		ContainerID: "test",
+		EventType:   utils.ExecveEventType,
+		ExePath:     "/usr/bin/test-process",
+		Pcomm:       "test-process",
+		Pid:         1234,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -74,8 +61,7 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule
@@ -154,30 +140,18 @@ func BenchmarkEvaluateRuleNative(b *testing.B) {
 			TTL:     1 * time.Microsecond,
 		},
 	})
-	e := &events.ExecEvent{
-		Event: tracerexectype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Pid:     1234,
-			Comm:    "test-process",
-			Pcomm:   "test-process",
-			ExePath: "/usr/bin/test-process",
-			Args:    []string{"test-process", "arg1"},
-		},
+	e := &utils.StructEvent{
+		Container:   "test",
+		ContainerID: "test",
+		EventType:   utils.ExecveEventType,
+		Pid:         1234,
+		Comm:        "test-process",
+		Pcomm:       "test-process",
+		ExePath:     "/usr/bin/test-process",
+		Args:        []string{"test-process", "arg1"},
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     e,
+		Event: e,
 	}
 	ruleSpec, err := common.LoadRuleFromYAML("unexpected-process-launched.yaml")
 	require.NoError(b, err)

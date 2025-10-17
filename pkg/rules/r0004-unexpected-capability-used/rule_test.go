@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracercapabilitiestype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/capabilities/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
@@ -14,7 +12,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -25,23 +23,14 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 	}
 
 	// Create a capabilities event
-	e := &tracercapabilitiestype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		Comm:    "test",
-		CapName: "test_cap",
-		Syscall: "test_syscall",
-		Pid:     1234,
+	e := &utils.StructEvent{
+		CapName:     "test_cap",
+		Comm:        "test",
+		Container:   "test",
+		ContainerID: "test",
+		EventType:   utils.CapabilitiesEventType,
+		Pid:         1234,
+		Syscall:     "test_syscall",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -70,8 +59,7 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.CapabilitiesEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule
