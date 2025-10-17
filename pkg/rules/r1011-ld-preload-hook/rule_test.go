@@ -50,20 +50,19 @@ func TestR1011LdPreloadHook(t *testing.T) {
 
 	// Test open event with ld.so.preload file opened with write flag - SHOULD TRIGGER
 	openEvent := &utils.StructEvent{
+		Comm:        "test",
 		Container:   "test",
 		ContainerID: "test",
-		Pod:         "test-pod",
-		Namespace:   "default",
-		Comm:        "test",
-		Path:        "/etc/ld.so.preload",
-		FlagsRaw:    1, // Write flag
 		EventType:   utils.OpenEventType,
+		FlagsRaw:    1, // Write flag
+		Namespace:   "default",
+		Path:        "/etc/ld.so.preload",
+		Pod:         "test-pod",
 	}
 
 	// Serialize open event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.OpenEventType,
-		Event:     openEvent,
+		Event: openEvent,
 	}
 
 	// Evaluate the rule for open event - should trigger for write access to ld.so.preload
@@ -100,18 +99,17 @@ func TestR1011LdPreloadHook(t *testing.T) {
 
 	// Test exec events - just verify expression compiles and returns false (can't mock PID)
 	execEvent := &utils.StructEvent{
+		Comm:        "java",
 		Container:   "test",
 		ContainerID: "test",
-		Pod:         "test-pod",
-		Namespace:   "default",
-		Comm:        "java",
-		Pid:         1234,
 		EventType:   utils.ExecveEventType,
+		Namespace:   "default",
+		Pid:         1234,
+		Pod:         "test-pod",
 	}
 
 	enrichedEvent2 := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     execEvent,
+		Event: execEvent,
 	}
 
 	// For exec events, just verify the expression compiles and returns false

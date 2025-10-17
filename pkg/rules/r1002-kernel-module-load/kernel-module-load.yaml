@@ -12,13 +12,13 @@ spec:
     id: "R1002"
     description: "Detecting Kernel Module Load."
     expressions:
-      message: "'Kernel module load syscall (' + event.syscallName + ') was called'"
-      unique_id: "event.syscallName"
+      message: "'Kernel module load syscall (init_module) was called'"
+      unique_id: "'init_module'"
       rule_expression:
         - event_type: "syscall"
           expression: >
-            event.syscallName == 'init_module' ||
-            event.syscallName == 'finit_module'
+            'init_module' in event.syscalls ||
+            'finit_module' in event.syscalls
     profile_dependency: 2
     severity: 10
     support_policy: false

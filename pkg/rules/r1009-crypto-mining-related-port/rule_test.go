@@ -25,20 +25,21 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 
 	// Create a network event for crypto mining port communication
 	e := &utils.StructEvent{
+		Comm:        "xmrig",
 		Container:   "test",
 		ContainerID: "test-container",
-		Pod:         "test-pod",
-		Namespace:   "test-namespace",
-		Proto:       "TCP",
-		PktType:     "OUTGOING",
-		DstPort:     3333,
-		Comm:        "xmrig",
-		Pid:         1234,
-		Uid:         1000,
-		Gid:         1000,
 		DstEndpoint: eventtypes.L3Endpoint{
 			Addr: "1.1.1.1",
 		},
+		DstPort:   3333,
+		EventType: utils.NetworkEventType,
+		Gid:       1000,
+		Namespace: "test-namespace",
+		Pid:       1234,
+		PktType:   "OUTGOING",
+		Pod:       "test-pod",
+		Proto:     "TCP",
+		Uid:       1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -68,8 +69,7 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.NetworkEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test with crypto mining port - should trigger alert

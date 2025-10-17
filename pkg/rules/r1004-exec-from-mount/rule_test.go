@@ -25,16 +25,17 @@ func TestR1004ExecFromMount(t *testing.T) {
 
 	// Create a mock exec event
 	e := &utils.StructEvent{
+		Args:        []string{"/var/test1/test", "arg1"},
+		Comm:        "/var/test1/test",
 		Container:   "test",
 		ContainerID: "test-container",
-		Pod:         "test-pod",
-		Namespace:   "test-namespace",
-		Comm:        "/var/test1/test",
+		EventType:   utils.ExecveEventType,
 		ExePath:     "/var/test1/test",
-		Args:        []string{"/var/test1/test", "arg1"},
-		Pid:         1234,
-		Uid:         1000,
 		Gid:         1000,
+		Namespace:   "test-namespace",
+		Pid:         1234,
+		Pod:         "test-pod",
+		Uid:         1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -103,8 +104,7 @@ func TestR1004ExecFromMount(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without application profile - should trigger alert for exec from mounted path

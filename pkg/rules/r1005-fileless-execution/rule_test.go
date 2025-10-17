@@ -23,17 +23,18 @@ func TestR1005FilelessExecution(t *testing.T) {
 
 	// Create a mock exec event for fileless execution via memfd
 	e := &utils.StructEvent{
+		Args:        []string{"/memfd:test", "arg1"},
+		Comm:        "/memfd:test",
 		Container:   "test",
 		ContainerID: "test-container",
-		Pod:         "test-pod",
-		Namespace:   "test-namespace",
-		Comm:        "/memfd:test",
+		EventType:   utils.ExecveEventType,
 		ExePath:     "/memfd:test",
-		Pcomm:       "/memfd:test",
-		Args:        []string{"/memfd:test", "arg1"},
-		Pid:         1234,
-		Uid:         1000,
 		Gid:         1000,
+		Namespace:   "test-namespace",
+		Pcomm:       "/memfd:test",
+		Pid:         1234,
+		Pod:         "test-pod",
+		Uid:         1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -63,8 +64,7 @@ func TestR1005FilelessExecution(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test with memfd execution - should trigger alert

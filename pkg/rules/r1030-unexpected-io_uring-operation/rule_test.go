@@ -25,13 +25,14 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 
 	// Create an io_uring event
 	e := &utils.StructEvent{
+		Comm:        "test-process",
 		Container:   "test",
 		ContainerID: "test",
+		EventType:   utils.IoUringEventType,
+		FlagsRaw:    0x0,
 		Identifier:  "test-process",
 		Opcode:      1, // IORING_OP_NOP
-		FlagsRaw:    0x0,
 		UserData:    123,
-		Comm:        "test-process",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -61,8 +62,7 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.IoUringEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule - should always return true for io_uring events

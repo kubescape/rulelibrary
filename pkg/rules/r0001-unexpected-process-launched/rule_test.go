@@ -26,13 +26,14 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 	}
 	// Create a process exec event
 	e := &utils.StructEvent{
+		Args:        []string{"test-process", "arg1"},
+		Comm:        "test-process",
 		Container:   "test",
 		ContainerID: "test",
-		Pid:         1234,
-		Comm:        "test-process",
-		Pcomm:       "test-process",
+		EventType:   utils.ExecveEventType,
 		ExePath:     "/usr/bin/test-process",
-		Args:        []string{"test-process", "arg1"},
+		Pcomm:       "test-process",
+		Pid:         1234,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -60,8 +61,7 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule
@@ -143,6 +143,7 @@ func BenchmarkEvaluateRuleNative(b *testing.B) {
 	e := &utils.StructEvent{
 		Container:   "test",
 		ContainerID: "test",
+		EventType:   utils.ExecveEventType,
 		Pid:         1234,
 		Comm:        "test-process",
 		Pcomm:       "test-process",
@@ -150,8 +151,7 @@ func BenchmarkEvaluateRuleNative(b *testing.B) {
 		Args:        []string{"test-process", "arg1"},
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     e,
+		Event: e,
 	}
 	ruleSpec, err := common.LoadRuleFromYAML("unexpected-process-launched.yaml")
 	require.NoError(b, err)

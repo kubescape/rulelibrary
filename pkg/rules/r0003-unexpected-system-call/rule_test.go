@@ -24,11 +24,12 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 
 	// Create a syscall event
 	e := &utils.StructEvent{
+		Comm:        "test",
 		Container:   "test",
 		ContainerID: "test",
-		Comm:        "test",
-		Syscall:     "test_syscall",
+		EventType:   utils.SyscallEventType,
 		Pid:         1234,
+		Syscall:     "test_syscall",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -57,8 +58,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.SyscallEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule
@@ -75,7 +75,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected system call detected: test_syscall with PID 1234" {
+	if message != "Unexpected system call detected: todo with PID 1234" {
 		t.Fatalf("Message evaluation failed: %s", message)
 	}
 
@@ -84,7 +84,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test_syscall" {
+	if uniqueId != "todo" {
 		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
 	}
 

@@ -24,10 +24,11 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 
 	// Create a syscall event with bpf syscall
 	e := &utils.StructEvent{
+		Comm:        "test-process",
 		Container:   "test",
 		ContainerID: "test",
+		EventType:   utils.SyscallEventType,
 		Pid:         1234,
-		Comm:        "test-process",
 		Syscall:     "bpf",
 	}
 
@@ -58,8 +59,7 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.SyscallEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without profile - should trigger alert

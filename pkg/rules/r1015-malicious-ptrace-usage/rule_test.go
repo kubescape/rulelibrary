@@ -30,15 +30,16 @@ func TestR1015MaliciousPtraceUsage(t *testing.T) {
 
 	// Create a ptrace event
 	e := &utils.StructEvent{
+		Comm:          "malicious_process",
 		Container:     "test",
 		ContainerID:   "test",
-		Comm:          "malicious_process",
+		EventType:     utils.PtraceEventType,
+		ExePath:       "/path/to/malicious_process",
+		Gid:           1000,
 		Pid:           1234,
 		Ppid:          5678,
-		Uid:           1000,
-		Gid:           1000,
-		ExePath:       "/path/to/malicious_process",
 		PtraceRequest: PTRACE_SETREGS, // Malicious ptrace request
+		Uid:           1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -68,8 +69,7 @@ func TestR1015MaliciousPtraceUsage(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.PtraceEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule - should always return true for ptrace events

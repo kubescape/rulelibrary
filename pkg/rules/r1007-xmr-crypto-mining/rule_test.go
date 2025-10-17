@@ -23,16 +23,17 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 
 	// Create a RandomX event for crypto mining detection
 	e := &utils.StructEvent{
+		Comm:        "xmrig",
 		Container:   "test",
 		ContainerID: "test-container",
-		Pod:         "test-pod",
-		Namespace:   "test-namespace",
-		Comm:        "xmrig",
+		EventType:   utils.RandomXEventType,
 		ExePath:     "/usr/bin/xmrig",
-		Pid:         1234,
-		Uid:         1000,
 		Gid:         1000,
+		Namespace:   "test-namespace",
+		Pid:         1234,
+		Pod:         "test-pod",
 		Ppid:        1,
+		Uid:         1000,
 		UpperLayer:  true,
 	}
 
@@ -63,8 +64,7 @@ func TestR1007XMRCryptoMining(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.RandomXEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test with RandomX event - should trigger alert

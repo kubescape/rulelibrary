@@ -25,16 +25,17 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 
 	// Create a network event for outgoing traffic to external IP
 	e := &utils.StructEvent{
+		Comm:        "curl",
 		Container:   "test",
 		ContainerID: "test",
-		PktType:     "OUTGOING",
 		DstEndpoint: eventtypes.L3Endpoint{
 			Addr: "1.1.1.1", // External IP
 		},
-		DstPort: 80,
-		Proto:   "TCP",
-		Comm:    "curl",
-		Pid:     1234,
+		DstPort:   80,
+		EventType: utils.NetworkEventType,
+		Pid:       1234,
+		PktType:   "OUTGOING",
+		Proto:     "TCP",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -64,8 +65,7 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.NetworkEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without network neighborhood - should trigger alert

@@ -19,19 +19,20 @@ import (
 // createTestExecEvent creates a test ExecEvent
 func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, args []string, upperLayer, pupperLayer bool) *utils.StructEvent {
 	return &utils.StructEvent{
+		Args:        args,
+		Comm:        comm,
 		Container:   containerName,
 		ContainerID: containerID,
-		Comm:        comm,
-		ExePath:     exePath,
 		Cwd:         cwd,
-		Args:        args,
+		EventType:   utils.ExecveEventType,
+		ExePath:     exePath,
+		Gid:         0,
+		Pcomm:       "parent-process",
 		Pid:         1234,
 		Ppid:        123,
-		Pcomm:       "parent-process",
-		Uid:         0,
-		Gid:         0,
-		UpperLayer:  upperLayer,
 		PupperLayer: pupperLayer,
+		Uid:         0,
+		UpperLayer:  upperLayer,
 	}
 }
 
@@ -165,8 +166,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 
 			// Serialize event
 			enrichedEvent := &events.EnrichedEvent{
-				EventType: utils.ExecveEventType,
-				Event:     tt.event,
+				Event: tt.event,
 			}
 
 			// Evaluate the rule
@@ -283,8 +283,7 @@ func TestR1001UpperLayerVariants(t *testing.T) {
 
 			// Serialize event and evaluate
 			enrichedEvent := &events.EnrichedEvent{
-				EventType: utils.ExecveEventType,
-				Event:     event,
+				Event: event,
 			}
 
 			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

@@ -23,19 +23,20 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 
 	// Create a DNS event for crypto mining domain communication
 	e := &utils.StructEvent{
+		Comm:        "xmrig",
 		Container:   "test",
 		ContainerID: "test-container",
-		Pod:         "test-pod",
-		Namespace:   "test-namespace",
-		DNSName:     "xmr.gntl.uk.",
-		Comm:        "xmrig",
-		ExePath:     "/usr/bin/xmrig",
-		Pid:         1234,
-		Uid:         1000,
-		Gid:         1000,
-		Ppid:        1,
-		Pcomm:       "bash",
 		Cwd:         "/tmp",
+		DNSName:     "xmr.gntl.uk.",
+		EventType:   utils.DnsEventType,
+		ExePath:     "/usr/bin/xmrig",
+		Gid:         1000,
+		Namespace:   "test-namespace",
+		Pcomm:       "bash",
+		Pid:         1234,
+		Pod:         "test-pod",
+		Ppid:        1,
+		Uid:         1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -65,8 +66,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.DnsEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test with crypto mining domain - should trigger alert

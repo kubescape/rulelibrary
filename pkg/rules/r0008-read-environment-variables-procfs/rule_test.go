@@ -20,14 +20,15 @@ import (
 // createTestEvent creates a test OpenEvent
 func createTestEvent(containerName, containerID, path string, flags []string) *utils.StructEvent {
 	return &utils.StructEvent{
+		Comm:        "test-process",
 		Container:   containerName,
 		ContainerID: containerID,
-		Comm:        "test-process",
-		Path:        path,
+		EventType:   utils.OpenEventType,
 		Flags:       flags,
+		Gid:         0,
+		Path:        path,
 		Pid:         1234,
 		Uid:         0,
-		Gid:         0,
 	}
 }
 
@@ -163,8 +164,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 
 			// Serialize event
 			enrichedEvent := &events.EnrichedEvent{
-				EventType: utils.OpenEventType,
-				Event:     tt.event,
+				Event: tt.event,
 			}
 
 			// Evaluate the rule
@@ -294,8 +294,7 @@ func TestR0008VariousProcFSPaths(t *testing.T) {
 
 			// Serialize event and evaluate
 			enrichedEvent := &events.EnrichedEvent{
-				EventType: utils.OpenEventType,
-				Event:     event,
+				Event: event,
 			}
 
 			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

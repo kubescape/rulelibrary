@@ -25,11 +25,12 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 
 	// Create a DNS event
 	e := &utils.StructEvent{
+		Comm:        "test-process",
 		Container:   "test",
 		ContainerID: "test",
-		Pid:         1234,
-		Comm:        "test-process",
 		DNSName:     "test.com",
+		EventType:   utils.DnsEventType,
+		Pid:         1234,
 		Qr:          utils.DNSPktTypeQuery,
 	}
 
@@ -58,8 +59,7 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.DnsEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without profile - should trigger alert

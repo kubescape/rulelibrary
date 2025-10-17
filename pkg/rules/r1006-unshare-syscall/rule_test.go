@@ -26,8 +26,9 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	e := &utils.StructEvent{
 		Container:   "test",
 		ContainerID: "test",
-		Syscall:     "unshare",
+		EventType:   utils.SyscallEventType,
 		Pid:         1234,
+		Syscall:     "unshare",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -57,8 +58,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.SyscallEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule

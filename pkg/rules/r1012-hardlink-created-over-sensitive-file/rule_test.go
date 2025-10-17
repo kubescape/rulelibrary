@@ -25,11 +25,12 @@ func TestR1012HardlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	// Create a hardlink event
 	e := &utils.StructEvent{
+		Comm:        "test",
 		Container:   "test",
 		ContainerID: "test",
-		Comm:        "test",
-		OldPath:     "test",
+		EventType:   utils.HardlinkEventType,
 		NewPath:     "test",
+		OldPath:     "test",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -59,8 +60,7 @@ func TestR1012HardlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.HardlinkEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule - should not trigger for non-sensitive file

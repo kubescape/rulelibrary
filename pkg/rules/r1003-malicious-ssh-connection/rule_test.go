@@ -25,18 +25,19 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Create a mock SSH event for outgoing connection to disallowed port
 	e := &utils.StructEvent{
+		Comm:        "ssh",
 		Container:   "test",
 		ContainerID: "test-container",
-		Pod:         "test-pod",
-		Namespace:   "test-namespace",
-		SrcIP:       "192.168.1.100",
 		DstIP:       "1.1.1.1",
-		SrcPort:     33333, // Ephemeral port
-		DstPort:     1234,  // Disallowed port
-		Comm:        "ssh",
-		Pid:         1234,
-		Uid:         1000,
+		DstPort:     1234, // Disallowed port
+		EventType:   utils.SSHEventType,
 		Gid:         1000,
+		Namespace:   "test-namespace",
+		Pid:         1234,
+		Pod:         "test-pod",
+		SrcIP:       "192.168.1.100",
+		SrcPort:     33333, // Ephemeral port
+		Uid:         1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -66,8 +67,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.SSHEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without network neighborhood - should trigger alert for disallowed port

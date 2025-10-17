@@ -24,12 +24,13 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 
 	// Create a capabilities event
 	e := &utils.StructEvent{
+		CapName:     "test_cap",
+		Comm:        "test",
 		Container:   "test",
 		ContainerID: "test",
-		Comm:        "test",
-		CapName:     "test_cap",
-		Syscall:     "test_syscall",
+		EventType:   utils.CapabilitiesEventType,
 		Pid:         1234,
+		Syscall:     "test_syscall",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -58,8 +59,7 @@ func TestR0004UnexpectedCapabilityUsed(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.CapabilitiesEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule

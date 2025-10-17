@@ -26,13 +26,14 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 
 	// Create a kubectl exec event
 	e := &utils.StructEvent{
+		Args:        []string{"kubectl", "get", "pods"},
+		Comm:        "kubectl",
 		Container:   "test",
 		ContainerID: "test",
-		Pid:         1234,
-		Comm:        "kubectl",
-		Pcomm:       "test-process",
+		EventType:   utils.ExecveEventType,
 		ExePath:     "/usr/bin/kubectl",
-		Args:        []string{"kubectl", "get", "pods"},
+		Pcomm:       "test-process",
+		Pid:         1234,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -60,8 +61,7 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.ExecveEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without profile - should trigger alert
@@ -141,11 +141,12 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 	e := &utils.StructEvent{
 		Container:   "test",
 		ContainerID: "test",
-		PktType:     "OUTGOING",
 		DstEndpoint: eventtypes.L3Endpoint{
 			Addr: "1.1.1.1",
 		},
-		DstPort: 80,
+		DstPort:   80,
+		EventType: utils.NetworkEventType,
+		PktType:   "OUTGOING",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -175,8 +176,7 @@ func TestR0007KubernetesClientExecutedNetwork(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.NetworkEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Sleep for 1 millisecond to make sure the cache is expired

@@ -24,11 +24,12 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	// Create a symlink event
 	e := &utils.StructEvent{
+		Comm:        "test",
 		Container:   "test",
 		ContainerID: "test",
-		Comm:        "test",
-		OldPath:     "/etc/shadow",
+		EventType:   utils.SymlinkEventType,
 		NewPath:     "/etc/abc",
+		OldPath:     "/etc/shadow",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -59,8 +60,7 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.SymlinkEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule

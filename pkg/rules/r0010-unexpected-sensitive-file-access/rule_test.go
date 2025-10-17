@@ -25,12 +25,13 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 
 	// Create a file access event to sensitive file
 	e := &utils.StructEvent{
+		Comm:        "test-process",
 		Container:   "test",
 		ContainerID: "test",
-		Pid:         1234,
-		Comm:        "test-process",
-		Path:        "/etc/shadow",
+		EventType:   utils.OpenEventType,
 		Flags:       []string{"O_RDONLY"},
+		Path:        "/etc/shadow",
+		Pid:         1234,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -60,8 +61,7 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.OpenEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without profile - should trigger alert for sensitive file

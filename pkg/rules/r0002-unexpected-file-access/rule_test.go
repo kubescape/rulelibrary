@@ -24,12 +24,13 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	}
 	// Create a file access event
 	e := &utils.StructEvent{
+		Comm:        "test",
 		Container:   "test",
 		ContainerID: "test",
-		Pid:         1234,
-		Comm:        "test",
-		Path:        "/etc/test",
+		EventType:   utils.OpenEventType,
 		Flags:       []string{"O_RDONLY"},
+		Path:        "/etc/test",
+		Pid:         1234,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -58,8 +59,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.OpenEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

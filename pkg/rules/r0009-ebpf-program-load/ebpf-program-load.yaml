@@ -13,10 +13,10 @@ spec:
     description: "Detecting eBPF program load."
     expressions:
       message: "'bpf system call executed in ' + event.containerName"
-      unique_id: "event.comm + '_' + event.syscallName"
+      unique_id: "event.comm + '_bpf'"
       rule_expression:
         - event_type: "syscall"
-          expression: "event.syscallName == 'bpf' && !ap.was_syscall_used(event.containerId, event.syscallName)"
+          expression: "'bpf' in event.syscalls && !ap.was_syscall_used(event.containerId, 'bpf')"
     profile_dependency: 1
     severity: 5
     support_policy: false
