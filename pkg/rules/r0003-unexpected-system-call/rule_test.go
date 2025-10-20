@@ -75,7 +75,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unexpected system call detected: todo with PID 1234" {
+	if message != "Unexpected system call detected: test_syscall with PID 1234" {
 		t.Fatalf("Message evaluation failed: %s", message)
 	}
 
@@ -84,7 +84,7 @@ func TestR0003UnexpectedSystemCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "todo" {
+	if uniqueId != "test_syscall" {
 		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
 	}
 

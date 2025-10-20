@@ -117,7 +117,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Kernel module load syscall (init_module) was called"
+				expectedMessage := "Kernel module load syscall (" + tt.event.Syscall + ") was called"
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}
@@ -127,7 +127,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
-				expectedUniqueID := "init_module"
+				expectedUniqueID := tt.event.Syscall
 				if uniqueID != expectedUniqueID {
 					t.Errorf("Unique ID evaluation failed. Expected: %s, Got: %s", expectedUniqueID, uniqueID)
 				}

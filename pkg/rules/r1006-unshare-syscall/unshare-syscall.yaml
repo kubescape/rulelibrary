@@ -12,11 +12,11 @@ spec:
       id: "R1006"
       description: "Detecting Unshare System Call usage, which can be used to escape container."
       expressions:
-        message: "'Unshare system call detected: unshare with PID ' + string(event.pid)"
-        uniqueId: "'unshare'"
+        message: "'Unshare system call detected: ' + event.syscallName + ' with PID ' + string(event.pid)"
+        uniqueId: "event.syscallName"
         ruleExpression:
           - eventType: "syscall"
-            expression: "'unshare' in event.syscalls && !ap.was_syscall_used(event.containerId, 'unshare')"
+            expression: "event.syscallName == 'unshare' && !ap.was_syscall_used(event.containerId, event.syscallName)"
       profileDependency: 2
       severity: 5
       supportPolicy: false

@@ -12,11 +12,11 @@ spec:
       id: "R0003"
       description: "Detects unexpected system calls that are not whitelisted by application profile"
       expressions:
-        message: "'Unexpected system call detected: todo with PID ' + string(event.pid)"
-        uniqueId: "'todo'"
+        message: "'Unexpected system call detected: ' + event.syscallName + ' with PID ' + string(event.pid)"
+        uniqueId: "event.syscallName"
         ruleExpression:
           - eventType: "syscall"
-            expression: "!ap.were_syscalls_used(event.containerId, event.syscalls)"
+            expression: "!ap.was_syscall_used(event.containerId, event.syscallName)"
       profileDependency: 0
       severity: 1
       supportPolicy: false
