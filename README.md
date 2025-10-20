@@ -26,13 +26,13 @@ spec:
       description: "Description of what the rule detects"
       expressions:
         message: "CEL expression for alert message"
-        unique_id: "CEL expression for unique identifier"
-        rule_expression:
-          - event_type: "event_type_name"
+        uniqueId: "CEL expression for unique identifier"
+        ruleExpression:
+          - eventType: "eventType_name"
             expression: "CEL expression for detection logic"
-      profile_dependency: 0  # 0=Required, 1=Optional, 2=NotRequired
+      profileDependency: 0  # 0=Required, 1=Optional, 2=NotRequired
       severity: 1
-      support_policy: false
+      supportPolicy: false
       tags:
         - "tag1"
         - "tag2"
@@ -47,11 +47,11 @@ spec:
 | `id` | string | Unique rule identifier (format: R####) | Yes |
 | `description` | string | Detailed description of the rule | Yes |
 | `expressions.message` | string | CEL expression for alert message | Yes |
-| `expressions.unique_id` | string | CEL expression for unique event ID | Yes |
-| `expressions.rule_expression` | array | Array of detection expressions | Yes |
-| `profile_dependency` | integer | Profile dependency level (0,1,2) | Yes |
+| `expressions.uniqueId` | string | CEL expression for unique event ID | Yes |
+| `expressions.ruleExpression` | array | Array of detection expressions | Yes |
+| `profileDependency` | integer | Profile dependency level (0,1,2) | Yes |
 | `severity` | integer | Rule severity level | Yes |
-| `support_policy` | boolean | Whether rule supported by rule policy | Yes |
+| `supportPolicy` | boolean | Whether rule supported by rule policy | Yes |
 | `tags` | array | Array of tags for categorization | Yes |
 | `state` | object | Rule state | No |
 

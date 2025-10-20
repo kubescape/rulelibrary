@@ -7,21 +7,21 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Unexpected Egress Network Traffic"
-    enabled: false
-    id: "R0011"
-    description: "Detecting unexpected egress network traffic that is not whitelisted by application profile."
-    expressions:
-      message: "'Unexpected egress network communication to: ' + event.dstAddr + ':' + string(event.dstPort) + ' using ' + event.proto + ' from: ' + event.containerName"
-      unique_id: "event.dstAddr + '_' + string(event.dstPort) + '_' + event.proto"
-      rule_expression:
-        - event_type: "network"
-          expression: "event.pktType == 'OUTGOING' && !net.is_private_ip(event.dstAddr) && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
-    profile_dependency: 0
-    severity: 5 # Medium
-    support_policy: false
-    tags:
-      - "whitelisted"
-      - "network"
-      - "anomaly"
-      - "networkprofile"
+    - name: "Unexpected Egress Network Traffic"
+      enabled: false
+      id: "R0011"
+      description: "Detecting unexpected egress network traffic that is not whitelisted by application profile."
+      expressions:
+        message: "'Unexpected egress network communication to: ' + event.dstAddr + ':' + string(event.dstPort) + ' using ' + event.proto + ' from: ' + event.containerName"
+        uniqueId: "event.dstAddr + '_' + string(event.dstPort) + '_' + event.proto"
+        ruleExpression:
+          - eventType: "network"
+            expression: "event.pktType == 'OUTGOING' && !net.is_private_ip(event.dstAddr) && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
+      profileDependency: 0
+      severity: 5 # Medium
+      supportPolicy: false
+      tags:
+        - "whitelisted"
+        - "network"
+        - "anomaly"
+        - "networkprofile"

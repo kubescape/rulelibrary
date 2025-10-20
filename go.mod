@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/goradd/maps v1.0.0
 	github.com/inspektor-gadget/inspektor-gadget v0.45.0
-	github.com/kubescape/node-agent v0.2.387-0.20251017195727-48fc07c8d7a3
+	github.com/kubescape/node-agent v0.2.387-0.20251020091723-a7e2e0fc9c92
 	github.com/kubescape/storage v0.0.221
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1

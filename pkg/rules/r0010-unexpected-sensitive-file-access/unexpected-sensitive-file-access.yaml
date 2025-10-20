@@ -7,20 +7,20 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Unexpected Sensitive File Access"
-    enabled: true
-    id: "R0010"
-    description: "Detecting access to sensitive files."
-    expressions:
-      message: "'Unexpected sensitive file access: ' + event.path + ' by process ' + event.comm"
-      unique_id: "event.comm + '_' + event.path"
-      rule_expression:
-        - event_type: "open"
-          expression: "event.path.startsWith('/etc/shadow') && !ap.was_path_opened(event.containerId, event.path)"
-    profile_dependency: 1
-    severity: 5
-    support_policy: false
-    tags:
-      - "files"
-      - "anomaly"
-      - "applicationprofile"
+    - name: "Unexpected Sensitive File Access"
+      enabled: true
+      id: "R0010"
+      description: "Detecting access to sensitive files."
+      expressions:
+        message: "'Unexpected sensitive file access: ' + event.path + ' by process ' + event.comm"
+        uniqueId: "event.comm + '_' + event.path"
+        ruleExpression:
+          - eventType: "open"
+            expression: "event.path.startsWith('/etc/shadow') && !ap.was_path_opened(event.containerId, event.path)"
+      profileDependency: 1
+      severity: 5
+      supportPolicy: false
+      tags:
+        - "files"
+        - "anomaly"
+        - "applicationprofile"

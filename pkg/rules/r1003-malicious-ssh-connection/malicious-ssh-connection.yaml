@@ -7,22 +7,22 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Disallowed ssh connection"
-    enabled: false
-    id: "R1003"
-    description: "Detecting ssh connection to disallowed port"
-    expressions:
-      message: "'Malicious SSH connection attempt to ' + event.dstIp + ':' + string(dyn(event.dstPort))"
-      unique_id: "event.comm + '_' + event.dstIp + '_' + string(dyn(event.dstPort))"
-      rule_expression:
-        - event_type: "ssh"
-          expression: "dyn(event.srcPort) >= 32768 && dyn(event.srcPort) <= 60999 && !(dyn(event.dstPort) in [22, 2022]) && !nn.was_address_in_egress(event.containerId, event.dstIp)"
-    profile_dependency: 1
-    severity: 5
-    support_policy: false
-    tags:
-      - "ssh"
-      - "connection"
-      - "port"
-      - "malicious"
-      - "networkprofile"
+    - name: "Disallowed ssh connection"
+      enabled: false
+      id: "R1003"
+      description: "Detecting ssh connection to disallowed port"
+      expressions:
+        message: "'Malicious SSH connection attempt to ' + event.dstIp + ':' + string(dyn(event.dstPort))"
+        uniqueId: "event.comm + '_' + event.dstIp + '_' + string(dyn(event.dstPort))"
+        ruleExpression:
+          - eventType: "ssh"
+            expression: "dyn(event.srcPort) >= 32768 && dyn(event.srcPort) <= 60999 && !(dyn(event.dstPort) in [22, 2022]) && !nn.was_address_in_egress(event.containerId, event.dstIp)"
+      profileDependency: 1
+      severity: 5
+      supportPolicy: false
+      tags:
+        - "ssh"
+        - "connection"
+        - "port"
+        - "malicious"
+        - "networkprofile"

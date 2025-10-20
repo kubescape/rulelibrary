@@ -7,20 +7,20 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Hard link created over sensitive file"
-    enabled: true
-    id: "R1012"
-    description: "Detecting hardlink creation over sensitive files."
-    expressions:
-      message: "'Hardlink created over sensitive file: ' + event.oldPath + ' - ' + event.newPath"
-      unique_id: "event.comm + '_' + event.oldPath"
-      rule_expression:
-        - event_type: "hardlink"
-          expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
-    profile_dependency: 1
-    severity: 5
-    support_policy: true
-    tags:
-      - "files"
-      - "malicious"
-      - "applicationprofile"
+    - name: "Hard link created over sensitive file"
+      enabled: true
+      id: "R1012"
+      description: "Detecting hardlink creation over sensitive files."
+      expressions:
+        message: "'Hardlink created over sensitive file: ' + event.oldPath + ' - ' + event.newPath"
+        uniqueId: "event.comm + '_' + event.oldPath"
+        ruleExpression:
+          - eventType: "hardlink"
+            expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
+      profileDependency: 1
+      severity: 5
+      supportPolicy: true
+      tags:
+        - "files"
+        - "malicious"
+        - "applicationprofile"

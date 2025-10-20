@@ -7,19 +7,19 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Malicious Ptrace Usage"
-    enabled: true
-    id: "R1015"
-    description: "Detecting potentially malicious ptrace usage."
-    expressions:
-      message: "'Malicious ptrace usage detected from: ' + event.comm"
-      unique_id: "event.exepath + '_' + event.comm"
-      rule_expression:
-        - event_type: "ptrace"
-          expression: "true"
-    profile_dependency: 2
-    severity: 5
-    support_policy: false
-    tags:
-      - "process"
-      - "malicious"
+    - name: "Malicious Ptrace Usage"
+      enabled: true
+      id: "R1015"
+      description: "Detecting potentially malicious ptrace usage."
+      expressions:
+        message: "'Malicious ptrace usage detected from: ' + event.comm"
+        uniqueId: "event.exepath + '_' + event.comm"
+        ruleExpression:
+          - eventType: "ptrace"
+            expression: "true"
+      profileDependency: 2
+      severity: 5
+      supportPolicy: false
+      tags:
+        - "process"
+        - "malicious"

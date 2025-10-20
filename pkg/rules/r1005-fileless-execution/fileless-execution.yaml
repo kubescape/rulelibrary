@@ -7,20 +7,20 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Fileless execution detected"
-    enabled: true
-    id: "R1005"
-    description: "Detecting Fileless Execution"
-    expressions:
-      message: "'Fileless execution detected: exec call \"' + event.comm + '\" is from a malicious source'"
-      unique_id: "event.comm + '_' + event.exepath + '_' + event.pcomm"
-      rule_expression:
-        - event_type: "exec"
-          expression: "event.exepath.contains('memfd') || event.exepath.startsWith('/proc/self/fd') || event.exepath.matches('/proc/[0-9]+/fd/[0-9]+')"
-    profile_dependency: 2
-    severity: 8
-    support_policy: false
-    tags:
-      - "fileless"
-      - "execution"
-      - "malicious"
+    - name: "Fileless execution detected"
+      enabled: true
+      id: "R1005"
+      description: "Detecting Fileless Execution"
+      expressions:
+        message: '''Fileless execution detected: exec call "'' + event.comm + ''" is from a malicious source'''
+        uniqueId: "event.comm + '_' + event.exepath + '_' + event.pcomm"
+        ruleExpression:
+          - eventType: "exec"
+            expression: "event.exepath.contains('memfd') || event.exepath.startsWith('/proc/self/fd') || event.exepath.matches('/proc/[0-9]+/fd/[0-9]+')"
+      profileDependency: 2
+      severity: 8
+      supportPolicy: false
+      tags:
+        - "fileless"
+        - "execution"
+        - "malicious"

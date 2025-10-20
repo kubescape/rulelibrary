@@ -7,22 +7,22 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Process tries to escape container"
-    enabled: true
-    id: "R1006"
-    description: "Detecting Unshare System Call usage, which can be used to escape container."
-    expressions:
-      message: "'Unshare system call detected: unshare with PID ' + string(event.pid)"
-      unique_id: "'unshare'"
-      rule_expression:
-        - event_type: "syscall"
-          expression: "'unshare' in event.syscalls && !ap.was_syscall_used(event.containerId, 'unshare')"
-    profile_dependency: 2
-    severity: 5
-    support_policy: false
-    tags:
-      - "syscall"
-      - "escape"
-      - "unshare"
-      - "anomaly"
-      - "applicationprofile"
+    - name: "Process tries to escape container"
+      enabled: true
+      id: "R1006"
+      description: "Detecting Unshare System Call usage, which can be used to escape container."
+      expressions:
+        message: "'Unshare system call detected: unshare with PID ' + string(event.pid)"
+        uniqueId: "'unshare'"
+        ruleExpression:
+          - eventType: "syscall"
+            expression: "'unshare' in event.syscalls && !ap.was_syscall_used(event.containerId, 'unshare')"
+      profileDependency: 2
+      severity: 5
+      supportPolicy: false
+      tags:
+        - "syscall"
+        - "escape"
+        - "unshare"
+        - "anomaly"
+        - "applicationprofile"

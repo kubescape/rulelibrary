@@ -7,20 +7,20 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Syscalls Anomalies in container"
-    enabled: true
-    id: "R0003"
-    description: "Detects unexpected system calls that are not whitelisted by application profile"
-    expressions:
-      message: "'Unexpected system call detected: todo with PID ' + string(event.pid)"
-      unique_id: "'todo'"
-      rule_expression:
-        - event_type: "syscall"
-          expression: "!ap.were_syscalls_used(event.containerId, event.syscalls)"
-    profile_dependency: 0
-    severity: 1
-    support_policy: false
-    tags:
-      - "anomaly"
-      - "syscall"
-      - "applicationprofile"
+    - name: "Syscalls Anomalies in container"
+      enabled: true
+      id: "R0003"
+      description: "Detects unexpected system calls that are not whitelisted by application profile"
+      expressions:
+        message: "'Unexpected system call detected: todo with PID ' + string(event.pid)"
+        uniqueId: "'todo'"
+        ruleExpression:
+          - eventType: "syscall"
+            expression: "!ap.were_syscalls_used(event.containerId, event.syscalls)"
+      profileDependency: 0
+      severity: 1
+      supportPolicy: false
+      tags:
+        - "anomaly"
+        - "syscall"
+        - "applicationprofile"

@@ -7,20 +7,20 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Linux Capabilities Anomalies in container"
-    enabled: true
-    id: "R0004"
-    description: "Detects unexpected capabilities that are not whitelisted by application profile"
-    expressions:
-      message: "'Unexpected capability used: ' + event.capName + ' in syscall ' + event.syscallName + ' with PID ' + string(event.pid)"
-      unique_id: "event.comm + '_' + event.capName"
-      rule_expression:
-        - event_type: "capabilities"
-          expression: "!ap.was_capability_used(event.containerId, event.capName)"
-    profile_dependency: 0
-    severity: 1
-    support_policy: false
-    tags:
-      - "anomaly"
-      - "capabilities"
-      - "applicationprofile"
+    - name: "Linux Capabilities Anomalies in container"
+      enabled: true
+      id: "R0004"
+      description: "Detects unexpected capabilities that are not whitelisted by application profile"
+      expressions:
+        message: "'Unexpected capability used: ' + event.capName + ' in syscall ' + event.syscallName + ' with PID ' + string(event.pid)"
+        uniqueId: "event.comm + '_' + event.capName"
+        ruleExpression:
+          - eventType: "capabilities"
+            expression: "!ap.was_capability_used(event.containerId, event.capName)"
+      profileDependency: 0
+      severity: 1
+      supportPolicy: false
+      tags:
+        - "anomaly"
+        - "capabilities"
+        - "applicationprofile"

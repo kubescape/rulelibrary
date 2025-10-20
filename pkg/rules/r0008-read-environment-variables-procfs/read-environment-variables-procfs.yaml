@@ -7,24 +7,24 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Read Environment Variables from procfs"
-    enabled: true
-    id: "R0008"
-    description: "Detecting reading environment variables from procfs."
-    expressions:
-      message: "'Reading environment variables from procfs: ' + event.path + ' by process ' + event.comm"
-      unique_id: "event.comm + '_' + event.path"
-      rule_expression:
-        - event_type: "open"
-          expression: >
-            event.path.startsWith('/proc/') && 
-            event.path.endsWith('/environ') &&
-            !ap.was_path_opened_with_suffix(event.containerId, '/environ')
-    profile_dependency: 0 # Required
-    severity: 5 # Medium
-    support_policy: false
-    tags:
-      - "anomaly"
-      - "procfs"
-      - "environment"
-      - "applicationprofile"
+    - name: "Read Environment Variables from procfs"
+      enabled: true
+      id: "R0008"
+      description: "Detecting reading environment variables from procfs."
+      expressions:
+        message: "'Reading environment variables from procfs: ' + event.path + ' by process ' + event.comm"
+        uniqueId: "event.comm + '_' + event.path"
+        ruleExpression:
+          - eventType: "open"
+            expression: >
+              event.path.startsWith('/proc/') && 
+              event.path.endsWith('/environ') &&
+              !ap.was_path_opened_with_suffix(event.containerId, '/environ')
+      profileDependency: 0 # Required
+      severity: 5 # Medium
+      supportPolicy: false
+      tags:
+        - "anomaly"
+        - "procfs"
+        - "environment"
+        - "applicationprofile"

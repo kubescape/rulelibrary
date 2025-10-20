@@ -7,20 +7,20 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "DNS Anomalies in container"
-    enabled: true
-    id: "R0005"
-    description: "Detecting unexpected domain requests that are not whitelisted by application profile."
-    expressions:
-      message: "'Unexpected domain communication: ' + event.name + ' from: ' + event.containerName"
-      unique_id: "event.comm + '_' + event.name"
-      rule_expression:
-        - event_type: "dns"
-          expression: "!event.name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(event.containerId, event.name)"
-    profile_dependency: 0
-    severity: 1
-    support_policy: false
-    tags:
-      - "dns"
-      - "anomaly"
-      - "networkprofile"
+    - name: "DNS Anomalies in container"
+      enabled: true
+      id: "R0005"
+      description: "Detecting unexpected domain requests that are not whitelisted by application profile."
+      expressions:
+        message: "'Unexpected domain communication: ' + event.name + ' from: ' + event.containerName"
+        uniqueId: "event.comm + '_' + event.name"
+        ruleExpression:
+          - eventType: "dns"
+            expression: "!event.name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(event.containerId, event.name)"
+      profileDependency: 0
+      severity: 1
+      supportPolicy: false
+      tags:
+        - "dns"
+        - "anomaly"
+        - "networkprofile"
