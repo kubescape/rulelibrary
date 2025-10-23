@@ -24,9 +24,10 @@ func TestR1006UnshareSyscall(t *testing.T) {
 
 	// Create a syscall event for unshare
 	e := &utils.StructEvent{
+		Comm:        "test-process",
 		Container:   "test",
 		ContainerID: "test",
-		EventType:   utils.SyscallEventType,
+		EventType:   utils.UnshareEventType,
 		Pid:         1234,
 		Syscall:     "unshare",
 	}
@@ -75,7 +76,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unshare system call detected: unshare with PID 1234" {
+	if message != "Unshare system call (unshare) was called by process (test-process)" {
 		t.Fatalf("Message evaluation failed: %s", message)
 	}
 
@@ -84,7 +85,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "unshare" {
+	if uniqueId != "test-process_unshare" {
 		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
 	}
 

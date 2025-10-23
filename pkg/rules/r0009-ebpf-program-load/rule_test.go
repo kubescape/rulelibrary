@@ -27,9 +27,10 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 		Comm:        "test-process",
 		Container:   "test",
 		ContainerID: "test",
-		EventType:   utils.SyscallEventType,
+		EventType:   utils.BpfEventType,
 		Pid:         1234,
 		Syscall:     "bpf",
+		Cmd:         5,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -76,7 +77,7 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "bpf system call executed in test" {
+	if message != "bpf program load system call (bpf) was called by process (test-process) with command (BPF_PROG_LOAD)" {
 		t.Fatalf("Message evaluation failed, got: %s", message)
 	}
 
@@ -85,7 +86,7 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "test-process_bpf" {
+	if uniqueId != "test-process_bpf_5" {
 		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 

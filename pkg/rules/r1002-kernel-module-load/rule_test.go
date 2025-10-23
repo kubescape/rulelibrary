@@ -16,14 +16,15 @@ import (
 )
 
 // createTestSyscallEvent creates a test SyscallEvent
-func createTestSyscallEvent(containerName, containerID, comm, syscallName string, pid uint32) *utils.StructEvent {
+func createTestKmodEvent(containerName, containerID, comm, syscallName, module string, pid uint32) *utils.StructEvent {
 	return &utils.StructEvent{
 		Comm:        comm,
 		Container:   containerName,
 		ContainerID: containerID,
-		EventType:   utils.SyscallEventType,
+		EventType:   utils.KmodEventType,
 		Pid:         pid,
 		Syscall:     syscallName,
+		Module:      module,
 	}
 }
 
@@ -42,25 +43,25 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 	}{
 		{
 			name:          "init_module syscall",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "init_module", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "init_module", "module1", uint32(1234)),
 			expectTrigger: true,
 			description:   "Should trigger for init_module syscall",
 		},
 		{
 			name:          "finit_module syscall",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "finit_module", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "finit_module", "module2", uint32(1234)),
 			expectTrigger: true,
 			description:   "Should trigger for finit_module syscall",
 		},
 		{
 			name:          "other syscall",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "open", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "open", "module3", uint32(1234)),
 			expectTrigger: false,
 			description:   "Should not trigger for non-kernel-module syscall",
 		},
 		{
 			name:          "other syscall name",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "read", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "read", "module4", uint32(1234)),
 			expectTrigger: false,
 			description:   "Should not trigger for non-kernel-module syscall",
 		},
@@ -117,7 +118,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Kernel module load syscall (" + tt.event.Syscall + ") was called"
+				expectedMessage := "Kernel module (" + tt.event.Module + ") loading attempt with syscall (" + tt.event.Syscall + ") was called by process (" + tt.event.Comm + ")"
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}
@@ -127,7 +128,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
-				expectedUniqueID := tt.event.Syscall
+				expectedUniqueID := tt.event.Comm + "_" + tt.event.Syscall + "_" + tt.event.Module
 				if uniqueID != expectedUniqueID {
 					t.Errorf("Unique ID evaluation failed. Expected: %s, Got: %s", expectedUniqueID, uniqueID)
 				}
