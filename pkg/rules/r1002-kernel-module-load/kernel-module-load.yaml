@@ -20,6 +20,9 @@ spec:
       profileDependency: 2
       severity: 10
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0005"
+      mitreTechnique: "T1547.006"
       tags:
         - "kmod"
         - "kernel"

@@ -20,6 +20,9 @@ spec:
       profileDependency: 0
       severity: 5 # Medium
       supportPolicy: false
+      isTriggerAlert: false
+      mitreTactic: "TA0010"
+      mitreTechnique: "T1041"
       tags:
         - "whitelisted"
         - "network"

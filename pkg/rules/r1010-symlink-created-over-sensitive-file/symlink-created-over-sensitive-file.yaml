@@ -20,6 +20,9 @@ spec:
       profileDependency: 1
       severity: 5
       supportPolicy: true
+      isTriggerAlert: true
+      mitreTactic: "TA0006"
+      mitreTechnique: "T1005"
       tags:
         - "anomaly"
         - "symlink"

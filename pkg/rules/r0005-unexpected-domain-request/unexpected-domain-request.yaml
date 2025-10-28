@@ -20,6 +20,9 @@ spec:
       profileDependency: 0
       severity: 1
       supportPolicy: false
+      isTriggerAlert: false
+      mitreTactic: "TA0011"
+      mitreTechnique: "T1071.004"
       tags:
         - "dns"
         - "anomaly"

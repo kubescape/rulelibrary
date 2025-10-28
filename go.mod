@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/goradd/maps v1.0.0
 	github.com/inspektor-gadget/inspektor-gadget v0.45.1-0.20251020222545-c91c23581ebf
-	github.com/kubescape/node-agent v0.2.387-0.20251023081123-8575bdb5c9c4
+	github.com/kubescape/node-agent v0.2.387-0.20251028144632-fead4536b150
 	github.com/kubescape/storage v0.0.221
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
@@ -255,3 +255,5 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 	zombiezen.com/go/sqlite v1.4.0 // indirect
 )
+
+replace github.com/inspektor-gadget/inspektor-gadget => github.com/matthyx/inspektor-gadget v0.0.0-20251028120806-bb895db89083

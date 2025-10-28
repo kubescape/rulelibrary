@@ -23,6 +23,9 @@ spec:
       profileDependency: 1
       severity: 8
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0005"
+      mitreTechnique: "T1036"
       tags:
         - "exec"
         - "malicious"

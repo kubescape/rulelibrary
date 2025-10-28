@@ -23,6 +23,9 @@ spec:
       profileDependency: 0 # Required
       severity: 5 # Medium
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0006"
+      mitreTechnique: "T1552.001"
       tags:
         - "anomaly"
         - "procfs"

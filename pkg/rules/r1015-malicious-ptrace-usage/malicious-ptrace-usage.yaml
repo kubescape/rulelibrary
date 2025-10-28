@@ -20,6 +20,9 @@ spec:
       profileDependency: 2
       severity: 5
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0005"
+      mitreTechnique: "T1622"
       tags:
         - "process"
         - "malicious"

@@ -20,6 +20,9 @@ spec:
       profileDependency: 1
       severity: 5
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0005"
+      mitreTechnique: "T1218"
       tags:
         - "bpf"
         - "ebpf"

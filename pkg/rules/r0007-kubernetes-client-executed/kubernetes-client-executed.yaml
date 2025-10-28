@@ -22,6 +22,9 @@ spec:
       profileDependency: 0
       severity: 5 # Medium
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0008"
+      mitreTechnique: "T1210"
       tags:
         - "exec"
         - "network"

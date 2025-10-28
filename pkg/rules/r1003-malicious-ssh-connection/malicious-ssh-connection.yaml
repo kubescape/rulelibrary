@@ -20,6 +20,9 @@ spec:
       profileDependency: 1
       severity: 5
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0008"
+      mitreTechnique: "T1021.001"
       tags:
         - "ssh"
         - "connection"

@@ -20,6 +20,9 @@ spec:
       profileDependency: 2
       severity: 10
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0040"
+      mitreTechnique: "T1496"
       tags:
         - "crypto"
         - "miners"

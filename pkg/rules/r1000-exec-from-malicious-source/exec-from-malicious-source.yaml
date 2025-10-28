@@ -23,6 +23,9 @@ spec:
       profileDependency: 2
       severity: 8
       supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1059"
       tags:
         - "exec"
         - "signature"

@@ -20,6 +20,9 @@ spec:
       profileDependency: 0
       severity: 1
       supportPolicy: false
+      isTriggerAlert: false
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1059"
       tags:
         - "anomaly"
         - "capabilities"

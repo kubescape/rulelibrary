@@ -20,6 +20,9 @@ spec:
       profileDependency: 0
       severity: 5
       supportPolicy: true
+      isTriggerAlert: true
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1218"
       tags:
         - "syscalls"
         - "io_uring"

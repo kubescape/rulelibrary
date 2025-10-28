@@ -20,6 +20,9 @@ spec:
       profileDependency: 1
       severity: 3
       supportPolicy: false
+      isTriggerAlert: false
+      mitreTactic: "TA0011"
+      mitreTechnique: "T1071"
       tags:
         - "network"
         - "crypto"
