@@ -1,6 +1,7 @@
 package r0006_unexpected_service_account_token_access
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -93,19 +94,19 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 			name:  "kubernetes service account token access with matching profile",
 			event: createTestEvent("test", "container123", "/run/secrets/kubernetes.io/serviceaccount/token", []string{"O_RDONLY"}),
 			profile: createTestProfile("test", []v1beta1.OpenCalls{
-				{Path: "/run/secrets/kubernetes.io/serviceaccount/namespace", Flags: []string{"O_RDONLY"}},
+				{Path: "/run/secrets/kubernetes.io/serviceaccount/token", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
-			description:   "Should not trigger when kubernetes service account path is in application profile",
+			description:   "Should not trigger when kubernetes service account token path is in application profile",
 		},
 		{
 			name:  "eks service account token access with matching profile",
 			event: createTestEvent("test", "container123", "/run/secrets/eks.amazonaws.com/serviceaccount/token", []string{"O_RDONLY"}),
 			profile: createTestProfile("test", []v1beta1.OpenCalls{
-				{Path: "/run/secrets/eks.amazonaws.com/serviceaccount/ca.crt", Flags: []string{"O_RDONLY"}},
+				{Path: "/run/secrets/eks.amazonaws.com/serviceaccount/token", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
-			description:   "Should not trigger when EKS service account path is in application profile",
+			description:   "Should not trigger when EKS service account token path is in application profile",
 		},
 		{
 			name:  "service account token access with different profile path",
@@ -117,13 +118,13 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 			description:   "Should trigger when service account token path is not in application profile",
 		},
 		{
-			name:  "service account namespace access with matching profile",
+			name:  "service account namespace access (not a token)",
 			event: createTestEvent("test", "container123", "/run/secrets/kubernetes.io/serviceaccount/namespace", []string{"O_RDONLY"}),
 			profile: createTestProfile("test", []v1beta1.OpenCalls{
 				{Path: "/run/secrets/kubernetes.io/serviceaccount/token", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
-			description:   "Should not trigger when service account directory is whitelisted",
+			description:   "Should not trigger for non-token service account paths",
 		},
 		{
 			name:  "similar path but not service account token",
@@ -191,7 +192,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Unexpected access to service account token: " + tt.event.Path + " with flags: " + tt.event.Flags[0]
+				expectedMessage := "Unexpected access to service account token: " + tt.event.Path + " with flags: " + strings.Join(tt.event.Flags, ",")
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}
@@ -227,16 +228,16 @@ func TestR0006WithTimestampPaths(t *testing.T) {
 		{
 			name:          "kubernetes token access with timestamp",
 			accessPath:    "/run/secrets/kubernetes.io/serviceaccount/..2024_11_24_09_06_53.3676909075/token",
-			profilePath:   "/run/secrets/kubernetes.io/serviceaccount/..2024_11_21_04_30_58.850095521/namespace",
+			profilePath:   "/run/secrets/kubernetes.io/serviceaccount/..2024_11_21_04_30_58.850095521/token",
 			expectTrigger: false,
-			description:   "Should not trigger when service account directory is whitelisted despite different timestamps",
+			description:   "Should not trigger when service account token path is in application profile despite different timestamps",
 		},
 		{
 			name:          "eks token access with timestamp",
 			accessPath:    "/run/secrets/eks.amazonaws.com/serviceaccount/..2024_11_1111_24_34_58.850095521/token",
-			profilePath:   "/run/secrets/eks.amazonaws.com/serviceaccount/..2024_11_21_04_30_58.850095521/ca.crt",
+			profilePath:   "/run/secrets/eks.amazonaws.com/serviceaccount/..2024_11_21_04_30_58.850095521/token",
 			expectTrigger: false,
-			description:   "Should not trigger when EKS service account directory is whitelisted despite different timestamps",
+			description:   "Should not trigger when EKS service account token path is in application profile despite different timestamps",
 		},
 	}
 
