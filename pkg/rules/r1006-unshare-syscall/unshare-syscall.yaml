@@ -16,7 +16,7 @@ spec:
         uniqueId: "event.comm + '_' + 'unshare'"
         ruleExpression:
           - eventType: "unshare"
-            expression: "!ap.was_syscall_used(event.containerId, 'unshare')"
+            expression: "event.pcomm != 'runc' && !ap.was_syscall_used(event.containerId, 'unshare')"
       profileDependency: 2
       severity: 5
       supportPolicy: false
