@@ -7,20 +7,23 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Syscalls Anomalies in container"
-    enabled: true
-    id: "R0003"
-    description: "Detects unexpected system calls that are not whitelisted by application profile"
-    expressions:
-      message: "'Unexpected system call detected: ' + syscall.syscall_name + ' with PID ' + string(syscall.pid)"
-      unique_id: "syscall.syscall_name"
-      rule_expression:
-        - event_type: "syscall"
-          expression: "!ap.was_syscall_used(syscall.runtime.container_id, syscall.syscall_name)"
-    profile_dependency: 0
-    severity: 1
-    support_policy: false
-    tags:
-      - "anomaly"
-      - "syscall"
-      - "applicationprofile"
+    - name: "Syscalls Anomalies in container"
+      enabled: true
+      id: "R0003"
+      description: "Detects unexpected system calls that are not whitelisted by application profile"
+      expressions:
+        message: "'Unexpected system call detected: ' + event.syscallName + ' with PID ' + string(event.pid)"
+        uniqueId: "event.syscallName"
+        ruleExpression:
+          - eventType: "syscall"
+            expression: "!ap.was_syscall_used(event.containerId, event.syscallName)"
+      profileDependency: 0
+      severity: 1
+      supportPolicy: false
+      isTriggerAlert: false
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1059"
+      tags:
+        - "anomaly"
+        - "syscall"
+        - "applicationprofile"

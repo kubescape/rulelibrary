@@ -7,23 +7,26 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Process executed from malicious source"
-    enabled: true
-    id: "R1000"
-    description: "Detecting exec calls that are from malicious source like: /dev/shm"
-    expressions:
-      message: "'Execution from malicious source: ' + exec.exe_path + ' in directory ' + exec.cwd"
-      unique_id: "exec.comm + '_' + exec.exe_path + '_' + exec.pcomm"
-      rule_expression:
-        - event_type: "exec"
-          expression: >
-            (exec.exe_path == '/dev/shm' || exec.exe_path.startsWith('/dev/shm/')) ||
-            (exec.cwd == '/dev/shm' || exec.cwd.startsWith('/dev/shm/') || 
-            (parse.get_exec_path(exec.args, exec.comm).startsWith('/dev/shm/')))
-    profile_dependency: 2
-    severity: 8
-    support_policy: false
-    tags:
-      - "exec"
-      - "signature"
-      - "malicious"
+    - name: "Process executed from malicious source"
+      enabled: true
+      id: "R1000"
+      description: "Detecting exec calls that are from malicious source like: /dev/shm"
+      expressions:
+        message: "'Execution from malicious source: ' + event.exepath + ' in directory ' + event.cwd"
+        uniqueId: "event.comm + '_' + event.exepath + '_' + event.pcomm"
+        ruleExpression:
+          - eventType: "exec"
+            expression: >
+              (event.exepath == '/dev/shm' || event.exepath.startsWith('/dev/shm/')) ||
+              (event.cwd == '/dev/shm' || event.cwd.startsWith('/dev/shm/') || 
+              (parse.get_exec_path(event.args, event.comm).startsWith('/dev/shm/')))
+      profileDependency: 2
+      severity: 8
+      supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1059"
+      tags:
+        - "exec"
+        - "signature"
+        - "malicious"

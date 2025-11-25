@@ -5,16 +5,14 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 )
 
@@ -25,22 +23,13 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	}
 
 	// Create a syscall event for unshare
-	e := &types.SyscallEvent{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: "test",
-				},
-			},
-		},
-		Comm:        "test",
-		SyscallName: "unshare",
+	e := &utils.StructEvent{
+		Comm:        "test-process",
+		Container:   "test",
+		ContainerID: "test",
+		EventType:   utils.UnshareEventType,
 		Pid:         1234,
+		Syscall:     "unshare",
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -70,8 +59,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.SyscallEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Evaluate the rule
@@ -88,7 +76,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	if message != "Unshare system call detected: unshare with PID 1234" {
+	if message != "Unshare system call (unshare) was called by process (test-process)" {
 		t.Fatalf("Message evaluation failed: %s", message)
 	}
 
@@ -97,7 +85,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "unshare" {
+	if uniqueId != "test-process_unshare" {
 		t.Fatalf("Unique id evaluation failed: %s", uniqueId)
 	}
 
@@ -125,7 +113,7 @@ func TestR1006UnshareSyscall(t *testing.T) {
 	}
 
 	// Test with different syscall - should not trigger
-	e.SyscallName = "open"
+	e.Syscall = "open"
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

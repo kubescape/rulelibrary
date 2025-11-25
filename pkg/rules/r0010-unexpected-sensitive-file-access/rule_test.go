@@ -11,12 +11,10 @@ import (
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
-	traceropentype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/open/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
@@ -26,26 +24,14 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 	}
 
 	// Create a file access event to sensitive file
-	e := &events.OpenEvent{
-		Event: traceropentype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Pid:      1234,
-			Comm:     "test-process",
-			Path:     "/etc/shadow",
-			FullPath: "/etc/shadow",
-			Flags:    []string{"O_RDONLY"},
-		},
+	e := &utils.StructEvent{
+		Comm:        "test-process",
+		Container:   "test",
+		ContainerID: "test",
+		EventType:   utils.OpenEventType,
+		Flags:       []string{"O_RDONLY"},
+		Path:        "/etc/shadow",
+		Pid:         1234,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -75,8 +61,7 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.OpenEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test without profile - should trigger alert for sensitive file
@@ -135,8 +120,7 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 	}
 
 	// Test with non-sensitive file (should not trigger)
-	e.Event.Path = "/tmp/test.txt"
-	e.Event.FullPath = "/tmp/test.txt"
+	e.Path = "/tmp/test.txt"
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {

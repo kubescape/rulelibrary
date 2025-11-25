@@ -11,31 +11,20 @@ import (
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	"github.com/kubescape/node-agent/pkg/rulemanager/types"
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/rulelibrary/pkg/common"
-
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 )
 
 // createTestSyscallEvent creates a test SyscallEvent
-func createTestSyscallEvent(containerName, containerID, comm, syscallName string, pid uint32) *types.SyscallEvent {
-	return &types.SyscallEvent{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: containerName,
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID: containerID,
-				},
-			},
-		},
+func createTestKmodEvent(containerName, containerID, comm, syscallName, module string, pid uint32) *utils.StructEvent {
+	return &utils.StructEvent{
 		Comm:        comm,
-		SyscallName: syscallName,
+		Container:   containerName,
+		ContainerID: containerID,
+		EventType:   utils.KmodEventType,
 		Pid:         pid,
+		Syscall:     syscallName,
+		Module:      module,
 	}
 }
 
@@ -48,31 +37,31 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		event         *types.SyscallEvent
+		event         *utils.StructEvent
 		expectTrigger bool
 		description   string
 	}{
 		{
 			name:          "init_module syscall",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "init_module", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "init_module", "module1", uint32(1234)),
 			expectTrigger: true,
 			description:   "Should trigger for init_module syscall",
 		},
 		{
 			name:          "finit_module syscall",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "finit_module", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "finit_module", "module2", uint32(1234)),
 			expectTrigger: true,
 			description:   "Should trigger for finit_module syscall",
 		},
 		{
 			name:          "other syscall",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "open", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "open", "module3", uint32(1234)),
 			expectTrigger: false,
 			description:   "Should not trigger for non-kernel-module syscall",
 		},
 		{
 			name:          "other syscall name",
-			event:         createTestSyscallEvent("test", "container123", "test-process", "read", uint32(1234)),
+			event:         createTestKmodEvent("test", "container123", "test-process", "read", "module4", uint32(1234)),
 			expectTrigger: false,
 			description:   "Should not trigger for non-kernel-module syscall",
 		},
@@ -89,7 +78,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
 					objectcache.Container: {
 						{
-							Name: tt.event.Event.K8s.BasicK8sMetadata.ContainerName,
+							//Name: tt.event.Event.K8s.BasicK8sMetadata.ContainerName,
 						},
 					},
 				},
@@ -108,8 +97,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 
 			// Serialize event
 			enrichedEvent := &events.EnrichedEvent{
-				EventType: utils.SyscallEventType,
-				Event:     tt.event,
+				Event: tt.event,
 			}
 
 			// Evaluate the rule
@@ -130,7 +118,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Kernel module load syscall (" + tt.event.SyscallName + ") was called"
+				expectedMessage := "Kernel module (" + tt.event.Module + ") loading attempt with syscall (" + tt.event.Syscall + ") was called by process (" + tt.event.Comm + ")"
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}
@@ -140,7 +128,7 @@ func TestR1002KernelModuleLoad(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
-				expectedUniqueID := tt.event.SyscallName
+				expectedUniqueID := tt.event.Comm + "_" + tt.event.Syscall + "_" + tt.event.Module
 				if uniqueID != expectedUniqueID {
 					t.Errorf("Unique ID evaluation failed. Expected: %s, Got: %s", expectedUniqueID, uniqueID)
 				}

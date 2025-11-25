@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/goradd/maps"
-	tracerdnstype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/dns/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	"github.com/kubescape/node-agent/pkg/config"
 	"github.com/kubescape/node-agent/pkg/ebpf/events"
 	"github.com/kubescape/node-agent/pkg/objectcache"
@@ -14,7 +12,7 @@ import (
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
 	"github.com/kubescape/node-agent/pkg/utils"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
@@ -24,31 +22,21 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 	}
 
 	// Create a DNS event for crypto mining domain communication
-	e := &tracerdnstype.Event{
-		Event: eventtypes.Event{
-			CommonData: eventtypes.CommonData{
-				K8s: eventtypes.K8sMetadata{
-					BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-						ContainerName: "test",
-						PodName:       "test-pod",
-						Namespace:     "test-namespace",
-					},
-				},
-				Runtime: eventtypes.BasicRuntimeMetadata{
-					ContainerID:   "test-container",
-					ContainerName: "test",
-				},
-			},
-		},
-		DNSName: "xmr.gntl.uk.",
-		Comm:    "xmrig",
-		Exepath: "/usr/bin/xmrig",
-		Pid:     1234,
-		Uid:     1000,
-		Gid:     1000,
-		Ppid:    1,
-		Pcomm:   "bash",
-		Cwd:     "/tmp",
+	e := &utils.StructEvent{
+		Comm:        "xmrig",
+		Container:   "test",
+		ContainerID: "test-container",
+		Cwd:         "/tmp",
+		DNSName:     "xmr.gntl.uk.",
+		EventType:   utils.DnsEventType,
+		ExePath:     "/usr/bin/xmrig",
+		Gid:         1000,
+		Namespace:   "test-namespace",
+		Pcomm:       "bash",
+		Pid:         1234,
+		Pod:         "test-pod",
+		Ppid:        1,
+		Uid:         1000,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -78,8 +66,7 @@ func TestR1008CryptoMiningDomainCommunication(t *testing.T) {
 
 	// Serialize event
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.DnsEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	// Test with crypto mining domain - should trigger alert

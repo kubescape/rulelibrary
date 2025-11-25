@@ -7,20 +7,23 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Process executed from mount"
-    enabled: true
-    id: "R1004"
-    description: "Detecting exec calls from mounted paths."
-    expressions:
-      message: "'Process (' + exec.comm + ') was executed from a mounted path'"
-      unique_id: "exec.comm + '_' + exec.exe_path"
-      rule_expression:
-        - event_type: "exec"
-          expression: "!ap.was_executed(exec.runtime.container_id, parse.get_exec_path(exec.args, exec.comm)) && k8s.get_container_mount_paths(exec.k8s.namespace, exec.k8s.pod_name, exec.k8s.container_name).exists(mount, exec.exe_path.startsWith(mount) || parse.get_exec_path(exec.args, exec.comm).startsWith(mount))"
-    profile_dependency: 1
-    severity: 5
-    support_policy: false
-    tags:
-      - "exec"
-      - "mount"
-      - "applicationprofile"
+    - name: "Process executed from mount"
+      enabled: true
+      id: "R1004"
+      description: "Detecting exec calls from mounted paths."
+      expressions:
+        message: "'Process (' + event.comm + ') was executed from a mounted path'"
+        uniqueId: "event.comm"
+        ruleExpression:
+          - eventType: "exec"
+            expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && k8s.get_container_mount_paths(event.namespace, event.podName, event.containerName).exists(mount, event.exepath.startsWith(mount) || parse.get_exec_path(event.args, event.comm).startsWith(mount))"
+      profileDependency: 1
+      severity: 5
+      supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1059"
+      tags:
+        - "exec"
+        - "mount"
+        - "applicationprofile"

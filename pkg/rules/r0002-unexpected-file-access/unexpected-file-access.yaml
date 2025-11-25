@@ -7,39 +7,42 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Files Access Anomalies in container"
-    enabled: false
-    id: "R0002"
-    description: "Detects unexpected file access that is not in the baseline"
-    expressions:
-      message: "'Unexpected file access detected: ' + open.comm + ' with PID ' + string(open.pid) + ' to ' + open.full_path"
-      unique_id: "open.comm + '_' + open.full_path"
-      rule_expression:
-        - event_type: "open"
-          expression: >
-            (open.full_path.startsWith('/etc/') ||
-            open.full_path.startsWith('/var/log/') ||
-            open.full_path.startsWith('/var/run/') ||
-            open.full_path.startsWith('/run/') ||
-            open.full_path.startsWith('/var/spool/cron/') ||
-            open.full_path.startsWith('/var/www/') ||
-            open.full_path.startsWith('/var/lib/') ||
-            open.full_path.startsWith('/opt/') ||
-            open.full_path.startsWith('/usr/local/') ||
-            open.full_path.startsWith('/app/') ||
-            open.full_path == '/.dockerenv' ||
-            open.full_path == '/proc/self/environ')
-            &&
-            !(open.full_path.startsWith('/run/secrets/kubernetes.io/serviceaccount') ||
-              open.full_path.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') ||
-              open.full_path.startsWith('/tmp'))
-            &&
-            !ap.was_path_opened(open.runtime.container_id, open.full_path)
-    profile_dependency: 0
-    severity: 1
-    support_policy: false
-    tags:
-      - "anomaly"
-      - "file"
-      - "open"
-      - "applicationprofile"
+    - name: "Files Access Anomalies in container"
+      enabled: false
+      id: "R0002"
+      description: "Detects unexpected file access that is not in the baseline"
+      expressions:
+        message: "'Unexpected file access detected: ' + event.comm + ' with PID ' + string(event.pid) + ' to ' + event.path"
+        uniqueId: "event.comm + '_' + event.path"
+        ruleExpression:
+          - eventType: "open"
+            expression: >
+              (event.path.startsWith('/etc/') ||
+              event.path.startsWith('/var/log/') ||
+              event.path.startsWith('/var/run/') ||
+              event.path.startsWith('/run/') ||
+              event.path.startsWith('/var/spool/cron/') ||
+              event.path.startsWith('/var/www/') ||
+              event.path.startsWith('/var/lib/') ||
+              event.path.startsWith('/opt/') ||
+              event.path.startsWith('/usr/local/') ||
+              event.path.startsWith('/app/') ||
+              event.path == '/.dockerenv' ||
+              event.path == '/proc/self/environ')
+              &&
+              !(event.path.startsWith('/run/secrets/kubernetes.io/serviceaccount') ||
+                event.path.startsWith('/var/run/secrets/kubernetes.io/serviceaccount') ||
+                event.path.startsWith('/tmp'))
+              &&
+              !ap.was_path_opened(event.containerId, event.path)
+      profileDependency: 0
+      severity: 1
+      supportPolicy: false
+      isTriggerAlert: false
+      mitreTactic: "TA0009"
+      mitreTechnique: "T1005"
+      tags:
+        - "anomaly"
+        - "file"
+        - "open"
+        - "applicationprofile"

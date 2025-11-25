@@ -11,12 +11,10 @@ import (
 	"github.com/kubescape/node-agent/pkg/utils"
 	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
 
-	traceropentype "github.com/inspektor-gadget/inspektor-gadget/pkg/gadgets/trace/open/types"
-	eventtypes "github.com/inspektor-gadget/inspektor-gadget/pkg/types"
 	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
 	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
 	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
-	common "github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/kubescape/rulelibrary/pkg/common"
 )
 
 func TestR0002UnexpectedFileAccess(t *testing.T) {
@@ -25,26 +23,14 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 	// Create a file access event
-	e := &events.OpenEvent{
-		Event: traceropentype.Event{
-			Event: eventtypes.Event{
-				CommonData: eventtypes.CommonData{
-					K8s: eventtypes.K8sMetadata{
-						BasicK8sMetadata: eventtypes.BasicK8sMetadata{
-							ContainerName: "test",
-						},
-					},
-					Runtime: eventtypes.BasicRuntimeMetadata{
-						ContainerID: "test",
-					},
-				},
-			},
-			Pid:      1234,
-			Comm:     "test",
-			Path:     "/etc/test",
-			FullPath: "/etc/test",
-			Flags:    []string{"O_RDONLY"},
-		},
+	e := &utils.StructEvent{
+		Comm:        "test",
+		Container:   "test",
+		ContainerID: "test",
+		EventType:   utils.OpenEventType,
+		Flags:       []string{"O_RDONLY"},
+		Path:        "/etc/test",
+		Pid:         1234,
 	}
 
 	objCache := &objectcachev1.RuleObjectCacheMock{
@@ -73,8 +59,7 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 		t.Fatalf("Failed to create CEL engine: %v", err)
 	}
 	enrichedEvent := &events.EnrichedEvent{
-		EventType: utils.OpenEventType,
-		Event:     e,
+		Event: e,
 	}
 
 	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

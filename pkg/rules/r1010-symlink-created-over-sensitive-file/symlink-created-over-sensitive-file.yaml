@@ -7,20 +7,23 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Soft link created over sensitive file"
-    enabled: true
-    id: "R1010"
-    description: "Detects symlink creation over sensitive files"
-    expressions:
-      message: "'Symlink created over sensitive file: ' + symlink.old_path + ' -> ' + symlink.new_path"
-      unique_id: "symlink.comm + '_' + symlink.old_path"
-      rule_expression:
-        - event_type: "symlink"
-          expression: "(symlink.old_path.startsWith('/etc/shadow') || symlink.old_path.startsWith('/etc/sudoers')) && !ap.was_path_opened(symlink.runtime.container_id, symlink.old_path)"
-    profile_dependency: 1
-    severity: 5
-    support_policy: true
-    tags:
-      - "anomaly"
-      - "symlink"
-      - "applicationprofile"
+    - name: "Soft link created over sensitive file"
+      enabled: true
+      id: "R1010"
+      description: "Detects symlink creation over sensitive files"
+      expressions:
+        message: "'Symlink created over sensitive file: ' + event.oldPath + ' -> ' + event.newPath"
+        uniqueId: "event.comm + '_' + event.oldPath"
+        ruleExpression:
+          - eventType: "symlink"
+            expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
+      profileDependency: 1
+      severity: 5
+      supportPolicy: true
+      isTriggerAlert: true
+      mitreTactic: "TA0006"
+      mitreTechnique: "T1005"
+      tags:
+        - "anomaly"
+        - "symlink"
+        - "applicationprofile"

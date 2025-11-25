@@ -7,23 +7,24 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Process tries to load a kernel module"
-    enabled: true
-    id: "R1002"
-    description: "Detecting Kernel Module Load."
-    expressions:
-      message: "'Kernel module load syscall (' + syscall.syscall_name + ') was called'"
-      unique_id: "syscall.syscall_name"
-      rule_expression:
-        - event_type: "syscall"
-          expression: >
-            syscall.syscall_name == 'init_module' ||
-            syscall.syscall_name == 'finit_module'
-    profile_dependency: 2
-    severity: 10
-    support_policy: false
-    tags:
-      - "syscall"
-      - "kernel"
-      - "module"
-      - "load"
+    - name: "Process tries to load a kernel module"
+      enabled: true
+      id: "R1002"
+      description: "Detecting Kernel Module Load."
+      expressions:
+        message: "'Kernel module (' + event.module + ') loading attempt with syscall (' + event.syscallName + ') was called by process (' + event.comm + ')'"
+        uniqueId: "event.comm + '_' + event.syscallName + '_' + event.module"
+        ruleExpression:
+          - eventType: "kmod"
+            expression: "event.syscallName == 'init_module' || event.syscallName == 'finit_module'"
+      profileDependency: 2
+      severity: 10
+      supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0005"
+      mitreTechnique: "T1547.006"
+      tags:
+        - "kmod"
+        - "kernel"
+        - "module"
+        - "load"

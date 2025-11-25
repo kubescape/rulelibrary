@@ -7,22 +7,25 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Crypto Mining Related Port Communication"
-    enabled: true
-    id: "R1009"
-    description: "Detecting Crypto Miners by suspicious port usage."
-    expressions:
-      message: "'Detected crypto mining related port communication on port ' + string(dyn(network.port)) + ' to ' + network.dst_endpoint.addr + ' with protocol ' + network.proto"
-      unique_id: "network.comm + '_' + string(dyn(network.port))"
-      rule_expression:
-        - event_type: "network"
-          expression: "network.proto == 'TCP' && network.pkt_type == 'OUTGOING' && dyn(network.port) in [3333, 45700] && !nn.was_address_in_egress(network.runtime.container_id, network.dst_endpoint.addr)"
-    profile_dependency: 1
-    severity: 3
-    support_policy: false
-    tags:
-      - "network"
-      - "crypto"
-      - "miners"
-      - "malicious"
-      - "networkprofile"
+    - name: "Crypto Mining Related Port Communication"
+      enabled: true
+      id: "R1009"
+      description: "Detecting Crypto Miners by suspicious port usage."
+      expressions:
+        message: "'Detected crypto mining related port communication on port ' + string(event.dstPort) + ' to ' + event.dstAddr + ' with protocol ' + event.proto"
+        uniqueId: "event.comm + '_' + string(event.dstPort)"
+        ruleExpression:
+          - eventType: "network"
+            expression: "event.proto == 'TCP' && event.pktType == 'OUTGOING' && event.dstPort in [3333, 45700] && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
+      profileDependency: 1
+      severity: 3
+      supportPolicy: false
+      isTriggerAlert: false
+      mitreTactic: "TA0011"
+      mitreTechnique: "T1071"
+      tags:
+        - "network"
+        - "crypto"
+        - "miners"
+        - "malicious"
+        - "networkprofile"

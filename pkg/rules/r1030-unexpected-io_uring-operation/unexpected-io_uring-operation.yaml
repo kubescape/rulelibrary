@@ -7,20 +7,23 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "Unexpected io_uring Operation Detected"
-    enabled: true
-    id: "R1030"
-    description: "Detects io_uring operations that were not recorded during the initial observation period, indicating potential unauthorized activity."
-    expressions:
-      message: "'Unexpected io_uring operation detected: (opcode=' + string(iouring.opcode) + ') flags=0x' + (has(iouring.flags) ? string(iouring.flags) : '0') + ' in ' + iouring.comm + '.'"
-      unique_id: "string(iouring.opcode) + '_' + iouring.comm"
-      rule_expression:
-        - event_type: "iouring"
-          expression: "true"
-    profile_dependency: 0
-    severity: 5
-    support_policy: true
-    tags:
-      - "syscalls"
-      - "io_uring"
-      - "applicationprofile"
+    - name: "Unexpected io_uring Operation Detected"
+      enabled: true
+      id: "R1030"
+      description: "Detects io_uring operations that were not recorded during the initial observation period, indicating potential unauthorized activity."
+      expressions:
+        message: "'Unexpected io_uring operation detected: (opcode=' + string(event.opcode) + ') flags=0x' + (has(event.flagsRaw) ? string(event.flagsRaw) : '0') + ' in ' + event.comm + '.'"
+        uniqueId: "string(event.opcode) + '_' + event.comm"
+        ruleExpression:
+          - eventType: "iouring"
+            expression: "true"
+      profileDependency: 0
+      severity: 5
+      supportPolicy: true
+      isTriggerAlert: true
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1218"
+      tags:
+        - "syscalls"
+        - "io_uring"
+        - "applicationprofile"

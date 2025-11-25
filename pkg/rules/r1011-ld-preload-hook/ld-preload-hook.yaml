@@ -7,22 +7,25 @@ metadata:
     app: kubescape
 spec:
   rules:
-  - name: "ld_preload hooks technique detected"
-    enabled: false
-    id: "R1011"
-    description: "Detecting ld_preload hook techniques."
-    expressions:
-      message: "event_type == 'exec' ? 'Process (' + exec.comm + ') is using a dynamic linker hook: ' + process.get_ld_hook_var(exec.pid) : 'The dynamic linker configuration file (' + open.full_path + ') was modified by process (' + open.comm + ')'"
-      unique_id: "event_type == 'exec' ? 'exec_' + exec.comm : 'open_' + open.full_path"
-      rule_expression:
-        - event_type: "exec"
-          expression: "exec.comm != 'java' && exec.k8s.container_name != 'matlab' && process.get_ld_hook_var(exec.pid) != ''"
-        - event_type: "open"
-          expression: "open.full_path == '/etc/ld.so.preload' && has(open.flags_raw) && open.flags_raw != 0"
-    profile_dependency: 1
-    severity: 5
-    support_policy: true
-    tags:
-      - "exec"
-      - "malicious"
-      - "applicationprofile"
+    - name: "ld_preload hooks technique detected"
+      enabled: false
+      id: "R1011"
+      description: "Detecting ld_preload hook techniques."
+      expressions:
+        message: "eventType == 'exec' ? 'Process (' + event.comm + ') is using a dynamic linker hook: ' + process.get_ld_hook_var(event.pid) : 'The dynamic linker configuration file (' + event.path + ') was modified by process (' + event.comm + ')'"
+        uniqueId: "eventType == 'exec' ? 'exec_' + event.comm : 'open_' + event.path"
+        ruleExpression:
+          - eventType: "exec"
+            expression: "event.comm != 'java' && event.containerName != 'matlab' && process.get_ld_hook_var(event.pid) != ''"
+          - eventType: "open"
+            expression: "event.path == '/etc/ld.so.preload' && has(event.flagsRaw) && event.flagsRaw != 0"
+      profileDependency: 1
+      severity: 5
+      supportPolicy: true
+      isTriggerAlert: true
+      mitreTactic: "TA0005"
+      mitreTechnique: "T1574.006"
+      tags:
+        - "exec"
+        - "malicious"
+        - "applicationprofile"
