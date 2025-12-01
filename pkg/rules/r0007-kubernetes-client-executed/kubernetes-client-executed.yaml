@@ -22,7 +22,7 @@ spec:
       profileDependency: 0
       severity: 5 # Medium
       supportPolicy: false
-      isTriggerAlert: true
+      isTriggerAlert: false
       mitreTactic: "TA0008"
       mitreTechnique: "T1210"
       tags:
