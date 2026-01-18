@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0006"
       mitreTechnique: "T1005"
       tags:
+        - "context:kubernetes"
         - "files"
         - "malicious"
         - "applicationprofile"

@@ -27,6 +27,7 @@ spec:
       mitreTactic: "TA0005"
       mitreTechnique: "T1036"
       tags:
+        - "context:kubernetes"
         - "exec"
         - "malicious"
         - "binary"

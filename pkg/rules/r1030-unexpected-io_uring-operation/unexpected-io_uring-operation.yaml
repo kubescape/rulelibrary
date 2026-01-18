@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0002"
       mitreTechnique: "T1218"
       tags:
+        - "context:kubernetes"
         - "syscalls"
         - "io_uring"
         - "applicationprofile"

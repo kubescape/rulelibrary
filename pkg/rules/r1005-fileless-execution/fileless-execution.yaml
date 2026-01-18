@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0005"
       mitreTechnique: "T1055"
       tags:
+        - "context:kubernetes"
         - "fileless"
         - "execution"
         - "malicious"
