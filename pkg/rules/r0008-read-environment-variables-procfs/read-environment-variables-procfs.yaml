@@ -27,6 +27,7 @@ spec:
       mitreTactic: "TA0006"
       mitreTechnique: "T1552.001"
       tags:
+        - "context:kubernetes"
         - "anomaly"
         - "procfs"
         - "environment"

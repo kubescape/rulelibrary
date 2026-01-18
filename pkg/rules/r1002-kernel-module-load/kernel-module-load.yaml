@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0005"
       mitreTechnique: "T1547.006"
       tags:
+        - "context:kubernetes"
         - "kmod"
         - "kernel"
         - "module"

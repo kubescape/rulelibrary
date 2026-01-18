@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0010"
       mitreTechnique: "T1041"
       tags:
+        - "context:kubernetes"
         - "whitelisted"
         - "network"
         - "anomaly"

@@ -27,6 +27,7 @@ spec:
       mitreTactic: "TA0002"
       mitreTechnique: "T1059"
       tags:
+        - "context:kubernetes"
         - "exec"
         - "signature"
         - "malicious"

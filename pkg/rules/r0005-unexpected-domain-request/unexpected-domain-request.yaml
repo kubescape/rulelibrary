@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0011"
       mitreTechnique: "T1071.004"
       tags:
+        - "context:kubernetes"
         - "dns"
         - "anomaly"
         - "networkprofile"

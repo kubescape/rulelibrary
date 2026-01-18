@@ -26,6 +26,7 @@ spec:
       mitreTactic: "TA0008"
       mitreTechnique: "T1210"
       tags:
+        - "context:kubernetes"
         - "exec"
         - "network"
         - "anomaly"

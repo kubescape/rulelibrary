@@ -24,5 +24,6 @@ spec:
       mitreTactic: "TA0005"
       mitreTechnique: "T1622"
       tags:
+        - "context:kubernetes"
         - "process"
         - "malicious"

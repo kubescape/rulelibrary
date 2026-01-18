@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0004"
       mitreTechnique: "T1611"
       tags:
+        - "context:kubernetes"
         - "unshare"
         - "escape"
         - "unshare"

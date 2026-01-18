@@ -42,6 +42,7 @@ spec:
       mitreTactic: "TA0009"
       mitreTechnique: "T1005"
       tags:
+        - "context:kubernetes"
         - "anomaly"
         - "file"
         - "open"

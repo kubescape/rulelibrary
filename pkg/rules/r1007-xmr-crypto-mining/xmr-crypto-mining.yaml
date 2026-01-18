@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0040"
       mitreTechnique: "T1496"
       tags:
+        - "context:kubernetes"
         - "crypto"
         - "miners"
         - "malicious"

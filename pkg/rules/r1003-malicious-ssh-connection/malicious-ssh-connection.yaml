@@ -24,6 +24,7 @@ spec:
       mitreTactic: "TA0008"
       mitreTechnique: "T1021.001"
       tags:
+        - "context:kubernetes"
         - "ssh"
         - "connection"
         - "port"
