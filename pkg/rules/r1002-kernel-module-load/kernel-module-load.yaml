@@ -25,6 +25,7 @@ spec:
       mitreTechnique: "T1547.006"
       tags:
         - "context:kubernetes"
+        - "context:host"
         - "kmod"
         - "kernel"
         - "module"

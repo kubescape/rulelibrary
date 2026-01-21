@@ -25,6 +25,7 @@ spec:
       mitreTechnique: "T1218"
       tags:
         - "context:kubernetes"
+        - "context:host"
         - "bpf"
         - "ebpf"
         - "applicationprofile"
