@@ -25,6 +25,7 @@ spec:
       mitreTechnique: "T1071.004"
       tags:
         - "context:kubernetes"
+        - "context:host"
         - "network"
         - "crypto"
         - "miners"

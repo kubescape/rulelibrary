@@ -25,6 +25,7 @@ spec:
       mitreTechnique: "T1005"
       tags:
         - "context:kubernetes"
+        - "context:host"
         - "anomaly"
         - "symlink"
         - "applicationprofile"
