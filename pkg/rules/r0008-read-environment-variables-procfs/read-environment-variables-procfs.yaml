@@ -13,7 +13,7 @@ spec:
       description: "Detecting reading environment variables from procfs."
       expressions:
         message: "'Reading environment variables from procfs: ' + event.path + ' by process ' + event.comm"
-        uniqueId: "event.comm + '_' + event.path"
+        uniqueId: "event.comm"
         ruleExpression:
           - eventType: "open"
             expression: >
