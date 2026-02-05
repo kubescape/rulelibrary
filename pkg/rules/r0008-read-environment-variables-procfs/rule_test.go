@@ -18,9 +18,9 @@ import (
 )
 
 // createTestEvent creates a test OpenEvent
-func createTestEvent(containerName, containerID, path string, flags []string) *utils.StructEvent {
+func createTestEvent(containerName, containerID, path string, flags []string, processName string) *utils.StructEvent {
 	return &utils.StructEvent{
-		Comm:        "test-process",
+		Comm:        processName,
 		Container:   containerName,
 		ContainerID: containerID,
 		EventType:   utils.OpenEventType,
@@ -62,31 +62,31 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 	}{
 		{
 			name:          "non-procfs file access",
-			event:         createTestEvent("test", "container123", "/home/user/file.txt", []string{"O_RDONLY"}),
+			event:         createTestEvent("test", "container123", "/home/user/file.txt", []string{"O_RDONLY"}, "cat"),
 			expectTrigger: false,
 			description:   "Should not trigger for non-procfs paths",
 		},
 		{
 			name:          "procfs non-environ file access",
-			event:         createTestEvent("test", "container123", "/proc/1/cmdline", []string{"O_RDONLY"}),
+			event:         createTestEvent("test", "container123", "/proc/1/cmdline", []string{"O_RDONLY"}, "ps"),
 			expectTrigger: false,
 			description:   "Should not trigger for procfs files that are not environ",
 		},
 		{
 			name:          "procfs environ access without profile",
-			event:         createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}),
+			event:         createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "bash"),
 			expectTrigger: true,
 			description:   "Should trigger for procfs environ access without application profile",
 		},
 		{
 			name:          "procfs environ access with different PID without profile",
-			event:         createTestEvent("test", "container123", "/proc/12345/environ", []string{"O_RDONLY"}),
+			event:         createTestEvent("test", "container123", "/proc/12345/environ", []string{"O_RDONLY"}, "python"),
 			expectTrigger: true,
 			description:   "Should trigger for any PID environ access without application profile",
 		},
 		{
 			name:  "procfs environ access with matching profile",
-			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}),
+			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "node"),
 			profile: createTestProfile("test", []v1beta1.OpenCalls{
 				{Path: "/proc/1234/environ", Flags: []string{"O_RDONLY"}},
 			}),
@@ -95,7 +95,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		},
 		{
 			name:  "procfs environ access with dynamic identifier profile",
-			event: createTestEvent("test", "container123", "/proc/567/environ", []string{"O_RDONLY"}),
+			event: createTestEvent("test", "container123", "/proc/567/environ", []string{"O_RDONLY"}, "java"),
 			profile: createTestProfile("test", []v1beta1.OpenCalls{
 				{Path: "/proc/" + dynamicpathdetector.DynamicIdentifier + "/environ", Flags: []string{"O_RDONLY"}},
 			}),
@@ -104,7 +104,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		},
 		{
 			name:  "procfs environ access with non-matching profile",
-			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}),
+			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "curl"),
 			profile: createTestProfile("test", []v1beta1.OpenCalls{
 				{Path: "/home/user/file.txt", Flags: []string{"O_RDONLY"}},
 			}),
@@ -113,7 +113,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		},
 		{
 			name:  "procfs environ access with procfs non-environ profile",
-			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}),
+			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "ruby"),
 			profile: createTestProfile("test", []v1beta1.OpenCalls{
 				{Path: "/proc/1/cmdline", Flags: []string{"O_RDONLY"}},
 			}),
@@ -122,7 +122,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		},
 		{
 			name:          "different container name",
-			event:         createTestEvent("test2", "container123", "/proc/1/environ", []string{"O_RDONLY"}),
+			event:         createTestEvent("test2", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "perl"),
 			profile:       createTestProfile("test", []v1beta1.OpenCalls{{Path: "/proc/1/environ", Flags: []string{"O_RDONLY"}}}),
 			expectTrigger: false,
 			description:   "Should not trigger when no profile exists for the container",
@@ -195,7 +195,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
-				expectedUniqueID := tt.event.Comm + "_" + tt.event.Path
+				expectedUniqueID := tt.event.Comm
 				if uniqueID != expectedUniqueID {
 					t.Errorf("Unique ID evaluation failed. Expected: %s, Got: %s", expectedUniqueID, uniqueID)
 				}
@@ -214,48 +214,56 @@ func TestR0008VariousProcFSPaths(t *testing.T) {
 	tests := []struct {
 		name          string
 		path          string
+		processName   string
 		expectTrigger bool
 		description   string
 	}{
 		{
 			name:          "simple proc environ",
 			path:          "/proc/1/environ",
+			processName:   "sh",
 			expectTrigger: true,
 			description:   "Should trigger for /proc/1/environ",
 		},
 		{
 			name:          "multi-digit PID environ",
 			path:          "/proc/12345/environ",
+			processName:   "go",
 			expectTrigger: true,
 			description:   "Should trigger for multi-digit PID environ",
 		},
 		{
 			name:          "proc self environ",
 			path:          "/proc/self/environ",
+			processName:   "dotnet",
 			expectTrigger: true,
 			description:   "Should trigger for /proc/self/environ",
 		},
 		{
 			name:          "proc path not environ",
 			path:          "/proc/1/cmdline",
+			processName:   "grep",
 			expectTrigger: false,
 			description:   "Should not trigger for non-environ procfs files",
 		},
 		{
 			name:          "environ but not proc",
 			path:          "/home/user/environ",
+			processName:   "vim",
 			expectTrigger: false,
 			description:   "Should not trigger for environ files outside procfs",
 		},
 		{
 			name:          "contains proc but wrong path",
 			path:          "/home/proc/1/environ",
+			processName:   "sed",
 			expectTrigger: false,
 			description:   "Should not trigger for paths containing proc but not starting with /proc/",
 		},
 		{
 			name:          "proc environ with subdirectory",
 			path:          "/proc/1/task/2/environ",
+			processName:   "php",
 			expectTrigger: true,
 			description:   "Should trigger for environ in task subdirectories",
 		},
@@ -264,7 +272,7 @@ func TestR0008VariousProcFSPaths(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create event
-			event := createTestEvent("test", "container123", tt.path, []string{"O_RDONLY"})
+			event := createTestEvent("test", "container123", tt.path, []string{"O_RDONLY"}, tt.processName)
 
 			// Create object cache without profile (to test basic detection)
 			objCache := &objectcachev1.RuleObjectCacheMock{
