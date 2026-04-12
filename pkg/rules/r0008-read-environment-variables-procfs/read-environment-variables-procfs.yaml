@@ -20,6 +20,9 @@ spec:
               event.path.startsWith('/proc/') && 
               event.path.endsWith('/environ') &&
               !ap.was_path_opened_with_suffix(event.containerId, '/environ')
+      state:
+        includePrefixes:
+          - /proc
       profileDependency: 0 # Required
       severity: 5 # Medium
       supportPolicy: false

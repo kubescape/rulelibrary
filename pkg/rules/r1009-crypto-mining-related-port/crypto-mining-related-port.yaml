@@ -17,6 +17,10 @@ spec:
         ruleExpression:
           - eventType: "network"
             expression: "event.proto == 'TCP' && event.pktType == 'OUTGOING' && event.dstPort in [3333, 45700] && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
+      state:
+        ports:
+          - 3333
+          - 45700
       profileDependency: 1
       severity: 3
       supportPolicy: false
