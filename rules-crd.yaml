@@ -26,6 +26,7 @@ spec:
         mitreTactic: "TA0002"
         mitreTechnique: "T1059"
         tags:
+          - "context:kubernetes"
           - "anomaly"
           - "process"
           - "exec"
@@ -65,6 +66,7 @@ spec:
         mitreTactic: "TA0009"
         mitreTechnique: "T1005"
         tags:
+          - "context:kubernetes"
           - "anomaly"
           - "file"
           - "open"
@@ -86,6 +88,7 @@ spec:
         mitreTactic: "TA0002"
         mitreTechnique: "T1059"
         tags:
+          - "context:kubernetes"
           - "anomaly"
           - "syscall"
           - "applicationprofile"
@@ -106,6 +109,7 @@ spec:
         mitreTactic: "TA0002"
         mitreTechnique: "T1059"
         tags:
+          - "context:kubernetes"
           - "anomaly"
           - "capabilities"
           - "applicationprofile"
@@ -126,6 +130,7 @@ spec:
         mitreTactic: "TA0011"
         mitreTechnique: "T1071.004"
         tags:
+          - "context:kubernetes"
           - "dns"
           - "anomaly"
           - "networkprofile"
@@ -144,6 +149,10 @@ spec:
                  (event.path.startsWith('/run/secrets/eks.amazonaws.com/serviceaccount') && event.path.endsWith('/token')) ||
                  (event.path.startsWith('/var/run/secrets/eks.amazonaws.com/serviceaccount') && event.path.endsWith('/token'))) &&
                 !ap.was_path_opened_with_suffix(event.containerId, '/token')
+        state:
+          includePrefixes:
+            - /run/secrets
+            - /var/run/secrets
         profileDependency: 0
         severity: 5
         supportPolicy: false
@@ -151,6 +160,7 @@ spec:
         mitreTactic: "TA0006"
         mitreTechnique: "T1528"
         tags:
+          - "context:kubernetes"
           - "anomaly"
           - "serviceaccount"
           - "applicationprofile"
@@ -173,6 +183,7 @@ spec:
         mitreTactic: "TA0008"
         mitreTechnique: "T1210"
         tags:
+          - "context:kubernetes"
           - "exec"
           - "network"
           - "anomaly"
@@ -183,13 +194,16 @@ spec:
         description: "Detecting reading environment variables from procfs."
         expressions:
           message: "'Reading environment variables from procfs: ' + event.path + ' by process ' + event.comm"
-          uniqueId: "event.comm + '_' + event.path"
+          uniqueId: "event.comm"
           ruleExpression:
             - eventType: "open"
               expression: >
                 event.path.startsWith('/proc/') && 
                 event.path.endsWith('/environ') &&
                 !ap.was_path_opened_with_suffix(event.containerId, '/environ')
+        state:
+          includePrefixes:
+            - /proc
         profileDependency: 0 # Required
         severity: 5 # Medium
         supportPolicy: false
@@ -197,6 +211,7 @@ spec:
         mitreTactic: "TA0006"
         mitreTechnique: "T1552.001"
         tags:
+          - "context:kubernetes"
           - "anomaly"
           - "procfs"
           - "environment"
@@ -218,6 +233,8 @@ spec:
         mitreTactic: "TA0005"
         mitreTechnique: "T1218"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "bpf"
           - "ebpf"
           - "applicationprofile"
@@ -238,6 +255,8 @@ spec:
         mitreTactic: "TA0006"
         mitreTechnique: "T1005"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "files"
           - "anomaly"
           - "applicationprofile"
@@ -258,6 +277,7 @@ spec:
         mitreTactic: "TA0010"
         mitreTechnique: "T1041"
         tags:
+          - "context:kubernetes"
           - "whitelisted"
           - "network"
           - "anomaly"
@@ -282,6 +302,8 @@ spec:
         mitreTactic: "TA0002"
         mitreTechnique: "T1059"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "exec"
           - "signature"
           - "malicious"
@@ -305,6 +327,7 @@ spec:
         mitreTactic: "TA0005"
         mitreTechnique: "T1036"
         tags:
+          - "context:kubernetes"
           - "exec"
           - "malicious"
           - "binary"
@@ -327,6 +350,8 @@ spec:
         mitreTactic: "TA0005"
         mitreTechnique: "T1547.006"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "kmod"
           - "kernel"
           - "module"
@@ -348,6 +373,7 @@ spec:
         mitreTactic: "TA0008"
         mitreTechnique: "T1021.001"
         tags:
+          - "context:kubernetes"
           - "ssh"
           - "connection"
           - "port"
@@ -370,6 +396,7 @@ spec:
         mitreTactic: "TA0002"
         mitreTechnique: "T1059"
         tags:
+          - "context:kubernetes"
           - "exec"
           - "mount"
           - "applicationprofile"
@@ -390,6 +417,8 @@ spec:
         mitreTactic: "TA0005"
         mitreTechnique: "T1055"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "fileless"
           - "execution"
           - "malicious"
@@ -410,6 +439,7 @@ spec:
         mitreTactic: "TA0004"
         mitreTechnique: "T1611"
         tags:
+          - "context:kubernetes"
           - "unshare"
           - "escape"
           - "unshare"
@@ -432,6 +462,7 @@ spec:
         mitreTactic: "TA0040"
         mitreTechnique: "T1496"
         tags:
+          - "context:kubernetes"
           - "crypto"
           - "miners"
           - "malicious"
@@ -452,6 +483,8 @@ spec:
         mitreTactic: "TA0011"
         mitreTechnique: "T1071.004"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "network"
           - "crypto"
           - "miners"
@@ -467,6 +500,10 @@ spec:
           ruleExpression:
             - eventType: "network"
               expression: "event.proto == 'TCP' && event.pktType == 'OUTGOING' && event.dstPort in [3333, 45700] && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
+        state:
+          ports:
+            - 3333
+            - 45700
         profileDependency: 1
         severity: 3
         supportPolicy: false
@@ -474,6 +511,8 @@ spec:
         mitreTactic: "TA0011"
         mitreTechnique: "T1071"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "network"
           - "crypto"
           - "miners"
@@ -496,6 +535,8 @@ spec:
         mitreTactic: "TA0006"
         mitreTechnique: "T1005"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "anomaly"
           - "symlink"
           - "applicationprofile"
@@ -518,6 +559,7 @@ spec:
         mitreTactic: "TA0005"
         mitreTechnique: "T1574.006"
         tags:
+          - "context:kubernetes"
           - "exec"
           - "malicious"
           - "applicationprofile"
@@ -538,6 +580,7 @@ spec:
         mitreTactic: "TA0006"
         mitreTechnique: "T1005"
         tags:
+          - "context:kubernetes"
           - "files"
           - "malicious"
           - "applicationprofile"
@@ -558,6 +601,8 @@ spec:
         mitreTactic: "TA0005"
         mitreTechnique: "T1622"
         tags:
+          - "context:kubernetes"
+          - "context:host"
           - "process"
           - "malicious"
       - name: "Unexpected io_uring Operation Detected"
@@ -577,6 +622,7 @@ spec:
         mitreTactic: "TA0002"
         mitreTechnique: "T1218"
         tags:
+          - "context:kubernetes"
           - "syscalls"
           - "io_uring"
           - "applicationprofile"
