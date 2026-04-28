@@ -1,0 +1,6 @@
+spec:
+  rules:
+    - id: R0001
+      profileDependency: 0
+      profileDataRequired:
+        execs: all

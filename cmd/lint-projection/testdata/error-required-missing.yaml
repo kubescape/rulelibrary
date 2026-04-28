@@ -1,0 +1,4 @@
+spec:
+  rules:
+    - id: R0001
+      profileDependency: 0
