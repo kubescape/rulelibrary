@@ -207,6 +207,48 @@ Defines the detection logic:
 7. **Test both positive and negative scenarios**
 8. **Validate generated YAML** before deployment
 
+## Declaring `profileDataRequired`
+
+When a rule's `profileDependency` is `Required` (0) or `Optional` (1), it must declare
+`profileDataRequired` listing which profile surfaces the rule queries at runtime. Look at
+every CEL guard that passes an event field to a profile helper (`ap.*` / `nn.*`) and
+translate the argument into a pattern under the correct surface key:
+
+| Event field | Surface key |
+|---|---|
+| `event.path` / `event.exepath` (open events) | `opens` |
+| `event.path` / `event.exepath` (exec events) | `execs` |
+| `event.syscallName` | `syscalls` |
+| `event.capName` | `capabilities` |
+| `event.name` (DNS) | `egressDomains` |
+| `event.dstAddr` / `event.dstIp` (network) | `egressAddresses` |
+| `event.endpoint` (HTTP) | `endpoints` |
+
+| Guard operator | Pattern type |
+|---|---|
+| `==` | `exact` |
+| `.startsWith(...)` | `prefix` |
+| `.endsWith(...)` | `suffix` |
+| `.contains(...)` | `contains` |
+
+If the helper receives a fully dynamic argument with no co-located literal guard, declare
+the surface as `all`.
+
+Example:
+
+```yaml
+profileDependency: 0
+profileDataRequired:
+  opens:
+    - exact: "/var/run/docker.sock"
+    - prefix: "/etc/cron.d/"
+  execs: all
+```
+
+The lint at `cmd/lint-projection/` enforces that declarations are present and schema-valid.
+Run it locally with `make lint-projection`. Getting the patterns right is the rule author's
+responsibility — runtime metrics in node-agent catch drift after deployment.
+
 ## Contributing
 
 1. Fork the repository

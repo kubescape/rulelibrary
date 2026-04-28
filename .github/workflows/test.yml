@@ -37,6 +37,9 @@ jobs:
       
     - name: Run tests
       run: go test ./...
+
+    - name: Lint projection declarations
+      run: make lint-projection
       
     - name: Run tests with coverage
       run: go test -coverprofile=coverage.out ./...
