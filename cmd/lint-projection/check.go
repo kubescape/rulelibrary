@@ -76,7 +76,7 @@ func checkRule(path string, line int, id string, dep armotypes.ProfileDependency
 				Message: fmt.Sprintf("rule has profileDependency=%v; profileDataRequired must be present and declare at least one surface", profileDependencyName(dep))})
 		}
 	case armotypes.NotRequired:
-		if pdr != nil && !pdr.IsEmpty() {
+		if pdr != nil {
 			out = append(out, Finding{File: path, Line: line, RuleID: id, Severity: SeverityWarn, Check: "C4",
 				Message: "rule has profileDependency=NotRequired but declares profileDataRequired; if the rule does not query profile data, remove the declaration"})
 		}
