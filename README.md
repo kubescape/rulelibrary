@@ -249,6 +249,9 @@ The lint at `cmd/lint-projection/` enforces that declarations are present and sc
 Run it locally with `make lint-projection`. Getting the patterns right is the rule author's
 responsibility — runtime metrics in node-agent catch drift after deployment.
 
+Rules with `profileDependency: 2` (NotRequired) must **not** declare `profileDataRequired`;
+the lint emits a warning if they do.
+
 ## Contributing
 
 1. Fork the repository
