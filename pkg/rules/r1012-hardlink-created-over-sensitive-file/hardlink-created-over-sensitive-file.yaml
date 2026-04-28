@@ -18,6 +18,10 @@ spec:
           - eventType: "hardlink"
             expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
       profileDependency: 1
+      profileDataRequired:
+        opens:
+          - prefix: "/etc/shadow"
+          - prefix: "/etc/sudoers"
       severity: 5
       supportPolicy: true
       isTriggerAlert: true

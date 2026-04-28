@@ -18,6 +18,9 @@ spec:
           - eventType: "open"
             expression: "event.path.startsWith('/etc/shadow') && !ap.was_path_opened(event.containerId, event.path)"
       profileDependency: 1
+      profileDataRequired:
+        opens:
+          - prefix: "/etc/shadow"
       severity: 5
       supportPolicy: false
       isTriggerAlert: true

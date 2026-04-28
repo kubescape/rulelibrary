@@ -18,6 +18,8 @@ spec:
           - eventType: "ssh"
             expression: "dyn(event.srcPort) >= 32768 && dyn(event.srcPort) <= 60999 && !(dyn(event.dstPort) in [22, 2022]) && !nn.was_address_in_egress(event.containerId, event.dstIp)"
       profileDependency: 1
+      profileDataRequired:
+        egressAddresses: all
       severity: 5
       supportPolicy: false
       isTriggerAlert: true

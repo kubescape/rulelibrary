@@ -20,6 +20,9 @@ spec:
           - eventType: "open"
             expression: "event.path == '/etc/ld.so.preload' && has(event.flagsRaw) && event.flagsRaw != 0"
       profileDependency: 1
+      profileDataRequired:
+        opens:
+          - exact: "/etc/ld.so.preload"
       severity: 5
       supportPolicy: true
       isTriggerAlert: true

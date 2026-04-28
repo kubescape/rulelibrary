@@ -24,6 +24,9 @@ spec:
         includePrefixes:
           - /proc
       profileDependency: 0 # Required
+      profileDataRequired:
+        opens:
+          - suffix: "/environ"
       severity: 5 # Medium
       supportPolicy: false
       isTriggerAlert: true

@@ -18,6 +18,8 @@ spec:
           - eventType: "dns"
             expression: "!event.name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(event.containerId, event.name)"
       profileDependency: 0
+      profileDataRequired:
+        egressDomains: all
       severity: 1
       supportPolicy: false
       isTriggerAlert: false

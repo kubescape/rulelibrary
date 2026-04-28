@@ -18,6 +18,8 @@ spec:
           - eventType: "capabilities"
             expression: "!ap.was_capability_used(event.containerId, event.capName)"
       profileDependency: 0
+      profileDataRequired:
+        capabilities: all
       severity: 1
       supportPolicy: false
       isTriggerAlert: false

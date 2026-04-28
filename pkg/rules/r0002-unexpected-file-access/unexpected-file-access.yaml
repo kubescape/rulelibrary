@@ -36,6 +36,20 @@ spec:
               &&
               !ap.was_path_opened(event.containerId, event.path)
       profileDependency: 0
+      profileDataRequired:
+        opens:
+          - prefix: "/etc/"
+          - prefix: "/var/log/"
+          - prefix: "/var/run/"
+          - prefix: "/run/"
+          - prefix: "/var/spool/cron/"
+          - prefix: "/var/www/"
+          - prefix: "/var/lib/"
+          - prefix: "/opt/"
+          - prefix: "/usr/local/"
+          - prefix: "/app/"
+          - exact: "/.dockerenv"
+          - exact: "/proc/self/environ"
       severity: 1
       supportPolicy: false
       isTriggerAlert: false

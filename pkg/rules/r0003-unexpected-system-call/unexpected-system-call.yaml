@@ -18,6 +18,8 @@ spec:
           - eventType: "syscall"
             expression: "!ap.was_syscall_used(event.containerId, event.syscallName)"
       profileDependency: 0
+      profileDataRequired:
+        syscalls: all
       severity: 1
       supportPolicy: false
       isTriggerAlert: false

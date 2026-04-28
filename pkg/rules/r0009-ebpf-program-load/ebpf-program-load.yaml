@@ -18,6 +18,9 @@ spec:
           - eventType: "bpf"
             expression: "event.cmd == uint(5) && !ap.was_syscall_used(event.containerId, 'bpf')"
       profileDependency: 1
+      profileDataRequired:
+        syscalls:
+          - exact: "bpf"
       severity: 5
       supportPolicy: false
       isTriggerAlert: true

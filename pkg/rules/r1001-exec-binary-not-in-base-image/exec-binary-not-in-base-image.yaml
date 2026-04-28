@@ -21,6 +21,8 @@ spec:
                event.pupperlayer == true) &&
               !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))
       profileDependency: 1
+      profileDataRequired:
+        execs: all
       severity: 8
       supportPolicy: false
       isTriggerAlert: true
