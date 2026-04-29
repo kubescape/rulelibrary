@@ -1,0 +1,7 @@
+spec:
+  rules:
+    - id: R1000
+      profileDependency: 2
+      profileDataRequired:
+        opens:
+          - exact: "/a"

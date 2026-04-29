@@ -1,0 +1,7 @@
+spec:
+  rules:
+    - id: R0010
+      profileDependency: 1
+      profileDataRequired:
+        opens:
+          - prefix: "/etc/shadow"

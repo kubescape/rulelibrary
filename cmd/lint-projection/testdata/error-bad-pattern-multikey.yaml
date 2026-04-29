@@ -1,0 +1,8 @@
+spec:
+  rules:
+    - id: R0002
+      profileDependency: 0
+      profileDataRequired:
+        opens:
+          - exact: "/a"
+            prefix: "/b"

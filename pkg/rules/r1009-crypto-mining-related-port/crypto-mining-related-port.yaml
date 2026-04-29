@@ -22,6 +22,8 @@ spec:
           - 3333
           - 45700
       profileDependency: 1
+      profileDataRequired:
+        egressAddresses: all
       severity: 3
       supportPolicy: false
       isTriggerAlert: false
