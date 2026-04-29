@@ -22,6 +22,7 @@ func TestLintFile(t *testing.T) {
 		{"testdata/error-bad-pattern-multikey.yaml", []Severity{SeverityError}, []string{"C2", "exactly one"}},
 		{"testdata/error-field-empty.yaml", []Severity{SeverityError}, []string{"C2", "at least one pattern"}},
 		{"testdata/warn-notrequired-with-decl.yaml", []Severity{SeverityWarn}, []string{"C4"}},
+		{"testdata/error-bad-dependency-value.yaml", []Severity{SeverityError}, []string{"C5", "unrecognized profileDependency"}},
 	}
 	for _, c := range cases {
 		t.Run(c.path, func(t *testing.T) {

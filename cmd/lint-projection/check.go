@@ -80,6 +80,9 @@ func checkRule(path string, line int, id string, dep armotypes.ProfileDependency
 			out = append(out, Finding{File: path, Line: line, RuleID: id, Severity: SeverityWarn, Check: "C4",
 				Message: "rule has profileDependency=NotRequired but declares profileDataRequired; if the rule does not query profile data, remove the declaration"})
 		}
+	default:
+		out = append(out, Finding{File: path, Line: line, RuleID: id, Severity: SeverityError, Check: "C5",
+			Message: fmt.Sprintf("rule has unrecognized profileDependency value %d; must be 0 (Required), 1 (Optional), or 2 (NotRequired)", int(dep))})
 	}
 	if pdr != nil && !pdr.IsEmpty() {
 		if err := pdr.Validate(); err != nil {
