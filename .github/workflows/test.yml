@@ -53,9 +53,7 @@ jobs:
         fail_ci_if_error: false
         
     - name: Generate Rules CRD
-      run: |
-        chmod +x gen.sh
-        ./gen.sh
+      run: make generate-rules-crd
         
     - name: Upload Rules CRD as artifact
       uses: actions/upload-artifact@v4

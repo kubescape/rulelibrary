@@ -20,6 +20,8 @@ spec:
             - eventType: "exec"
               expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))"
         profileDependency: 0
+        profileDataRequired:
+          execs: all
         severity: 1
         supportPolicy: false
         isTriggerAlert: true
@@ -60,6 +62,20 @@ spec:
                 &&
                 !ap.was_path_opened(event.containerId, event.path)
         profileDependency: 0
+        profileDataRequired:
+          opens:
+            - prefix: "/etc/"
+            - prefix: "/var/log/"
+            - prefix: "/var/run/"
+            - prefix: "/run/"
+            - prefix: "/var/spool/cron/"
+            - prefix: "/var/www/"
+            - prefix: "/var/lib/"
+            - prefix: "/opt/"
+            - prefix: "/usr/local/"
+            - prefix: "/app/"
+            - exact: "/.dockerenv"
+            - exact: "/proc/self/environ"
         severity: 1
         supportPolicy: false
         isTriggerAlert: false
@@ -82,6 +98,8 @@ spec:
             - eventType: "syscall"
               expression: "!ap.was_syscall_used(event.containerId, event.syscallName)"
         profileDependency: 0
+        profileDataRequired:
+          syscalls: all
         severity: 1
         supportPolicy: false
         isTriggerAlert: false
@@ -103,6 +121,8 @@ spec:
             - eventType: "capabilities"
               expression: "!ap.was_capability_used(event.containerId, event.capName)"
         profileDependency: 0
+        profileDataRequired:
+          capabilities: all
         severity: 1
         supportPolicy: false
         isTriggerAlert: false
@@ -124,6 +144,8 @@ spec:
             - eventType: "dns"
               expression: "!event.name.endsWith('.svc.cluster.local.') && !nn.is_domain_in_egress(event.containerId, event.name)"
         profileDependency: 0
+        profileDataRequired:
+          egressDomains: all
         severity: 1
         supportPolicy: false
         isTriggerAlert: false
@@ -154,6 +176,9 @@ spec:
             - /run/secrets
             - /var/run/secrets
         profileDependency: 0
+        profileDataRequired:
+          opens:
+            - suffix: "/token"
         severity: 5
         supportPolicy: false
         isTriggerAlert: true
@@ -177,6 +202,9 @@ spec:
             - eventType: "network"
               expression: "event.pktType == 'OUTGOING' && k8s.is_api_server_address(event.dstAddr) && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
         profileDependency: 0
+        profileDataRequired:
+          execs: all
+          egressAddresses: all
         severity: 5 # Medium
         supportPolicy: false
         isTriggerAlert: false
@@ -205,6 +233,9 @@ spec:
           includePrefixes:
             - /proc
         profileDependency: 0 # Required
+        profileDataRequired:
+          opens:
+            - suffix: "/environ"
         severity: 5 # Medium
         supportPolicy: false
         isTriggerAlert: true
@@ -227,6 +258,9 @@ spec:
             - eventType: "bpf"
               expression: "event.cmd == uint(5) && !ap.was_syscall_used(event.containerId, 'bpf')"
         profileDependency: 1
+        profileDataRequired:
+          syscalls:
+            - exact: "bpf"
         severity: 5
         supportPolicy: false
         isTriggerAlert: true
@@ -249,6 +283,9 @@ spec:
             - eventType: "open"
               expression: "event.path.startsWith('/etc/shadow') && !ap.was_path_opened(event.containerId, event.path)"
         profileDependency: 1
+        profileDataRequired:
+          opens:
+            - prefix: "/etc/shadow"
         severity: 5
         supportPolicy: false
         isTriggerAlert: true
@@ -271,6 +308,8 @@ spec:
             - eventType: "network"
               expression: "event.pktType == 'OUTGOING' && !net.is_private_ip(event.dstAddr) && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
         profileDependency: 0
+        profileDataRequired:
+          egressAddresses: all
         severity: 5 # Medium
         supportPolicy: false
         isTriggerAlert: false
@@ -321,6 +360,8 @@ spec:
                  event.pupperlayer == true) &&
                 !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))
         profileDependency: 1
+        profileDataRequired:
+          execs: all
         severity: 8
         supportPolicy: false
         isTriggerAlert: true
@@ -367,6 +408,8 @@ spec:
             - eventType: "ssh"
               expression: "dyn(event.srcPort) >= 32768 && dyn(event.srcPort) <= 60999 && !(dyn(event.dstPort) in [22, 2022]) && !nn.was_address_in_egress(event.containerId, event.dstIp)"
         profileDependency: 1
+        profileDataRequired:
+          egressAddresses: all
         severity: 5
         supportPolicy: false
         isTriggerAlert: true
@@ -390,6 +433,8 @@ spec:
             - eventType: "exec"
               expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && k8s.get_container_mount_paths(event.namespace, event.podName, event.containerName).exists(mount, event.exepath.startsWith(mount) || parse.get_exec_path(event.args, event.comm).startsWith(mount))"
         profileDependency: 1
+        profileDataRequired:
+          execs: all
         severity: 5
         supportPolicy: false
         isTriggerAlert: true
@@ -432,7 +477,10 @@ spec:
           ruleExpression:
             - eventType: "unshare"
               expression: "event.pcomm != 'runc' && !ap.was_syscall_used(event.containerId, 'unshare')"
-        profileDependency: 2
+        profileDependency: 1
+        profileDataRequired:
+          syscalls:
+            - exact: "unshare"
         severity: 5
         supportPolicy: false
         isTriggerAlert: true
@@ -505,6 +553,8 @@ spec:
             - 3333
             - 45700
         profileDependency: 1
+        profileDataRequired:
+          egressAddresses: all
         severity: 3
         supportPolicy: false
         isTriggerAlert: false
@@ -529,6 +579,10 @@ spec:
             - eventType: "symlink"
               expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
         profileDependency: 1
+        profileDataRequired:
+          opens:
+            - prefix: "/etc/shadow"
+            - prefix: "/etc/sudoers"
         severity: 5
         supportPolicy: true
         isTriggerAlert: true
@@ -553,6 +607,9 @@ spec:
             - eventType: "open"
               expression: "event.path == '/etc/ld.so.preload' && has(event.flagsRaw) && event.flagsRaw != 0"
         profileDependency: 1
+        profileDataRequired:
+          opens:
+            - exact: "/etc/ld.so.preload"
         severity: 5
         supportPolicy: true
         isTriggerAlert: true
@@ -574,6 +631,10 @@ spec:
             - eventType: "hardlink"
               expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
         profileDependency: 1
+        profileDataRequired:
+          opens:
+            - prefix: "/etc/shadow"
+            - prefix: "/etc/sudoers"
         severity: 5
         supportPolicy: true
         isTriggerAlert: true
@@ -616,6 +677,8 @@ spec:
             - eventType: "iouring"
               expression: "true"
         profileDependency: 0
+        profileDataRequired:
+          syscalls: all
         severity: 5
         supportPolicy: true
         isTriggerAlert: true
