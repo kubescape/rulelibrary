@@ -106,12 +106,13 @@ go test -v ./pkg/rules/r0001-unexpected-process-launched/
 
 ## Rule Generation Script
 
-The `gen.sh` script automatically combines all individual rule YAML files into a single CRD instance.
+The `gen.sh` script automatically combines all individual rule YAML files into a single CRD instance. The
+recommended entrypoint is the Make target below, which wraps the script.
 
 ### Usage
 
 ```bash
-./gen.sh
+make generate-rules-crd
 ```
 
 ### What it does
@@ -153,7 +154,7 @@ spec:
 2. **Write the rule YAML** with proper CEL expressions
 3. **Add comprehensive tests** in `rule_test.go`
 4. **Test your rule** with `go test -v ./pkg/rules/your-rule/`
-5. **Generate the combined CRD** with `./gen.sh`
+5. **Generate the combined CRD** with `make generate-rules-crd`
 6. **Deploy** the generated `rules-crd.yaml` to your Kubernetes cluster
 
 ## Testing
@@ -170,7 +171,7 @@ go test -v ./pkg/rules/r0001-unexpected-process-launched/
 
 ### Test the generation script
 ```bash
-./gen.sh
+make generate-rules-crd
 # Check the generated rules-crd.yaml file
 ```
 
