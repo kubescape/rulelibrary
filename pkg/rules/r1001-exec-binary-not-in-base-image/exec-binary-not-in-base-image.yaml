@@ -19,7 +19,8 @@ spec:
             expression: >
               (event.upperlayer == true ||
                event.pupperlayer == true) &&
-              !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))
+              !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) &&
+              (event.exepath == "" || !ap.was_executed(event.containerId, event.exepath))
       profileDependency: 1
       profileDataRequired:
         execs: all
