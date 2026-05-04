@@ -217,3 +217,175 @@ func TestR1004ExecFromMount(t *testing.T) {
 		t.Fatalf("Rule evaluation should have failed for exec from system path")
 	}
 }
+
+// TestR1004ExepathFallback verifies the rule's exepath fallback for the AP lookup.
+// All cases use mount paths /var/test1 or /var/test2 so the mount clause is satisfied;
+// the test isolates the AP lookup behavior. See R0001 ExepathFallback test for full motivation.
+func TestR1004ExepathFallback(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("exec-from-mount.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load rule: %v", err)
+	}
+
+	podSpec := &corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name: "test",
+				VolumeMounts: []corev1.VolumeMount{
+					{Name: "test-volume", MountPath: "/var/test1"},
+					{Name: "test-volume-2", MountPath: "/var/test2"},
+				},
+			},
+		},
+		Volumes: []corev1.Volume{
+			{
+				Name: "test-volume",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{Path: "/var/test1"},
+				},
+			},
+			{
+				Name: "test-volume-2",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{Path: "/var/test2"},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		event         *utils.StructEvent
+		profileExecs  []v1beta1.ExecCalls
+		expectTrigger bool
+		description   string
+	}{
+		{
+			name: "relative argv[0] suppressed via exepath (both under mount)",
+			event: &utils.StructEvent{
+				Args:        []string{"./python"},
+				Comm:        "python",
+				Container:   "test",
+				ContainerID: "test-container",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "/var/test1/python3",
+				Namespace:   "test-namespace",
+				Pid:         1234,
+				Pod:         "test-pod",
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/var/test1/python3", Args: []string{"./python"}},
+			},
+			expectTrigger: false,
+			description:   "argv[0]='./python' misses AP, but exepath '/var/test1/python3' matches",
+		},
+		{
+			name: "empty argv[0] (fexecve) suppressed via exepath",
+			event: &utils.StructEvent{
+				Args:        []string{"", "root"},
+				Comm:        "unix_chkpwd",
+				Container:   "test",
+				ContainerID: "test-container",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "/var/test1/unix_chkpwd",
+				Namespace:   "test-namespace",
+				Pid:         1234,
+				Pod:         "test-pod",
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/var/test1/unix_chkpwd", Args: []string{"", "root"}},
+			},
+			expectTrigger: false,
+			description:   "argv[0]='' misses AP, but exepath '/var/test1/unix_chkpwd' matches",
+		},
+		{
+			name: "empty exepath fallback guard — argv[0] match suppresses",
+			event: &utils.StructEvent{
+				Args:        []string{"/var/test2/foo"},
+				Comm:        "foo",
+				Container:   "test",
+				ContainerID: "test-container",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "",
+				Namespace:   "test-namespace",
+				Pid:         1234,
+				Pod:         "test-pod",
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/var/test2/foo", Args: []string{"/var/test2/foo"}},
+			},
+			expectTrigger: false,
+			description:   "exepath='' must not poll the AP; argv[0] '/var/test2/foo' alone suffices to suppress (mount clause satisfied via argv[0])",
+		},
+		{
+			name: "both miss — rule still fires",
+			event: &utils.StructEvent{
+				Args:        []string{"./newbinary"},
+				Comm:        "newbinary",
+				Container:   "test",
+				ContainerID: "test-container",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "/var/test1/newbinary",
+				Namespace:   "test-namespace",
+				Pid:         1234,
+				Pod:         "test-pod",
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/var/test1/something-else", Args: []string{"/var/test1/something-else"}},
+			},
+			expectTrigger: true,
+			description:   "neither argv[0] nor exepath match AP; mount clause satisfied via exepath — must still fire",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			objCache := &objectcachev1.RuleObjectCacheMock{
+				ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+			}
+			objCache.SetSharedContainerData("test-container", &objectcache.WatchedContainerData{
+				ContainerType: objectcache.Container,
+				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+					objectcache.Container: {
+						{Name: "test"},
+					},
+				},
+			})
+			objCache.SetPodSpec(podSpec)
+
+			profile := &v1beta1.ApplicationProfile{
+				Spec: v1beta1.ApplicationProfileSpec{
+					Containers: []v1beta1.ApplicationProfileContainer{
+						{
+							Name:  "test",
+							Execs: tt.profileExecs,
+						},
+					},
+				},
+			}
+			objCache.SetApplicationProfile(profile)
+
+			celEngine, err := celengine.NewCEL(objCache, config.Config{
+				CelConfigCache: cache.FunctionCacheConfig{
+					MaxSize: 1000,
+					TTL:     1 * time.Microsecond,
+				},
+			})
+			if err != nil {
+				t.Fatalf("Failed to create CEL engine: %v", err)
+			}
+
+			enrichedEvent := &events.EnrichedEvent{Event: tt.event}
+
+			time.Sleep(1 * time.Millisecond)
+
+			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
+			if err != nil {
+				t.Fatalf("Failed to evaluate rule: %v", err)
+			}
+			if triggered != tt.expectTrigger {
+				t.Errorf("expected trigger=%v, got trigger=%v. %s", tt.expectTrigger, triggered, tt.description)
+			}
+		})
+	}
+}

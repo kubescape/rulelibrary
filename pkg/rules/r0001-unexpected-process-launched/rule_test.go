@@ -120,6 +120,149 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 	}
 }
 
+// TestR0001ExepathFallback verifies the rule's exepath fallback logic.
+//
+// parse.get_exec_path(event.args, event.comm) returns argv[0] verbatim, which
+// can disagree with the kernel-authoritative event.exepath in two real cases:
+//   - relative argv[0] (e.g. "./python") — exepath is the resolved absolute path
+//   - empty argv[0] from fexecve / AT_EMPTY_PATH — exepath is the resolved path
+//
+// The rule now also checks event.exepath (with an empty-string guard) so the
+// rule's AP lookup matches the recorder's storage key.
+func TestR0001ExepathFallback(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("unexpected-process-launched.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load rule: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		event         *utils.StructEvent
+		profileExecs  []v1beta1.ExecCalls
+		expectTrigger bool
+		description   string
+	}{
+		{
+			name: "relative argv[0] suppressed via exepath",
+			event: &utils.StructEvent{
+				Args:        []string{"./python"},
+				Comm:        "python",
+				Container:   "test",
+				ContainerID: "test",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "/usr/bin/python3",
+				Pcomm:       "bash",
+				Pid:         1234,
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/usr/bin/python3", Args: []string{"./python"}},
+			},
+			expectTrigger: false,
+			description:   "argv[0]='./python' misses AP, but exepath '/usr/bin/python3' matches",
+		},
+		{
+			name: "empty argv[0] (fexecve) suppressed via exepath",
+			event: &utils.StructEvent{
+				Args:        []string{"", "root"},
+				Comm:        "unix_chkpwd",
+				Container:   "test",
+				ContainerID: "test",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "/usr/sbin/unix_chkpwd",
+				Pcomm:       "sshd",
+				Pid:         1234,
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/usr/sbin/unix_chkpwd", Args: []string{"", "root"}},
+			},
+			expectTrigger: false,
+			description:   "argv[0]='' misses AP, but exepath '/usr/sbin/unix_chkpwd' matches",
+		},
+		{
+			name: "empty exepath fallback guard — argv[0] match suppresses",
+			event: &utils.StructEvent{
+				Args:        []string{"/usr/bin/foo"},
+				Comm:        "foo",
+				Container:   "test",
+				ContainerID: "test",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "",
+				Pcomm:       "bash",
+				Pid:         1234,
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/usr/bin/foo", Args: []string{"/usr/bin/foo"}},
+			},
+			expectTrigger: false,
+			description:   "exepath='' must not poll the AP; argv[0] '/usr/bin/foo' alone suffices to suppress",
+		},
+		{
+			name: "both miss — rule still fires",
+			event: &utils.StructEvent{
+				Args:        []string{"./newbinary"},
+				Comm:        "newbinary",
+				Container:   "test",
+				ContainerID: "test",
+				EventType:   utils.ExecveEventType,
+				ExePath:     "/tmp/newbinary",
+				Pcomm:       "bash",
+				Pid:         1234,
+			},
+			profileExecs: []v1beta1.ExecCalls{
+				{Path: "/usr/bin/something-else", Args: []string{"/usr/bin/something-else"}},
+			},
+			expectTrigger: true,
+			description:   "neither argv[0] nor exepath match the AP — must still fire",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			objCache := &objectcachev1.RuleObjectCacheMock{
+				ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+			}
+			objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
+				ContainerType: objectcache.Container,
+				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+					objectcache.Container: {
+						{Name: "test"},
+					},
+				},
+			})
+
+			profile := &v1beta1.ApplicationProfile{}
+			profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
+				Name:  "test",
+				Execs: tt.profileExecs,
+			})
+			objCache.SetApplicationProfile(profile)
+
+			celEngine, err := celengine.NewCEL(objCache, config.Config{
+				CelConfigCache: cache.FunctionCacheConfig{
+					MaxSize: 1000,
+					TTL:     1 * time.Microsecond,
+				},
+			})
+			if err != nil {
+				t.Fatalf("Failed to create CEL engine: %v", err)
+			}
+
+			enrichedEvent := &events.EnrichedEvent{Event: tt.event}
+
+			// Sleep to ensure the cache from prior test runs is expired.
+			time.Sleep(1 * time.Millisecond)
+
+			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
+			if err != nil {
+				t.Fatalf("Failed to evaluate rule: %v", err)
+			}
+			if triggered != tt.expectTrigger {
+				t.Errorf("expected trigger=%v, got trigger=%v. %s", tt.expectTrigger, triggered, tt.description)
+			}
+		})
+	}
+}
+
 func BenchmarkEvaluateRuleNative(b *testing.B) {
 	objCache := &objectcachev1.RuleObjectCacheMock{
 		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),

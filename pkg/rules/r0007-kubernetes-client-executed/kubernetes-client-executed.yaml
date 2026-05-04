@@ -16,7 +16,7 @@ spec:
         uniqueId: "eventType == 'exec' ? 'exec_' + event.comm : 'network_' + event.dstAddr"
         ruleExpression:
           - eventType: "exec"
-            expression: "(event.comm == 'kubectl' || event.exepath.endsWith('/kubectl')) && !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))"
+            expression: "(event.comm == 'kubectl' || event.exepath.endsWith('/kubectl')) && !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && (event.exepath == \"\" || !ap.was_executed(event.containerId, event.exepath))"
           - eventType: "network"
             expression: "event.pktType == 'OUTGOING' && k8s.is_api_server_address(event.dstAddr) && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
       profileDependency: 0

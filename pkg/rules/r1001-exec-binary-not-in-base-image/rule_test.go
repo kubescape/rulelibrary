@@ -206,6 +206,103 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 	}
 }
 
+// TestR1001ExepathFallback verifies the rule's exepath fallback for the AP lookup.
+// See R0001 ExepathFallback test for full motivation. UpperLayer is set so the
+// upper-layer clause is satisfied and the test isolates the AP lookup behavior.
+func TestR1001ExepathFallback(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("exec-binary-not-in-base-image.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load rule spec: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		event         *utils.StructEvent
+		profile       *v1beta1.ApplicationProfile
+		expectTrigger bool
+		description   string
+	}{
+		{
+			name:  "relative argv[0] suppressed via exepath",
+			event: createTestExecEvent("test", "container123", "python", "/usr/bin/python3", "/", []string{"./python"}, true, false),
+			profile: createTestProfile("test", []v1beta1.ExecCalls{
+				{Path: "/usr/bin/python3", Args: []string{"./python"}},
+			}),
+			expectTrigger: false,
+			description:   "argv[0]='./python' misses AP, but exepath '/usr/bin/python3' matches",
+		},
+		{
+			name:  "empty argv[0] (fexecve) suppressed via exepath",
+			event: createTestExecEvent("test", "container123", "unix_chkpwd", "/usr/sbin/unix_chkpwd", "/", []string{"", "root"}, true, false),
+			profile: createTestProfile("test", []v1beta1.ExecCalls{
+				{Path: "/usr/sbin/unix_chkpwd", Args: []string{"", "root"}},
+			}),
+			expectTrigger: false,
+			description:   "argv[0]='' misses AP, but exepath '/usr/sbin/unix_chkpwd' matches",
+		},
+		{
+			name:  "empty exepath fallback guard — argv[0] match suppresses",
+			event: createTestExecEvent("test", "container123", "foo", "", "/", []string{"/usr/bin/foo"}, true, false),
+			profile: createTestProfile("test", []v1beta1.ExecCalls{
+				{Path: "/usr/bin/foo", Args: []string{"/usr/bin/foo"}},
+			}),
+			expectTrigger: false,
+			description:   "exepath='' must not poll the AP; argv[0] '/usr/bin/foo' alone suffices to suppress",
+		},
+		{
+			name:  "both miss — rule still fires",
+			event: createTestExecEvent("test", "container123", "newbinary", "/tmp/newbinary", "/", []string{"./newbinary"}, true, false),
+			profile: createTestProfile("test", []v1beta1.ExecCalls{
+				{Path: "/usr/bin/something-else", Args: []string{"/usr/bin/something-else"}},
+			}),
+			expectTrigger: true,
+			description:   "neither argv[0] nor exepath match the AP — must still fire",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			objCache := &objectcachev1.RuleObjectCacheMock{
+				ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+			}
+			objCache.SetSharedContainerData("container123", &objectcache.WatchedContainerData{
+				ContainerType: objectcache.Container,
+				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+					objectcache.Container: {
+						{Name: tt.event.Container},
+					},
+				},
+			})
+
+			if tt.profile != nil {
+				objCache.SetApplicationProfile(tt.profile)
+			}
+
+			celEngine, err := celengine.NewCEL(objCache, config.Config{
+				CelConfigCache: cache.FunctionCacheConfig{
+					MaxSize: 1000,
+					TTL:     1 * time.Microsecond,
+				},
+			})
+			if err != nil {
+				t.Fatalf("Failed to create CEL engine: %v", err)
+			}
+
+			enrichedEvent := &events.EnrichedEvent{Event: tt.event}
+
+			time.Sleep(1 * time.Millisecond)
+
+			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
+			if err != nil {
+				t.Fatalf("Failed to evaluate rule: %v", err)
+			}
+			if triggered != tt.expectTrigger {
+				t.Errorf("expected trigger=%v, got trigger=%v. %s", tt.expectTrigger, triggered, tt.description)
+			}
+		})
+	}
+}
+
 func TestR1001UpperLayerVariants(t *testing.T) {
 	// Load rule spec
 	ruleSpec, err := common.LoadRuleFromYAML("exec-binary-not-in-base-image.yaml")
