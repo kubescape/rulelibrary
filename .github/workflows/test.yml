@@ -52,6 +52,12 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
         
+    - name: Install bats
+      run: sudo apt-get update && sudo apt-get install -y bats
+
+    - name: Run README check tests
+      run: bats scripts/check_readmes_test.bats
+
     - name: Generate Rules CRD
       run: make generate-rules-crd
         
