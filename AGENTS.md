@@ -18,5 +18,3 @@ exits non-zero if any rule under `pkg/rules/` is missing or has an empty
 `README.md`. The README content is consumed downstream by the
 `armo-rulelibrary` build (which embeds this repo as a submodule) and
 shipped as the `documentation` field on each rule.
-
-See: `shared-designs-and-docs/rule-improvement-epic/rule-documentation-field-design.md`

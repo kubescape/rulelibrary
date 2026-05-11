@@ -53,7 +53,7 @@ jobs:
         fail_ci_if_error: false
         
     - name: Install bats
-      run: sudo apt-get update && sudo apt-get install -y bats
+      uses: bats-core/bats-action@3.0.0
 
     - name: Run README check tests
       run: bats scripts/check_readmes_test.bats

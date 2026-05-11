@@ -51,6 +51,10 @@ fi
 
 # Enforce that every rule directory has a non-empty README.md.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "$SCRIPT_DIR/scripts/check_readmes.sh" ]; then
+  echo "Error: scripts/check_readmes.sh not found relative to gen.sh" >&2
+  exit 1
+fi
 bash "$SCRIPT_DIR/scripts/check_readmes.sh" "$RULES_DIR"
 
 # Find all YAML files in rule directories
