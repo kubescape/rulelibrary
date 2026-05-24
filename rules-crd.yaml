@@ -18,7 +18,7 @@ spec:
           uniqueId: "event.comm + '_' + event.exepath"
           ruleExpression:
             - eventType: "exec"
-              expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))"
+              expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && (event.exepath == \"\" || !ap.was_executed(event.containerId, event.exepath))"
         profileDependency: 0
         profileDataRequired:
           execs: all
@@ -198,7 +198,7 @@ spec:
           uniqueId: "eventType == 'exec' ? 'exec_' + event.comm : 'network_' + event.dstAddr"
           ruleExpression:
             - eventType: "exec"
-              expression: "(event.comm == 'kubectl' || event.exepath.endsWith('/kubectl')) && !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))"
+              expression: "(event.comm == 'kubectl' || event.exepath.endsWith('/kubectl')) && !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && (event.exepath == \"\" || !ap.was_executed(event.containerId, event.exepath))"
             - eventType: "network"
               expression: "event.pktType == 'OUTGOING' && k8s.is_api_server_address(event.dstAddr) && !nn.was_address_in_egress(event.containerId, event.dstAddr)"
         profileDependency: 0
@@ -358,7 +358,8 @@ spec:
               expression: >
                 (event.upperlayer == true ||
                  event.pupperlayer == true) &&
-                !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))
+                !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) &&
+                (event.exepath == "" || !ap.was_executed(event.containerId, event.exepath))
         profileDependency: 1
         profileDataRequired:
           execs: all
@@ -431,7 +432,7 @@ spec:
           uniqueId: "event.comm"
           ruleExpression:
             - eventType: "exec"
-              expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && k8s.get_container_mount_paths(event.namespace, event.podName, event.containerName).exists(mount, event.exepath.startsWith(mount) || parse.get_exec_path(event.args, event.comm).startsWith(mount))"
+              expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && (event.exepath == \"\" || !ap.was_executed(event.containerId, event.exepath)) && k8s.get_container_mount_paths(event.namespace, event.podName, event.containerName).exists(mount, event.exepath.startsWith(mount) || parse.get_exec_path(event.args, event.comm).startsWith(mount))"
         profileDependency: 1
         profileDataRequired:
           execs: all
@@ -689,3 +690,43 @@ spec:
           - "syscalls"
           - "io_uring"
           - "applicationprofile"
+      - name: "Exec to pod"
+        enabled: true
+        id: "R2000"
+        description: "Detects exec operations on pods via the Kubernetes admission webhook (PodExecOptions CONNECT)"
+        expressions:
+          message: "'Exec to pod: ' + event.Name + ' in namespace ' + event.Namespace + ' by ' + event.UserInfo.Username"
+          uniqueId: "event.Namespace + '/' + event.Name"
+          ruleExpression:
+            - eventType: "k8s-admission"
+              expression: 'event.Kind == "PodExecOptions"'
+        profileDependency: 2
+        severity: 8
+        supportPolicy: false
+        isTriggerAlert: true
+        mitreTactic: "TA0002"
+        mitreTechnique: "T1609"
+        tags:
+          - "context:kubernetes"
+          - "admission"
+          - "exec"
+      - name: "Port forward to pod"
+        enabled: true
+        id: "R2001"
+        description: "Detects port-forward operations on pods via the Kubernetes admission webhook (PodPortForwardOptions CONNECT)"
+        expressions:
+          message: "'Port forward to pod: ' + event.Name + ' in namespace ' + event.Namespace + ' by ' + event.UserInfo.Username"
+          uniqueId: "event.Namespace + '/' + event.Name"
+          ruleExpression:
+            - eventType: "k8s-admission"
+              expression: 'event.Kind == "PodPortForwardOptions"'
+        profileDependency: 2
+        severity: 5
+        supportPolicy: false
+        isTriggerAlert: true
+        mitreTactic: "TA0011"
+        mitreTechnique: "T1090"
+        tags:
+          - "context:kubernetes"
+          - "admission"
+          - "network"
