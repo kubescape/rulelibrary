@@ -27,6 +27,7 @@ spec:
       mitreTechnique: "T1071.004"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "dns"
         - "anomaly"
         - "networkprofile"

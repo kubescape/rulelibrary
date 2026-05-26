@@ -34,6 +34,7 @@ spec:
       mitreTechnique: "T1552.001"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "anomaly"
         - "procfs"
         - "environment"

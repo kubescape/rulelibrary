@@ -27,6 +27,7 @@ spec:
       mitreTechnique: "T1218"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "syscalls"
         - "io_uring"
         - "applicationprofile"

@@ -28,6 +28,7 @@ spec:
       mitreTechnique: "T1611"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "unshare"
         - "escape"
         - "unshare"

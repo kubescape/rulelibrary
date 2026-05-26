@@ -27,6 +27,7 @@ spec:
       mitreTechnique: "T1021.001"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "ssh"
         - "connection"
         - "port"

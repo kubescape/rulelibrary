@@ -29,6 +29,7 @@ spec:
         mitreTechnique: "T1059"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "anomaly"
           - "process"
           - "exec"
@@ -83,6 +84,7 @@ spec:
         mitreTechnique: "T1005"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "anomaly"
           - "file"
           - "open"
@@ -107,6 +109,7 @@ spec:
         mitreTechnique: "T1059"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "anomaly"
           - "syscall"
           - "applicationprofile"
@@ -130,6 +133,7 @@ spec:
         mitreTechnique: "T1059"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "anomaly"
           - "capabilities"
           - "applicationprofile"
@@ -153,6 +157,7 @@ spec:
         mitreTechnique: "T1071.004"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "dns"
           - "anomaly"
           - "networkprofile"
@@ -243,6 +248,7 @@ spec:
         mitreTechnique: "T1552.001"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "anomaly"
           - "procfs"
           - "environment"
@@ -317,6 +323,7 @@ spec:
         mitreTechnique: "T1041"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "whitelisted"
           - "network"
           - "anomaly"
@@ -370,6 +377,7 @@ spec:
         mitreTechnique: "T1036"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "exec"
           - "malicious"
           - "binary"
@@ -418,6 +426,7 @@ spec:
         mitreTechnique: "T1021.001"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "ssh"
           - "connection"
           - "port"
@@ -443,6 +452,7 @@ spec:
         mitreTechnique: "T1059"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "exec"
           - "mount"
           - "applicationprofile"
@@ -489,6 +499,7 @@ spec:
         mitreTechnique: "T1611"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "unshare"
           - "escape"
           - "unshare"
@@ -512,6 +523,7 @@ spec:
         mitreTechnique: "T1496"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "crypto"
           - "miners"
           - "malicious"
@@ -687,6 +699,7 @@ spec:
         mitreTechnique: "T1218"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "syscalls"
           - "io_uring"
           - "applicationprofile"
