@@ -55,6 +55,23 @@ spec:
 | `tags` | array | Array of tags for categorization | Yes |
 | `state` | object | Rule state | No |
 
+### Context Tags
+
+The `tags` list includes machine-readable `context:*` labels that help agents decide where a rule should run. Context tags are additive, not exclusive, so a single rule may carry more than one when the behavior is meaningful in multiple environments.
+
+| Context tag | Meaning |
+|-------------|---------|
+| `context:host` | The behavior is meaningful from the host's point of view, such as host processes or host-mounted resources. |
+| `context:container` | The behavior is meaningful at the container boundary regardless of orchestrator. Use this for rules that should run for Kubernetes, ECS, or standalone container agents. |
+| `context:kubernetes` | The rule is valid in Kubernetes deployments. Keep this tag on container rules for backward compatibility with older agents, and use it by itself for Kubernetes-specific signals such as `kubectl exec`, `port-forward`, or service-account behavior. |
+
+Examples:
+
+- R0010 carries `context:host` and `context:container` because `/etc/shadow` access can be meaningful from a host workload or from a container that can see that file.
+- R2000 and R2001 remain Kubernetes-only because they are driven by Kubernetes API activity, not generic container behavior.
+
+The `Platforms` row in each rule README is human-facing documentation. The `context:*` tags are routing metadata, so they often overlap but are not interchangeable.
+
 ### Supported Event Types
 
 - `exec` - Process execution events

@@ -27,6 +27,7 @@ spec:
       mitreTechnique: "T1059"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "anomaly"
         - "process"
         - "exec"

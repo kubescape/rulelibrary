@@ -27,6 +27,7 @@ spec:
       mitreTechnique: "T1041"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "whitelisted"
         - "network"
         - "anomaly"

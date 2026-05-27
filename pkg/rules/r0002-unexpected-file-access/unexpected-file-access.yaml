@@ -57,6 +57,7 @@ spec:
       mitreTechnique: "T1005"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "anomaly"
         - "file"
         - "open"

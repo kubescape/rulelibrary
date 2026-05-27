@@ -25,6 +25,7 @@ spec:
       mitreTechnique: "T1496"
       tags:
         - "context:kubernetes"
+        - "context:container"
         - "crypto"
         - "miners"
         - "malicious"
