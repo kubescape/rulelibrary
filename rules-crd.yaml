@@ -299,6 +299,7 @@ spec:
         mitreTechnique: "T1005"
         tags:
           - "context:kubernetes"
+          - "context:container"
           - "context:host"
           - "files"
           - "anomaly"
