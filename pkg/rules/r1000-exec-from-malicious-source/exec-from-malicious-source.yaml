@@ -7,12 +7,12 @@ metadata:
     app: kubescape
 spec:
   rules:
-    - name: "Process executed from malicious source"
+    - name: "Process Executed from /dev/shm"
       enabled: true
       id: "R1000"
-      description: "Detecting exec calls that are from malicious source like: /dev/shm"
+      description: "Detecting exec calls whose executable path or working directory is under /dev/shm, a world-writable memory-backed (tmpfs) directory."
       expressions:
-        message: "'Execution from malicious source: ' + event.exepath + ' in directory ' + event.cwd"
+        message: "'Process executed from /dev/shm: ' + event.exepath + ' in directory ' + event.cwd"
         uniqueId: "event.comm + '_' + event.exepath + '_' + event.pcomm"
         ruleExpression:
           - eventType: "exec"

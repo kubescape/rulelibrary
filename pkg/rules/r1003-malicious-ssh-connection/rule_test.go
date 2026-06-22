@@ -84,7 +84,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	expectedMessage := "Malicious SSH connection attempt to 1.1.1.1:1234"
+	expectedMessage := "SSH connection to unexpected destination on non-standard port: 1.1.1.1:1234"
 	if message != expectedMessage {
 		t.Fatalf("Message evaluation failed, got: %s, expected: %s", message, expectedMessage)
 	}

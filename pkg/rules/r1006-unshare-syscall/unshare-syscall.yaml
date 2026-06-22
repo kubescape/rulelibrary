@@ -7,10 +7,10 @@ metadata:
     app: kubescape
 spec:
   rules:
-    - name: "Process tries to escape container"
+    - name: "Unexpected unshare Syscall in Container"
       enabled: true
       id: "R1006"
-      description: "Detecting Unshare System Call usage, which can be used to escape container."
+      description: "Detecting use of the unshare system call (a namespace-manipulation capability that can be used to escape a container) by a non-runc process, where it was not seen in the container's application-profile baseline."
       expressions:
         message: "'Unshare system call (unshare) was called by process (' + event.comm + ')'"
         uniqueId: "event.comm + '_' + 'unshare'"
