@@ -159,7 +159,7 @@ func TestR1000ExecFromMaliciousSource(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Execution from malicious source: " + tt.event.ExePath + " in directory " + tt.event.Cwd
+				expectedMessage := "Process executed from /dev/shm: " + tt.event.ExePath + " in directory " + tt.event.Cwd
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}

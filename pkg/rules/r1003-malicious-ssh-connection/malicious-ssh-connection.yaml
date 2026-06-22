@@ -7,12 +7,12 @@ metadata:
     app: kubescape
 spec:
   rules:
-    - name: "Disallowed ssh connection"
+    - name: "SSH Connection to Unexpected Destination on Non-Standard Port"
       enabled: false
       id: "R1003"
-      description: "Detecting ssh connection to disallowed port"
+      description: "Detecting an SSH connection to a non-standard port where the destination address is not in the container's learned egress baseline."
       expressions:
-        message: "'Malicious SSH connection attempt to ' + event.dstIp + ':' + string(dyn(event.dstPort))"
+        message: "'SSH connection to unexpected destination on non-standard port: ' + event.dstIp + ':' + string(dyn(event.dstPort))"
         uniqueId: "event.comm + '_' + event.dstIp + '_' + string(dyn(event.dstPort))"
         ruleExpression:
           - eventType: "ssh"

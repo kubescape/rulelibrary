@@ -7,10 +7,10 @@ metadata:
     app: kubescape
 spec:
   rules:
-    - name: "ld_preload hooks technique detected"
+    - name: "ld_preload Mechanism Use or ld.so.preload Modification"
       enabled: false
       id: "R1011"
-      description: "Detecting ld_preload hook techniques."
+      description: "Detecting use of the LD_PRELOAD/LD_LIBRARY_PATH dynamic-linker hook mechanism, or an unexpected write to /etc/ld.so.preload relative to the container's application-profile baseline."
       expressions:
         message: "eventType == 'exec' ? 'Process (' + event.comm + ') is using a dynamic linker hook: ' + process.get_ld_hook_var(event.pid) : 'The dynamic linker configuration file (' + event.path + ') was modified by process (' + event.comm + ')'"
         uniqueId: "eventType == 'exec' ? 'exec_' + event.comm : 'open_' + event.path"
