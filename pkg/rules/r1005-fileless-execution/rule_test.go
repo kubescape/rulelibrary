@@ -81,7 +81,7 @@ func TestR1005FilelessExecution(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	expectedMessage := "Fileless execution detected: exec call \"/memfd:test\" is from a malicious source"
+	expectedMessage := "Fileless execution detected: exec call \"/memfd:test\" runs from a memory-backed source (memfd / /proc/self/fd)"
 	if message != expectedMessage {
 		t.Fatalf("Message evaluation failed, got: %s, expected: %s", message, expectedMessage)
 	}

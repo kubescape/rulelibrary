@@ -12,7 +12,7 @@ spec:
       id: "R1005"
       description: "Detecting Fileless Execution"
       expressions:
-        message: '''Fileless execution detected: exec call "'' + event.comm + ''" is from a malicious source'''
+        message: '''Fileless execution detected: exec call "'' + event.comm + ''" runs from a memory-backed source (memfd / /proc/self/fd)'''
         uniqueId: "event.comm + '_' + event.exepath + '_' + event.pcomm"
         ruleExpression:
           - eventType: "exec"
