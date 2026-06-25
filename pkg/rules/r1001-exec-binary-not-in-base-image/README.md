@@ -20,11 +20,10 @@ Mapped to **MITRE T1036 — Masquerading** under **TA0005 — Defense Evasion**.
 
 ```
 (event.upperlayer == true || event.pupperlayer == true)
-  AND !ap.was_executed(containerId, parse.get_exec_path(args, comm))
-  AND (event.exepath == "" || !ap.was_executed(containerId, event.exepath))
+  AND !ap.was_executed(containerId, parse.get_exec_path(args, comm, exepath))
 ```
 
-The first clause checks whether the executable (or its parent) lives in the writable upper layer of the container's overlay. The second and third clauses match against the application profile with the same dual-path semantics as R0001 — `argv[0]` and `exepath` are both checked because they can disagree for relative or `fexecve` invocations.
+The first clause checks whether the executable (or its parent) lives in the writable upper layer of the container's overlay. The second clause matches against the application profile using the exepath-authoritative path resolution shared with R0001 — `parse.get_exec_path` prefers the kernel-resolved `exepath` and falls back to `argv[0]`/`comm` only when exepath is empty, so the rule queries the same identity the recorder stored.
 
 ## Investigation Steps
 

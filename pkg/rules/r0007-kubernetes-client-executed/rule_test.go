@@ -102,7 +102,7 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 			Name: "test",
 			Execs: []v1beta1.ExecCalls{
 				{
-					Path: "kubectl",
+					Path: "/usr/bin/kubectl",
 					Args: []string{"kubectl", "get", "pods"},
 				},
 			},

@@ -102,7 +102,7 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 			Name: "test",
 			Execs: []v1beta1.ExecCalls{
 				{
-					Path: "test-process",
+					Path: "/usr/bin/test-process",
 					Args: []string{"test-process", "arg1"},
 				},
 			},
