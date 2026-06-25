@@ -129,7 +129,7 @@ func TestR1012HardlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	// Test with profile - since profile is optional, we can test policy validation
-	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
+	profile := objCache.GetApplicationProfile("test")
 	if profile == nil {
 		profile = &v1beta1.ApplicationProfile{}
 		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
@@ -150,7 +150,7 @@ func TestR1012HardlinkCreatedOverSensitiveFile(t *testing.T) {
 	e.NewPath = "/etc/abc"
 
 	v := rulemanager.NewRulePolicyValidator(objCache)
-	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &profile.Spec.Containers[0])
+	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &objectcache.ProjectedContainerProfile{PolicyByRuleId: profile.Spec.Containers[0].PolicyByRuleId})
 	if err != nil {
 		t.Fatalf("Failed to validate rule policy: %v", err)
 	}

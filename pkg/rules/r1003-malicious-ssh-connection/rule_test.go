@@ -140,7 +140,7 @@ func TestR1003MaliciousSSHConnection(t *testing.T) {
 	// Sleep for 1 millisecond to make sure the cache is expired
 	time.Sleep(1 * time.Millisecond)
 
-	nn := objCache.NetworkNeighborhoodCache().GetNetworkNeighborhood("test-container")
+	nn := objCache.GetNetworkNeighborhood("test-container")
 	if nn == nil {
 		nn = &v1beta1.NetworkNeighborhood{}
 		nn.Spec.Containers = append(nn.Spec.Containers, v1beta1.NetworkNeighborhoodContainer{

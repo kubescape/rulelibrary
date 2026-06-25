@@ -93,7 +93,7 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Test with whitelisted domain in profile
-	profile := objCache.NetworkNeighborhoodCache().GetNetworkNeighborhood("test")
+	profile := objCache.GetNetworkNeighborhood("test")
 	if profile == nil {
 		profile = &v1beta1.NetworkNeighborhood{}
 		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.NetworkNeighborhoodContainer{

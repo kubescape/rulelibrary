@@ -95,7 +95,7 @@ func TestR0010UnexpectedSensitiveFileAccess(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Test with whitelisted sensitive file in profile
-	profile := objCache.ApplicationProfileCache().GetApplicationProfile("test")
+	profile := objCache.GetApplicationProfile("test")
 	if profile == nil {
 		profile = &v1beta1.ApplicationProfile{}
 		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
