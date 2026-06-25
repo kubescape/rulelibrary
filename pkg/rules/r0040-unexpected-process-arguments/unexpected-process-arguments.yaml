@@ -1,0 +1,34 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: unexpected-process-arguments-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+    - name: "Unexpected process arguments"
+      enabled: true
+      id: "R0040"
+      description: "Detects an exec event whose path IS in the application profile but whose argv vector does not match any recorded argv pattern for that path. Consumes ap.was_executed_with_args, which walks the ExecsByPath projection surface and delegates argv comparison to dynamicpathdetector.MatchExecArgs (storage). Stays silent when the path is unknown (R0001 covers that case) and when the argv vector matches any recorded pattern (including the trailing zero-or-more form and the single-arg form); a '*' in a recorded arg is a literal character, not a wildcard."
+      expressions:
+        message: "'Unexpected process arguments: ' + event.comm + ' with PID ' + string(event.pid) + ' argv=' + event.args.map(a, string(a)).join(' ')"
+        uniqueId: "event.comm + '_' + event.exepath + '_' + event.args.map(a, string(a)).join(' ')"
+        ruleExpression:
+          - eventType: "exec"
+            expression: "ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm, event.exepath)) && !ap.was_executed_with_args(event.containerId, parse.get_exec_path(event.args, event.comm, event.exepath), event.args)"
+      profileDependency: 0
+      profileDataRequired:
+        execs: all
+      severity: 3
+      supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0002"
+      mitreTechnique: "T1059"
+      tags:
+        - "context:kubernetes"
+        - "context:container"
+        - "anomaly"
+        - "process"
+        - "exec"
+        - "applicationprofile"
