@@ -23,16 +23,16 @@ The node agent builds a per-container **application profile** during a learning 
 Simplified CEL:
 
 ```
-!ap.was_executed(containerId, parse.get_exec_path(args, comm, exepath))
+!ap.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
 ```
 
-`parse.get_exec_path` resolves the exec path symmetrically with the recording side, which stores the kernel-resolved path. Precedence:
+The exec path is resolved exepath-first to stay symmetric with the recording side, which stores the kernel-resolved path. The resolution is a plain CEL ternary (no special engine support required, so it runs on every agent version):
 
 1. **exepath** — kernel-authoritative and spoof-resistant. `argv[0]` is user-controllable even when absolute (e.g. `exec -a /bin/sh sleep` reports `/bin/sh` while `/proc/<pid>/exe` is `/usr/bin/sleep`), so it cannot be trusted for an identity check.
-2. **argv[0]** only when exepath is empty (`fexecve()` / `AT_EMPTY_PATH`, common from `sshd → unix_chkpwd`).
-3. **comm** as the final fallback.
+2. **argv[0]** (via the 2-arg `parse.get_exec_path`) only when exepath is empty (`fexecve()` / `AT_EMPTY_PATH`, common from `sshd → unix_chkpwd`).
+3. **comm** as the final fallback (also via the 2-arg form).
 
-Because the rule now queries the same identity the recorder stored, it no longer needs the separate `exepath` fallback clause it carried on the older 2-arg form. The rule fires when the resolved path was not seen during learning.
+Because the rule queries the same identity the recorder stored, it needs only this single lookup. The rule fires when the resolved path was not seen during learning.
 
 ## Investigation Steps
 
