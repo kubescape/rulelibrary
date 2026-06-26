@@ -552,8 +552,8 @@ github.com/kubescape/go-logger v0.0.32 h1:4mI+XJOV8VFCMewrEE9VIFEIOhzXokYT3nFpNf
 github.com/kubescape/go-logger v0.0.32/go.mod h1:Alj7JBQ8/WCxbXe8Ura6ZheSRK45E0p21M3xeqedX90=
 github.com/kubescape/k8s-interface v0.0.213 h1:JaEVzgE5qwQ3rEjQ8tBMp48YX4yveitLfYNaCIk8j/A=
 github.com/kubescape/k8s-interface v0.0.213/go.mod h1:WNYUG93aZ5kDmuaRKFLtVhp18Yc6EfaHdD1gLYtVTN4=
-github.com/kubescape/node-agent v0.3.143-0.20260625140015-2ff5f0524483 h1:3B7tpaNNfW304Ll0mVS8i6JQDOKqAO7bngY4ednOLms=
-github.com/kubescape/node-agent v0.3.143-0.20260625140015-2ff5f0524483/go.mod h1:zxPymj8NmkxUbHne5WtUUtorSOJJrBrxsm7OJXJhUiU=
+github.com/kubescape/node-agent v0.3.147 h1:CKOA9I/iIoLFRkYWNUeV++q2UU3oZCCuCqox/7EuL2g=
+github.com/kubescape/node-agent v0.3.147/go.mod h1:zxPymj8NmkxUbHne5WtUUtorSOJJrBrxsm7OJXJhUiU=
 github.com/kubescape/storage v0.0.278 h1:/pOtKul443yb2Fzg/4MFq29oOaFoJg1okQaCGbcEVOk=
 github.com/kubescape/storage v0.0.278/go.mod h1:FpV6tCrYXlp2kKWza4yr7zf2Y1q7IGgx871ndN7SMNo=
 github.com/kubescape/syft v1.32.0-ks.2 h1:xdUksUmKEyyVKsTfJDYW8Z5HawVJtelsUolPOsWtDx0=

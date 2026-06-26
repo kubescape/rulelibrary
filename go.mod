@@ -6,7 +6,7 @@ require (
 	github.com/armosec/armoapi-go v0.0.707
 	github.com/goradd/maps v1.3.0
 	github.com/inspektor-gadget/inspektor-gadget v0.45.1-0.20251020222545-c91c23581ebf
-	github.com/kubescape/node-agent v0.3.143-0.20260625140015-2ff5f0524483
+	github.com/kubescape/node-agent v0.3.147
 	github.com/kubescape/storage v0.0.278
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
