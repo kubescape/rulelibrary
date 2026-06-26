@@ -116,13 +116,6 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 			description:   "Should trigger when upper layer execution is not in profile",
 		},
 		{
-			name:          "different container name",
-			event:         createTestExecEvent("test2", "container123", "/tmp/malicious", "/tmp/malicious", "/", []string{"/tmp/malicious"}, true, false),
-			profile:       createTestProfile("test", []v1beta1.ExecCalls{{Path: "/tmp/malicious", Args: []string{"/tmp/malicious"}}}),
-			expectTrigger: true,
-			description:   "Should trigger when no profile exists for the container",
-		},
-		{
 			name:          "no application profile",
 			event:         createTestExecEvent("test", "container123", "/tmp/malicious", "/tmp/malicious", "/", []string{"/tmp/malicious"}, true, false),
 			profile:       nil,

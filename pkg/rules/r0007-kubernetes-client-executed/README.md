@@ -23,7 +23,7 @@ Two event types, evaluated independently:
 ```
 exec:
   (event.comm == 'kubectl' || event.exepath.endsWith('/kubectl'))
-    AND !ap.was_executed(containerId, ...)
+    AND !ap.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
 
 network:
   event.pktType == 'OUTGOING'

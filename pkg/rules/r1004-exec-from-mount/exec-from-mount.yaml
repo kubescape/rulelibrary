@@ -16,7 +16,7 @@ spec:
         uniqueId: "event.comm"
         ruleExpression:
           - eventType: "exec"
-            expression: "!ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm)) && (event.exepath == \"\" || !ap.was_executed(event.containerId, event.exepath)) && k8s.get_container_mount_paths(event.namespace, event.podName, event.containerName).exists(mount, event.exepath.startsWith(mount) || parse.get_exec_path(event.args, event.comm).startsWith(mount))"
+            expression: "!ap.was_executed(event.containerId, (event.exepath != \"\" ? event.exepath : parse.get_exec_path(event.args, event.comm))) && k8s.get_container_mount_paths(event.namespace, event.podName, event.containerName).exists(mount, event.exepath.startsWith(mount) || (event.exepath != \"\" ? event.exepath : parse.get_exec_path(event.args, event.comm)).startsWith(mount))"
       profileDependency: 1
       profileDataRequired:
         execs: all

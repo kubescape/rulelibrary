@@ -23,16 +23,16 @@ The node agent builds a per-container **application profile** during a learning 
 Simplified CEL:
 
 ```
-!ap.was_executed(containerId, parse.get_exec_path(args, comm))
-  && (exepath == "" || !ap.was_executed(containerId, exepath))
+!ap.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
 ```
 
-Two paths are checked because `argv[0]` and the kernel-resolved `exepath` can disagree:
+The exec path is resolved exepath-first to stay symmetric with the recording side, which stores the kernel-resolved path. The resolution is a plain CEL ternary (no special engine support required, so it runs on every agent version):
 
-- **Relative `argv[0]`** (e.g. the process invoked itself as `./python`): the profile stores the resolved absolute path, so `argv[0]` would miss. `exepath` (`/usr/bin/python3`) catches it.
-- **Empty `argv[0]`** (e.g. via `fexecve()` with `AT_EMPTY_PATH`, common from `sshd → unix_chkpwd`): again, the profile stores the resolved path, and the fallback to `exepath` matches.
+1. **exepath** — kernel-authoritative and spoof-resistant. `argv[0]` is user-controllable even when absolute (e.g. `exec -a /bin/sh sleep` reports `/bin/sh` while `/proc/<pid>/exe` is `/usr/bin/sleep`), so it cannot be trusted for an identity check.
+2. **argv[0]** (via the 2-arg `parse.get_exec_path`) only when exepath is empty (`fexecve()` / `AT_EMPTY_PATH`, common from `sshd → unix_chkpwd`).
+3. **comm** as the final fallback (also via the 2-arg form).
 
-The rule fires when neither lookup succeeds.
+Because the rule queries the same identity the recorder stored, it needs only this single lookup. The rule fires when the resolved path was not seen during learning.
 
 ## Investigation Steps
 

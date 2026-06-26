@@ -100,7 +100,7 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Test with whitelisted address in network neighborhood
-	nn := objCache.NetworkNeighborhoodCache().GetNetworkNeighborhood("test")
+	nn := objCache.GetNetworkNeighborhood("test")
 	if nn == nil {
 		nn = &v1beta1.NetworkNeighborhood{}
 		nn.Spec.Containers = append(nn.Spec.Containers, v1beta1.NetworkNeighborhoodContainer{

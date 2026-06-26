@@ -25,10 +25,10 @@ exepath == '/dev/shm' || exepath.startsWith('/dev/shm/')
   OR
 cwd == '/dev/shm' || cwd.startsWith('/dev/shm/')
   OR
-parse.get_exec_path(args, comm).startsWith('/dev/shm/')
+args.size() > 0 && (args[0] == '/dev/shm' || args[0].startsWith('/dev/shm/'))
 ```
 
-The `startsWith('/dev/shm/')` form (with trailing slash) is intentional: it matches `/dev/shm/foo` but **not** `/dev/shm_fake/foo`, avoiding false matches on similarly-named directories. The current-working-directory check catches the variant where a relative path (`./run.sh`) is executed from inside `/dev/shm` even though `exepath` itself resolves elsewhere.
+The `startsWith('/dev/shm/')` form (with trailing slash) is intentional: it matches `/dev/shm/foo` but **not** `/dev/shm_fake/foo`, avoiding false matches on similarly-named directories. The current-working-directory check catches the variant where a relative path (`./run.sh`) is executed from inside `/dev/shm` even though `exepath` itself resolves elsewhere. The third clause inspects `argv[0]` directly (rather than the resolved exec path) so a `/dev/shm/...` invocation argument is caught even when the kernel-resolved `exepath` points elsewhere.
 
 ## Investigation Steps
 

@@ -21,8 +21,9 @@ Mapped to **MITRE T1059 â€” Command and Scripting Interpreter** under **TA0002 â
 The rule combines an application-profile check with a Kubernetes mount-path lookup. For each `exec` event:
 
 ```
-binary not in application profile (same dual-path check as R0001)
-  AND the binary's path or argv[0] starts with any of the container's mount paths
+binary not in application profile (same exepath-authoritative check as R0001)
+  AND the binary's resolved path (exepath, or argv[0]/comm when exepath is empty)
+      starts with any of the container's mount paths
 ```
 
 `k8s.get_container_mount_paths(namespace, podName, containerName)` returns the list of paths mounted into the container from Kubernetes-managed volumes. The rule fires only when the executed binary's path is under one of those mounts and was not seen during learning.
