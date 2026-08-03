@@ -25,12 +25,12 @@ During the learning window the node agent records, per container, each `exec` ev
 Simplified CEL:
 
 ```
-ap.was_executed(containerId, parse.get_exec_path(args, comm, exepath))
-  && !ap.was_executed_with_args(containerId, parse.get_exec_path(args, comm, exepath), args)
+cp.was_executed(containerId, parse.get_exec_path(args, comm, exepath))
+  && !cp.was_executed_with_args(containerId, parse.get_exec_path(args, comm, exepath), args)
 ```
 
 - The first clause gates on the path being **known** — an unknown path is R0001's domain, not R0040's.
-- `ap.was_executed_with_args` looks the resolved path up in `ExecsByPath` and asks storage's `dynamicpathdetector.MatchExecArgs` whether the runtime argv matches **any** recorded vector for that path. The rule fires only when none match.
+- `cp.was_executed_with_args` looks the resolved path up in `ExecsByPath` and asks storage's `dynamicpathdetector.MatchExecArgs` whether the runtime argv matches **any** recorded vector for that path. The rule fires only when none match.
 
 Argument matching uses dedicated sentinels, not shell globbing:
 

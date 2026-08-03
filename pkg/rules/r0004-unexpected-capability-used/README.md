@@ -21,7 +21,7 @@ Mapped to **MITRE T1059 â€” Command and Scripting Interpreter** under **TA0002 â
 The node agent records every distinct capability exercised during the learning window. After the profile is finalized, every capability check is matched against the recorded set:
 
 ```
-!ap.was_capability_used(containerId, capName)
+!cp.was_capability_used(containerId, capName)
 ```
 
 The rule fires the first time a capability is exercised that the profile did not see during learning.

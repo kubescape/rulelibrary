@@ -21,7 +21,7 @@ Mapped to **MITRE T1059 â€” Command and Scripting Interpreter** under **TA0002 â
 The node agent records every distinct syscall observed during the learning window. After the profile is finalized, every syscall event is checked against the recorded set:
 
 ```
-!ap.was_syscall_used(containerId, syscallName)
+!cp.was_syscall_used(containerId, syscallName)
 ```
 
 The rule fires on any miss. Because most workloads use only a small subset of the ~350 available syscalls, the suppression catches steady-state activity while novel syscalls light up.

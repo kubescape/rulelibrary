@@ -16,7 +16,7 @@ spec:
         uniqueId: "event.comm + '_' + 'bpf' + '_' + string(event.cmd)"
         ruleExpression:
           - eventType: "bpf"
-            expression: "event.cmd == uint(5) && !ap.was_syscall_used(event.containerId, 'bpf')"
+            expression: "event.cmd == uint(5) && !cp.was_syscall_used(event.containerId, 'bpf')"
       profileDependency: 1
       profileDataRequired:
         syscalls:
