@@ -18,3 +18,14 @@ exits non-zero if any rule under `pkg/rules/` is missing or has an empty
 `README.md`. The README content is consumed downstream by the
 `armo-rulelibrary` build (which embeds this repo as a submodule) and
 shipped as the `documentation` field on each rule.
+
+## Writing CEL efficiently
+
+Every enabled rule is evaluated on every matching event, on every node — per-event
+cost is a multiplier. When authoring or modifying a rule's `ruleExpression`, follow
+[`docs/writing-optimized-cel.md`](docs/writing-optimized-cel.md): collapse `==` OR-chains
+to `x in [...]` / `x in {...}`, fold `endsWith`/`startsWith`/`contains` chains into
+`[...].exists(s, ...)`, iterate collections once instead of re-scanning per needle, and
+order cheap/selective predicates before expensive `ap.*`/`nn.*` profile gates. These
+rewrites preserve the detection outcome while letting the engine's set-membership and
+constant-folding optimizers do their job.
