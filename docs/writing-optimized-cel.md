@@ -8,143 +8,149 @@ node-agent CEL engine evaluates it.
 
 Every enabled rule is evaluated on **every matching event**, on every node. A busy fleet pushes
 thousands of `exec`/`open`/`dns` events per second through the rule engine, so per-event cost is a
-multiplier: an expression that is 3× cheaper per event is 3× cheaper on the hot path forever.
+multiplier.
 
 ## The one mechanism you need to understand
 
 The node-agent CEL engine compiles each rule through two static optimizers
-(`kubescape/node-agent`, `pkg/rulemanager/cel/cel.go`):
+(`kubescape/node-agent`, `pkg/rulemanager/cel/cel.go`, cel-go **v0.26.1**):
 
-- **Set-membership optimizer** (`ext.NewSetMembershipOptimizer`) — turns `x in [...]` and
-  `x in {...}` into an efficient set lookup **at compile time**.
+- **Set-membership optimizer** (`ext.NewSetMembershipOptimizer`). Per `cel-go@v0.26.1/ext/sets.go`,
+  it rewrites `x in [<list of constants>]` — where every element is a constant
+  `string`/`int`/`uint`/`bool` — into a **map-keyed lookup** at compile time. It matches on the
+  **`in` operator only**, with **no size threshold** (it fires even for two elements).
 - **Constant-folding optimizer** (`NewConstantFoldingOptimizer`) — evaluates constant
-  sub-expressions (like a literal list or map of strings) **once at compile time** instead of
-  rebuilding them for every event.
+  sub-expressions (a literal list or map of strings) **once at compile time** rather than rebuilding
+  them per event.
 
-**The consequence that drives everything below:** a chain of `x == 'a' || x == 'b' || …` is
-**invisible** to these optimizers — the engine evaluates it as N separate comparisons on every
-event. Rewrite it as `x in ['a', 'b', …]` and the optimizer collapses it to a single set lookup and
-folds the list literal once. Same result, a fraction of the work.
+**Two consequences drive everything below:**
+
+1. A chain of `x == 'a' || x == 'b' || …` is a `||`/`==` spine — **not** an `in` expression — so the
+   set-membership optimizer never sees it and it stays N comparisons per event. Rewrite it to
+   `x in ['a', 'b', …]` and the optimizer turns it into a single map lookup. **This is the real win.**
+2. Because the optimizer *already* converts a constant `in [...]` list to a map, writing the map
+   literal yourself (`x in {'a': true, …}`) buys **no additional runtime speed** for constant sets —
+   it is a readability choice, not an O(1)-vs-O(n) choice.
 
 ---
 
-## The techniques
+## Techniques that are genuine CPU wins
 
-### 1. Collapse `==` OR-chains into a list — `x in [...]`
+### 1. Collapse `==` OR-chains into `x in [...]`
 
-The highest-value rewrite, because it unlocks the set-membership optimizer.
+The highest-value rewrite, because it converts an unoptimizable spine into an optimizer-backed map
+lookup.
 
 ```cel
-// ✗ before — N comparisons per event, optimizer can't see it
+// ✗ before — N comparisons per event; the optimizer can't see a || / == spine
 event.comm == 'nc' || event.comm == 'netcat'
 event.path == '/var/log/auth.log' || event.path == '/var/log/secure' || event.path == '/var/log/syslog'
 
-// ✓ after — one set lookup, list folded once
+// ✓ after — compiles to a single map-keyed lookup
 event.comm in ['nc', 'netcat']
 event.path in ['/var/log/auth.log', '/var/log/secure', '/var/log/syslog']
 ```
 
-### 2. For large exact-match sets, use a map literal — `x in {...}`
+### 2. Fold repeated `.exists` on the same collection into a single pass
 
-A list membership is a linear scan; a **map** literal is a hash lookup — O(1) instead of O(n). Once
-a set gets big (roughly a dozen-plus entries: DNS domain blocklists, process-name lists), prefer the
-map form with `: true` values.
+When the field is itself a list (`event.args`, `event.flags`), don't scan it once per needle. Push
+the alternatives *inside one* `.exists` so you traverse the collection a single time — and the inner
+`x in [<constants>]` is itself map-optimized.
 
 ```cel
-// ✓ big exact-match set — hash lookup
-event.pcomm in {
-  'mysql': true, 'mysqld': true, 'postgres': true, 'postmaster': true, 'psql': true,
-  'mongod': true, 'redis-server': true, 'sqlservr': true, 'oracle': true,
-  'cassandra': true, 'influxd': true, 'elasticsearch': true, 'neo4j': true,
-  'mariadb': true, 'clickhouse-server': true
-}
+// ✗ before — three full passes over event.args
+event.args.exists(a, a == 'add') || event.args.exists(a, a == 'install') || event.args.exists(a, a == 'remove')
+
+// ✓ after — one pass; inner membership test is map-optimized
+event.args.exists(a, a in ['add', 'install', 'remove'])
 ```
 
-Use a **list** for small sets (2–10) and where readability wins; use a **map** for large exact-match
-sets. Both are optimizer-friendly; the map just scales better.
+**Correctness caveat.** This is outcome-preserving only when you are matching **whole elements**.
+`event.args.join(' ').contains('rm -rf')` matches a substring *inside* an element and can match a
+sequence that **spans element boundaries**; `event.args.exists(a, a in ['rm -rf'])` matches neither.
+Only convert `join(' ').contains(...)` to element membership when the needle is a complete token
+(e.g. an `O_*` flag, an exact arg). Otherwise keep the `join`.
 
-### 3. Collapse substring/prefix/suffix OR-chains with the `.exists` macro over a list
+---
 
-`==` becomes `in`, but `endsWith` / `startsWith` / `contains` can't — they aren't equality. Fold the
-*needles* into a list literal and test them with one `.exists` macro. The list is constant-folded
-once, and the field (`event.exepath`) is evaluated once instead of per branch.
+## Rewrites that are readability, not CPU
+
+These make rules easier to read and maintain and are worth doing — but be honest that they are
+roughly CPU-neutral, so don't rewrite a working rule *for performance* alone.
+
+### 3. List vs. map literal — a readability choice
+
+For a set of constants, `x in ['a', 'b', …]` and `x in {'a': true, …}` compile to the **same**
+map-keyed lookup (see the mechanism above). Use the list form by default; reach for a map literal
+only when it genuinely reads better (very large sets), or in the rare case the elements are **not**
+all constants — then the optimizer bails on the list and an explicit map avoids a linear scan.
+
+### 4. `endsWith`/`startsWith`/`contains` chains → `[...].exists(s, x.op(s))`
+
+Suffix/prefix/substring tests are **not** equality, so they cannot become `in` and the
+set-membership optimizer does **not** apply — the `.exists` macro still calls `endsWith` once per
+element, the same count as the OR-chain. The gain is readability plus a constant-folded list literal,
+**not** algorithmic speed.
 
 ```cel
-// ✗ before — N endsWith calls, event.exepath dereferenced N times
-event.exepath.endsWith('/nmap') || event.exepath.endsWith('/masscan') || event.exepath.endsWith('/nikto') || …
-
-// ✓ after — list folded once, exepath read once
+// same number of endsWith calls either way — the list form is just cleaner
 ['/nmap', '/masscan', '/nikto', …].exists(s, event.exepath.endsWith(s))
-```
-
-Same shape for `startsWith` (path prefixes) and `contains` (path fragments):
-
-```cel
 ['/etc/crontab', '/etc/cron.d/', '/var/spool/cron/'].exists(p, event.path.startsWith(p))
-['/python', '/perl', '/ruby', '/node'].exists(s, event.exepath.contains(s))
 ```
 
-When a rule mixes exact matches and suffix matches, keep both idioms and OR them:
+When a rule mixes exact and suffix matches, OR the two idioms into one expression (note the `||`):
 
 ```cel
 (['python', 'python3', 'perl', 'ruby', 'node'].exists(s, event.exepath.endsWith(s)) ||
  ['/python', '/perl', '/ruby', '/node'].exists(s, event.exepath.contains(s)))
 ```
 
-### 4. Iterate a collection **once**, don't re-scan it per needle
+### 5. Repeated `join(' ')` — what does and doesn't help
 
-When the field is itself a list (`event.args`, `event.flags`), the wrong pattern scans the whole
-collection once per needle. Push the alternatives *inside* a single `.exists` so you traverse the
-collection one time.
+`event.flags.join(' ').contains('O_WRONLY')` allocates a joined string. Two things to know:
 
-```cel
-// ✗ before — three full passes over event.args
-event.args.exists(a, a == 'add') || event.args.exists(a, a == 'install') || event.args.exists(a, a == 'remove')
+- Where the needles are **whole tokens**, prefer iterating the list — this avoids the join
+  allocation entirely and is one pass (technique 2). Keep the alternative set **identical** to the
+  original so the outcome doesn't change:
 
-// ✓ after — one pass; inner test is a set lookup
-event.args.exists(a, a in ['add', 'install', 'remove'])
-```
+  ```cel
+  // ✗ before
+  event.flags.join(' ').contains('O_WRONLY') || event.flags.join(' ').contains('O_RDWR') || event.flags.join(' ').contains('O_TRUNC')
+  // ✓ after — same three tokens, no join, one pass
+  event.flags.exists(f, f in ['O_WRONLY', 'O_RDWR', 'O_TRUNC'])
+  ```
 
-**Prefer iterating the list to `join(' ').contains(...)`.** `event.flags.join(' ').contains('O_WRONLY')`
-allocates a new joined string on every event, and repeating it per flag allocates repeatedly. Test
-the elements directly instead:
+- Where you must keep `join(' ')` (substring or cross-token match), folding the needles into a list
+  **does not** make the join run once — `['a','b','c'].exists(s, event.args.join(' ').contains(s))`
+  re-evaluates `join(' ')` on **every iteration** (up to once per needle). It only consolidates the
+  needles into one predicate; it is **not** a single-join optimization. `join` is not constant, so
+  constant folding can't hoist it. If the repeated join is genuinely hot, the fix is host-side, not
+  in the expression.
 
-```cel
-// ✗ before — builds a joined string per event, several times
-event.flags.join(' ').contains('O_WRONLY') || event.flags.join(' ').contains('O_RDWR') || event.flags.join(' ').contains('O_TRUNC')
-
-// ✓ after — no allocation, one pass over flags
-event.flags.exists(f, f in ['O_WRONLY', 'O_RDWR', 'O_TRUNC', 'O_CREAT'])
-```
-
-(If you must keep `join(' ')` — e.g. matching a substring that spans tokens — at least fold the
-needles: `['a','b','c'].exists(s, event.args.join(' ').contains(s))` so the join happens once, not
-once per needle.)
-
-### 5. Order predicates cheap-and-selective first (`&&` short-circuits)
+### 6. Order predicates cheap-and-selective first (`&&` short-circuits)
 
 CEL evaluates `&&` left-to-right and stops at the first `false`. Put the cheapest, most-selective
 predicate first so the expensive ones rarely run:
 
 - A plain field compare (`event.containerId != ''`, `event.comm in [...]`) is cheaper than a
   library/profile call (`ap.was_executed(...)`, `nn.is_domain_in_egress(...)`, `parse.*`).
-- Profile-lookup and negation gates like `!ap.was_path_opened(...)` are the natural **last** term —
-  they only need to run for the tiny fraction of events that already matched the signature.
+- Profile-lookup / negation gates like `!ap.was_path_opened(...)` are the natural **last** term —
+  they only run for the tiny fraction of events that already matched the signature.
 
 ```cel
-// signature first (cheap, filters ~all events), profile lookup last (expensive, rarely reached)
 event.comm in ['nc', 'netcat'] &&
-['-e ', '-c '].exists(s, event.args.join(' ').contains(s)) &&
+event.args.exists(a, a in ['-e', '-c']) &&
 !ap.was_executed(event.containerId, parse.get_exec_path(event.args, event.comm))
 ```
 
----
-
 ## Checklist before shipping a rule
 
-- [ ] No `x == 'a' || x == 'b' || …` chains — use `x in [...]` (or `in {...}` if large).
-- [ ] No repeated `field.endsWith/startsWith/contains(...)` — use `[...].exists(s, field.op(s))`.
-- [ ] No repeated `list.join(' ').contains(...)` — iterate the list with `list.exists(e, e in [...])`.
-- [ ] No `coll.exists(x, x==a) || coll.exists(x, x==b)` — one `coll.exists(x, x in [a,b])`.
-- [ ] Cheapest / most-selective predicate first; profile (`ap.*`/`nn.*`) gates last.
-- [ ] Behavior unchanged — the rule's tests fire and no-fire exactly as before.
+- [ ] No `x == 'a' || x == 'b' || …` chains — use `x in [...]` (technique 1, real win).
+- [ ] No `coll.exists(x, x==a) || coll.exists(x, x==b)` — one `coll.exists(x, x in [a,b])` (technique 2).
+- [ ] `join(' ').contains(...)` collapsed to element membership **only** where the needle is a whole
+      token; substring / cross-token matches keep the `join`.
+- [ ] Cheapest / most-selective predicate first; `ap.*` / `nn.*` gates last.
+- [ ] `in [...]`-vs-`in {...}` and `endsWith`-chain-vs-`.exists` chosen for **readability** — don't
+      claim a CPU win the optimizer already gives you or doesn't give at all.
+- [ ] Behavior unchanged — the rule's tests fire and no-fire exactly as before, and any "before/after"
+      you write keeps the **same** match set.

@@ -23,9 +23,10 @@ shipped as the `documentation` field on each rule.
 
 Every enabled rule is evaluated on every matching event, on every node — per-event
 cost is a multiplier. When authoring or modifying a rule's `ruleExpression`, follow
-[`docs/writing-optimized-cel.md`](docs/writing-optimized-cel.md): collapse `==` OR-chains
-to `x in [...]` / `x in {...}`, fold `endsWith`/`startsWith`/`contains` chains into
-`[...].exists(s, ...)`, iterate collections once instead of re-scanning per needle, and
-order cheap/selective predicates before expensive `ap.*`/`nn.*` profile gates. These
-rewrites preserve the detection outcome while letting the engine's set-membership and
-constant-folding optimizers do their job.
+[`docs/writing-optimized-cel.md`](docs/writing-optimized-cel.md). The two real
+optimizer-backed wins are collapsing `==` OR-chains to `x in [...]` (which the engine
+rewrites to a map lookup) and folding repeated `coll.exists(x, x==a) || …` into one
+`coll.exists(x, x in [...])`; also order cheap/selective predicates before expensive
+`ap.*`/`nn.*` profile gates. (List-vs-map and `endsWith`-chain-vs-`.exists` are
+readability, not CPU — the guide explains why.) These rewrites preserve the detection
+outcome.
