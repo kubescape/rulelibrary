@@ -22,7 +22,7 @@ spec:
       supportPolicy: false
       isTriggerAlert: true
       mitreTactic: "TA0005"
-      mitreTechnique: "T1547.006"
+      mitreTechnique: "T1014"
       tags:
         - "context:kubernetes"
         - "context:host"

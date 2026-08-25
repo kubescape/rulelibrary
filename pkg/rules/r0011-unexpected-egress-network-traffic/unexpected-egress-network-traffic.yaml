@@ -20,7 +20,7 @@ spec:
       profileDependency: 0
       profileDataRequired:
         egressAddresses: all
-      severity: 5 # Medium
+      severity: 8 # High
       supportPolicy: false
       isTriggerAlert: false
       mitreTactic: "TA0010"

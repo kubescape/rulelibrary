@@ -150,7 +150,7 @@ spec:
         profileDependency: 0
         profileDataRequired:
           egressDomains: all
-        severity: 1
+        severity: 5 # Medium
         supportPolicy: false
         isTriggerAlert: false
         mitreTactic: "TA0011"
@@ -213,8 +213,8 @@ spec:
         severity: 5 # Medium
         supportPolicy: false
         isTriggerAlert: false
-        mitreTactic: "TA0008"
-        mitreTechnique: "T1210"
+        mitreTactic: "TA0007"
+        mitreTechnique: "T1613"
         tags:
           - "context:kubernetes"
           - "exec"
@@ -270,8 +270,8 @@ spec:
         severity: 5
         supportPolicy: false
         isTriggerAlert: true
-        mitreTactic: "TA0005"
-        mitreTechnique: "T1218"
+        mitreTactic: "TA0002"
+        mitreTechnique: "T1106"
         tags:
           - "context:kubernetes"
           - "context:host"
@@ -317,7 +317,7 @@ spec:
         profileDependency: 0
         profileDataRequired:
           egressAddresses: all
-        severity: 5 # Medium
+        severity: 8 # High
         supportPolicy: false
         isTriggerAlert: false
         mitreTactic: "TA0010"
@@ -423,7 +423,7 @@ spec:
         supportPolicy: false
         isTriggerAlert: true
         mitreTactic: "TA0005"
-        mitreTechnique: "T1547.006"
+        mitreTechnique: "T1014"
         tags:
           - "context:kubernetes"
           - "context:host"
@@ -444,7 +444,7 @@ spec:
         profileDependency: 1
         profileDataRequired:
           egressAddresses: all
-        severity: 5
+        severity: 8 # High
         supportPolicy: false
         isTriggerAlert: true
         mitreTactic: "TA0008"
@@ -496,7 +496,7 @@ spec:
         supportPolicy: false
         isTriggerAlert: true
         mitreTactic: "TA0005"
-        mitreTechnique: "T1055"
+        mitreTechnique: "T1620"
         tags:
           - "context:kubernetes"
           - "context:host"
@@ -545,7 +545,7 @@ spec:
         supportPolicy: false
         isTriggerAlert: true
         mitreTactic: "TA0040"
-        mitreTechnique: "T1496"
+        mitreTechnique: "T1496.001"
         tags:
           - "context:kubernetes"
           - "context:container"
@@ -593,11 +593,11 @@ spec:
         profileDependency: 1
         profileDataRequired:
           egressAddresses: all
-        severity: 3
+        severity: 8 # High
         supportPolicy: false
         isTriggerAlert: false
-        mitreTactic: "TA0011"
-        mitreTechnique: "T1071"
+        mitreTactic: "TA0040"
+        mitreTechnique: "T1496.001"
         tags:
           - "context:kubernetes"
           - "context:host"
@@ -698,7 +698,7 @@ spec:
         supportPolicy: false
         isTriggerAlert: true
         mitreTactic: "TA0005"
-        mitreTechnique: "T1622"
+        mitreTechnique: "T1055.008"
         tags:
           - "context:kubernetes"
           - "context:host"
@@ -739,8 +739,8 @@ spec:
         severity: 5
         supportPolicy: true
         isTriggerAlert: true
-        mitreTactic: "TA0002"
-        mitreTechnique: "T1218"
+        mitreTactic: "TA0005"
+        mitreTechnique: "T1014"
         tags:
           - "context:kubernetes"
           - "context:container"
