@@ -1,4 +1,4 @@
-package r0011unexpectedegressnetworktraffic
+package r0012unexpectedingressnetworktraffic
 
 import (
 	"testing"
@@ -19,23 +19,24 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
-	ruleSpec, err := common.LoadRuleFromYAML("unexpected-egress-network-traffic.yaml")
+func TestR0012UnexpectedIngressNetworkTraffic(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("unexpected-ingress-network-traffic.yaml")
 	if err != nil {
 		t.Fatalf("Failed to load rule: %v", err)
 	}
 
+	// Inbound connection from an unknown internal peer to the container's TCP/8080.
 	e := &utils.StructEvent{
-		Comm:        "curl",
+		Comm:        "server",
 		Container:   "test",
 		ContainerID: "test",
 		DstEndpoint: eventtypes.L3Endpoint{
-			Addr: "1.1.1.1",
+			Addr: "10.244.1.9",
 		},
-		DstPort:   80,
+		DstPort:   8080,
 		EventType: utils.NetworkEventType,
 		Pid:       1234,
-		PktType:   "OUTGOING",
+		PktType:   "HOST",
 		Proto:     "TCP",
 	}
 
@@ -80,14 +81,14 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 
 	// No profile: nothing is allowlisted, the connection alerts.
 	if !evaluate() {
-		t.Fatalf("Rule evaluation failed - should have detected unexpected egress traffic")
+		t.Fatalf("Rule evaluation failed - should have detected unexpected ingress traffic")
 	}
 
 	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
 	if err != nil {
 		t.Fatalf("Failed to evaluate message: %v", err)
 	}
-	expectedMessage := "Unexpected egress network communication to: 1.1.1.1:80 using TCP from: test"
+	expectedMessage := "Unexpected ingress network communication from: 10.244.1.9:8080 using TCP to: test"
 	if message != expectedMessage {
 		t.Fatalf("Message evaluation failed, got: %s, expected: %s", message, expectedMessage)
 	}
@@ -96,109 +97,121 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to evaluate unique id: %v", err)
 	}
-	if uniqueId != "1.1.1.1_80_TCP" {
+	if uniqueId != "10.244.1.9_8080_TCP" {
 		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
 	}
 
-	// Profile: 1.1.1.1 on TCP/80 only, 10.0.0.50 with no ports (any port),
-	// and an internal peer allowlisted by podSelector on TCP/6379.
+	// Profile ingress: a fixed-address peer on TCP/8080 only, a scraper with no
+	// ports (any port), and the frontend tier allowlisted by podSelector on TCP/8080.
 	cp := &v1beta1.ContainerProfile{}
 	cp.Name = "test"
 	cp.Namespace = "prod"
 	cp.Spec = v1beta1.ContainerProfileSpec{
+		Ingress: []v1beta1.NetworkNeighbor{
+			{
+				Identifier: "gateway",
+				IPAddress:  "10.244.1.9",
+				Ports: []v1beta1.NetworkPort{
+					{Name: "TCP-8080", Protocol: "TCP", Port: ptr.To(int32(8080))},
+				},
+			},
+			{
+				Identifier: "scraper",
+				IPAddress:  "10.244.0.3",
+			},
+			{
+				Identifier:  "frontend",
+				PodSelector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "frontend"}},
+				Ports: []v1beta1.NetworkPort{
+					{Name: "TCP-8080", Protocol: "TCP", Port: ptr.To(int32(8080))},
+				},
+			},
+		},
+		// Egress entries must not open ingress.
 		Egress: []v1beta1.NetworkNeighbor{
 			{
-				Identifier: "cloudflare",
-				IPAddress:  "1.1.1.1",
-				DNSNames:   []string{"cloudflare.com"},
-				Ports: []v1beta1.NetworkPort{
-					{Name: "TCP-80", Protocol: "TCP", Port: ptr.To(int32(80))},
-				},
+				Identifier: "egress-only",
+				IPAddress:  "10.244.5.5",
 			},
 			{
-				Identifier: "any-port-peer",
-				IPAddress:  "10.0.0.50",
-			},
-			{
-				Identifier:  "redis",
+				Identifier:  "egress-only-selector",
 				PodSelector: &metav1.LabelSelector{MatchLabels: map[string]string{"app": "redis"}},
-				Ports: []v1beta1.NetworkPort{
-					{Name: "TCP-6379", Protocol: "TCP", Port: ptr.To(int32(6379))},
-				},
 			},
 		},
 	}
 	objCache.SetContainerProfile(cp)
 
-	// Allowlisted address on its allowlisted port and protocol: no alert.
+	// Allowlisted peer on the allowlisted local port and protocol: no alert.
 	if evaluate() {
-		t.Fatalf("Rule evaluation should have failed since address:port:proto is allowlisted")
+		t.Fatalf("Rule evaluation should have failed since peer:port:proto is allowlisted")
 	}
 
-	// Same address, different port: port-aware matching alerts.
-	e.DstPort = 443
+	// Known peer on a port it never used: port-aware matching alerts.
+	e.DstPort = 22
 	if !evaluate() {
-		t.Fatalf("Rule evaluation failed - allowlisted address on an unlisted port must alert")
+		t.Fatalf("Rule evaluation failed - allowlisted peer on an unlisted port must alert")
 	}
 
-	// Same address and port, different protocol: alerts.
-	e.DstPort = 80
+	// Known peer, known port, different protocol: alerts.
+	e.DstPort = 8080
 	e.Proto = "UDP"
 	if !evaluate() {
-		t.Fatalf("Rule evaluation failed - allowlisted address on an unlisted protocol must alert")
+		t.Fatalf("Rule evaluation failed - allowlisted peer on an unlisted protocol must alert")
 	}
 	e.Proto = "TCP"
 
-	// Address entry without ports allows any port.
-	e.DstEndpoint.Addr = "10.0.0.50"
-	e.DstPort = 9999
+	// Peer entry without ports allows any port.
+	e.DstEndpoint.Addr = "10.244.0.3"
+	e.DstPort = 9100
 	if evaluate() {
 		t.Fatalf("Rule evaluation should have failed since an entry without ports allows any port")
 	}
 
-	// Private, unlisted internal address: no private-IP exemption, alerts.
-	e.DstEndpoint.Addr = "10.0.0.1"
-	e.DstPort = 80
+	// Unlisted private peer: no private-IP exemption, alerts.
+	e.DstEndpoint.Addr = "10.244.7.7"
+	e.DstPort = 8080
 	if !evaluate() {
-		t.Fatalf("Rule evaluation failed - unlisted private address must alert (no private-IP exemption)")
+		t.Fatalf("Rule evaluation failed - unlisted private peer must alert (no private-IP exemption)")
 	}
 
-	// Unlisted address but the peer matches an allowlisted podSelector on its port: no alert.
+	// Egress-only address must not open ingress.
+	e.DstEndpoint.Addr = "10.244.5.5"
+	if !evaluate() {
+		t.Fatalf("Rule evaluation failed - an egress-only address must not allowlist ingress")
+	}
+
+	// Unlisted address, but the peer matches an allowlisted ingress podSelector on this port: no alert.
 	e.DstEndpoint.Addr = "10.244.3.7"
 	e.DstEndpoint.Namespace = "prod"
-	e.DstEndpoint.PodLabels = map[string]string{"app": "redis", "tier": "cache"}
-	e.DstPort = 6379
+	e.DstEndpoint.PodLabels = map[string]string{"app": "frontend", "tier": "web"}
+	e.DstPort = 8080
 	if evaluate() {
-		t.Fatalf("Rule evaluation should have failed since the peer matches an allowlisted podSelector")
+		t.Fatalf("Rule evaluation should have failed since the peer matches an allowlisted ingress podSelector")
 	}
 
-	// Selector match on an unlisted port: alerts.
+	// Selector peer on an unlisted port: alerts.
 	e.DstPort = 22
 	if !evaluate() {
 		t.Fatalf("Rule evaluation failed - selector peer on an unlisted port must alert")
 	}
 
-	// Selector match from a different namespace (podSelector alone is namespace-local): alerts.
-	e.DstPort = 6379
+	// Selector peer from another namespace (podSelector alone is namespace-local): alerts.
+	e.DstPort = 8080
 	e.DstEndpoint.Namespace = "other"
 	if !evaluate() {
 		t.Fatalf("Rule evaluation failed - selector peer in another namespace must alert")
 	}
 
-	// Labels that do not match any selector: alerts.
+	// Egress-only selector must not open ingress.
 	e.DstEndpoint.Namespace = "prod"
-	e.DstEndpoint.PodLabels = map[string]string{"app": "other"}
+	e.DstEndpoint.PodLabels = map[string]string{"app": "redis"}
 	if !evaluate() {
-		t.Fatalf("Rule evaluation failed - peer with non-matching labels must alert")
+		t.Fatalf("Rule evaluation failed - an egress-only selector must not allowlist ingress")
 	}
 
-	// Incoming packet: not this rule.
-	e.PktType = "INCOMING"
+	// Outbound packets are not this rule.
+	e.PktType = "OUTGOING"
 	if evaluate() {
-		t.Fatalf("Rule evaluation should have failed for incoming packet")
-	}
-	e.PktType = "HOST"
-	if evaluate() {
-		t.Fatalf("Rule evaluation should have failed for ingress (HOST) packet")
+		t.Fatalf("Rule evaluation should have failed for outgoing packet")
 	}
 }
