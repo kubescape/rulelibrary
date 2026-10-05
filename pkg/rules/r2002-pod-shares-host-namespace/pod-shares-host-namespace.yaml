@@ -1,0 +1,44 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: pod-shares-host-namespace-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+    - name: "Pod shares host namespace"
+      enabled: true
+      id: "R2002"
+      description: "Detects pod creation with hostPID, hostIPC or hostNetwork enabled, via the Kubernetes admission webhook"
+      expressions:
+        message: >-
+          'Pod shares host namespace (' +
+          ["hostPID", "hostIPC", "hostNetwork"].filter(f, f in object.spec && object.spec[f] == true).join(', ') +
+          '): ' + event.Namespace + '/' +
+          (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')) +
+          ' by ' + event.UserInfo.Username
+        uniqueId: >-
+          event.Namespace + '/' +
+          (has(object.metadata.ownerReferences) && object.metadata.ownerReferences.size() > 0
+            ? string(object.metadata.ownerReferences[0].kind) + '/' + string(object.metadata.ownerReferences[0].name)
+            : (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')))
+        ruleExpression:
+          - eventType: "k8s-admission"
+            expression: >-
+              event.Kind == "Pod" &&
+              event.Operation == "CREATE" &&
+              !(event.Namespace in ["kube-system", "kube-public", "kube-node-lease", "kubescape"]) &&
+              has(object.spec) &&
+              ["hostPID", "hostIPC", "hostNetwork"].exists(f, f in object.spec && object.spec[f] == true)
+      profileDependency: 2
+      severity: 6
+      supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0004"
+      mitreTechnique: "T1611"
+      tags:
+        - "context:kubernetes"
+        - "admission"
+        - "container-escape"
+        - "host-namespace"

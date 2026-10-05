@@ -1,0 +1,53 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: sensitive-hostpath-volume-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+    - name: "Pod created with sensitive hostPath volume"
+      enabled: true
+      id: "R2004"
+      description: "Detects pod creation with a hostPath volume on a sensitive host location such as /, /etc, /var/lib/kubelet or the container runtime socket directories, via the Kubernetes admission webhook"
+      expressions:
+        message: >-
+          'Pod created with sensitive hostPath volume: ' +
+          object.spec.volumes.filter(v, has(v.hostPath) && has(v.hostPath.path)).map(v, string(v.hostPath.path)).join(', ') +
+          ' in ' + event.Namespace + '/' +
+          (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')) +
+          ' by ' + event.UserInfo.Username
+        uniqueId: >-
+          event.Namespace + '/' +
+          (has(object.metadata.ownerReferences) && object.metadata.ownerReferences.size() > 0
+            ? string(object.metadata.ownerReferences[0].kind) + '/' + string(object.metadata.ownerReferences[0].name)
+            : (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')))
+        ruleExpression:
+          - eventType: "k8s-admission"
+            expression: >-
+              event.Kind == "Pod" &&
+              event.Operation == "CREATE" &&
+              !(event.Namespace in ["kube-system", "kube-public", "kube-node-lease", "kubescape"]) &&
+              has(object.spec) && has(object.spec.volumes) &&
+              object.spec.volumes
+                .filter(v, has(v.hostPath) && has(v.hostPath.path))
+                .map(v, "/" + string(v.hostPath.path).split("/")
+                  .filter(c, c != "" && c != ".")
+                  .map(c, c + "/").join(""))
+                .exists(p, [
+                  p == "/",
+                  ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
+                   "/var/lib/docker/overlay2/", "/var/run/", "/run/"].exists(d, p.startsWith(d))
+                ].exists(b, b))
+      profileDependency: 2
+      severity: 8
+      supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0004"
+      mitreTechnique: "T1611"
+      tags:
+        - "context:kubernetes"
+        - "admission"
+        - "container-escape"
+        - "hostpath"
