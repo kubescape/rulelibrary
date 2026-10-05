@@ -11,9 +11,12 @@
 
 ## Description
 
-Fires at admission time when a Pod is created and any of its containers, init containers or
-ephemeral containers either runs with `securityContext.privileged: true` or adds a Linux
-capability that is equivalent to host root. A privileged container has every capability, all
+Fires at admission time when a Pod is created and any of its containers or init containers
+either runs with `securityContext.privileged: true` or adds a Linux capability that is
+equivalent to host root. The expression also walks `ephemeralContainers`, but Kubernetes
+rejects ephemeral containers on CREATE, so that branch only matters if the rule is ever
+extended to the `pods/ephemeralcontainers` subresource. Today a privileged debug container
+attached to a running pod is not covered. A privileged container has every capability, all
 host devices, and no seccomp or AppArmor confinement, which makes host escape a matter of
 mounting the node's root disk. The capability list is the near-root subset, not every
 capability:

@@ -14,18 +14,21 @@
 Fires at admission time when a Pod is created with a `hostPath` volume whose path is, or sits
 under, a location that gives the container control of the node:
 
-| Exact match | Prefix match |
+| Sensitive location | Why |
 |---|---|
-| `/`, `/etc`, `/proc`, `/root`, `/home`, `/var/run`, `/run` | `/etc/`, `/proc/`, `/root/`, `/home/` |
-| `/var/lib/kubelet`, `/etc/kubernetes`, `/var/lib/docker/overlay2` | `/var/lib/kubelet/`, `/etc/kubernetes/` |
-| `/var/run/docker.sock`, `/run/docker.sock` | |
-| `/var/run/containerd/containerd.sock`, `/run/containerd/containerd.sock` | |
-| `/var/run/crio/crio.sock`, `/run/crio/crio.sock` | |
+| `/` | The whole node |
+| `/etc` | Host configuration, SSH keys, cron, `/etc/kubernetes` with the control plane PKI |
+| `/proc` | Process memory and kernel tunables of every host process |
+| `/root`, `/home` | Credentials and shell history of host users |
+| `/var/lib/kubelet` | Kubelet client certificate and every pod's projected ServiceAccount tokens |
+| `/var/lib/docker/overlay2` | Every other container's filesystem |
+| `/run`, `/var/run` | Container runtime sockets (`docker.sock`, `containerd/containerd.sock`, `crio/crio.sock`), which allow launching arbitrary privileged containers on the node |
 
-Mounting `/` or `/etc` lets the container rewrite host configuration and add SSH keys or cron
-jobs. `/var/lib/kubelet` holds the kubelet's client certificate and every pod's projected
-service account tokens. The runtime sockets allow launching arbitrary privileged containers on
-the node. `/var/lib/docker/overlay2` exposes every other container's filesystem.
+The path and everything beneath it count, so `/var/lib/kubelet/pki`, `/run/containerd` and
+`/var/run/docker.sock` all fire. The path is normalised before comparison: Kubernetes rejects
+`..` in a hostPath but accepts single-dot components and repeated separators, so `/./etc`,
+`/var//lib/kubelet` and `/etc/.` are the same mounts as `/etc` and `/var/lib/kubelet` and
+are treated as such.
 
 Pods created in `kube-system`, `kube-public`, `kube-node-lease` and `kubescape` are excluded,
 because CNI, CSI, log shippers and the Kubescape node-agent mount host paths by design.
@@ -44,22 +47,30 @@ node-level control that is hard to distinguish from normal kubelet activity.
 event.Kind == "Pod" && event.Operation == "CREATE" &&
 !(event.Namespace in ["kube-system", "kube-public", "kube-node-lease", "kubescape"]) &&
 has(object.spec.volumes) &&
-object.spec.volumes.exists(v,
-  has(v.hostPath) && has(v.hostPath.path) &&
-  [
-    string(v.hostPath.path) in [ ...exact list... ],
-    [ ...prefix list... ].exists(p, string(v.hostPath.path).startsWith(p))
-  ].exists(b, b)
-)
+object.spec.volumes
+  .filter(v, has(v.hostPath) && has(v.hostPath.path))
+  .map(v, (string(v.hostPath.path) + "/")
+    .replace("//", "/").replace("//", "/").replace("//", "/")
+    .replace("/./", "/").replace("/./", "/"))
+  .exists(p, [
+    p == "/",
+    ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
+     "/var/lib/docker/overlay2/", "/var/run/", "/run/"].exists(d, p.startsWith(d))
+  ].exists(b, b))
 ```
 
-`object` is the admitted Pod as an unstructured map. Prefix entries carry a trailing slash so
-`/etc/` matches `/etc/kubernetes` but not `/etcd`. The exact and prefix checks are combined
-with a list `exists` rather than `||`, because the operator's Kind pre-filter falls back to
-evaluating every admission event if any loaded expression contains `||`.
+`object` is the admitted Pod as an unstructured map. Each hostPath is normalised by appending
+a slash, collapsing repeated slashes (three passes cover up to eight in a row) and removing
+`/./` components (two passes). After that every sensitive location is a single prefix check:
+`/etc/` matches `/etc`, `/etc/`, `/./etc`, `/etc/kubernetes/pki` and `/etc/.`, but not `/etcd`.
+The root check is a plain equality with `/`. The two checks are combined with a list `exists`
+rather than `||`, because the operator's Kind pre-filter falls back to evaluating every
+admission event if any loaded expression contains `||`.
 
 `/var/log`, `/var/lib/docker/containers` and `/sys` are intentionally absent. Log shippers and
-node exporters mount them routinely and they are far less useful for escape.
+node exporters mount them routinely and they are far less useful for escape. `/run` and
+`/var/run` are matched as whole trees because any directory containing a runtime socket exposes
+the socket, so `/run/containerd` is as dangerous as `/run/containerd/containerd.sock`.
 
 Only CREATE is inspected; volumes are immutable after creation. Whether the mount is writable
 is a property of `volumeMounts.readOnly`, not of the volume, and is not evaluated. A read-only

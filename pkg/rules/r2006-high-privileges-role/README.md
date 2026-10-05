@@ -14,19 +14,22 @@
 Fires at admission time when a `ClusterRole` or `Role` is created, or has its `rules` changed,
 and the resulting rules grant at least one of:
 
-- a wildcard verb, or the `escalate`, `bind` or `impersonate` verb on anything;
-- `create`, `update` or `patch` on RBAC objects (`roles`, `clusterroles`, `rolebindings`,
-  `clusterrolebindings`), on `pods/exec`, `pods/attach`, `serviceaccounts/token`, `nodes/proxy`,
-  `secrets`, or on the wildcard resource;
-- `list` or `watch` on `secrets` or on the wildcard resource.
+- a wildcard verb, or the `escalate`, `bind` or `impersonate` verb on any resource;
+- `create`, `update` or `patch` in the core or wildcard API group on `pods/exec`, `pods/attach`,
+  `serviceaccounts/token`, `nodes/proxy`, `secrets`, their wildcard-subresource spellings
+  `*/exec`, `*/attach`, `*/token`, `*/proxy`, or the wildcard resource;
+- `create`, `update` or `patch` in the `rbac.authorization.k8s.io` or wildcard API group on
+  `roles`, `clusterroles`, `rolebindings`, `clusterrolebindings` or the wildcard resource;
+- `list` or `watch` in the core or wildcard API group on `secrets` or the wildcard resource.
 
 Each of these lets the holder reach cluster-admin or read every credential in scope, so a role
 that grants one is as sensitive as the `cluster-admin` binding that R2005 watches for. R2005
 catches the binding of an existing powerful role. R2006 catches the creation of a new one, which
 is the step an attacker takes when `cluster-admin` itself is monitored or blocked.
 
-The operator webhook must register `clusterroles` and `roles`. kubescape/helm-charts adds them
-in the 1.40.6 chart. Earlier charts deliver only bindings, and this rule never fires.
+The operator webhook must register `clusterroles` and `roles`. kubescape/helm-charts#957 adds
+them to the webhook and is unreleased at the time of writing. Charts without it deliver only
+bindings, and this rule never fires.
 
 ## Attack Technique
 
@@ -46,25 +49,38 @@ event.Operation in ["CREATE", "UPDATE"] &&
 event.UserInfo.Username != "system:serviceaccount:kube-system:clusterrole-aggregation-controller" &&
 has(object.rules) &&
 (event.Operation == "CREATE" ? true : object.rules != (has(oldObject.rules) ? oldObject.rules : [])) &&
-object.rules.exists(r, has(r.verbs) && [
+object.rules.exists(r, has(r.verbs) && has(r.resources) && has(r.apiGroups) && [
   r.verbs.exists(v, v in ["*", "escalate", "bind", "impersonate"]),
-  (has(r.resources) && r.verbs.exists(v, v in ["create", "update", "patch"]) &&
-    r.resources.exists(res, res in ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings",
-                                     "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets"])),
-  (has(r.resources) && r.verbs.exists(v, v in ["list", "watch"]) &&
+  (r.apiGroups.exists(g, g in ["", "*"]) &&
+    r.verbs.exists(v, v in ["create", "update", "patch"]) &&
+    r.resources.exists(res, res in ["*", "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets",
+                                     "*/exec", "*/attach", "*/token", "*/proxy"])),
+  (r.apiGroups.exists(g, g in ["rbac.authorization.k8s.io", "*"]) &&
+    r.verbs.exists(v, v in ["create", "update", "patch"]) &&
+    r.resources.exists(res, res in ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings"])),
+  (r.apiGroups.exists(g, g in ["", "*"]) &&
+    r.verbs.exists(v, v in ["list", "watch"]) &&
     r.resources.exists(res, res in ["*", "secrets"]))
 ].exists(b, b))
 ```
 
 `object` and `oldObject` are the admitted role and its previous state as unstructured maps. Kinds
-and the three grant classes are combined with list `exists` instead of `||`, so the operator's
+and the four grant classes are combined with list `exists` instead of `||`, so the operator's
 Kind pre-filter still sees both literal `event.Kind == "..."` constraints. A `||` anywhere in a
 loaded expression disables that pre-filter for every rule.
 
+Only resource rules are inspected: a PolicyRule must carry `resources` and `apiGroups`, which
+Kubernetes requires for resource rules and forbids for `nonResourceURLs` rules. A rule with
+`verbs: ["*"]` and `nonResourceURLs: ["/healthz"]` grants no resource privilege and does not
+fire. Sensitive resource names are matched together with their API group, so a `secrets` or
+`roles` resource in a custom group such as `vault.example.com` does not fire. Kubernetes
+matches `*/exec` against every resource's `exec` subresource, so those spellings are listed
+next to `pods/exec`.
+
 A `PATCH` reaches the webhook as an `UPDATE` carrying the merged object, so patches are covered.
 On UPDATE the rule fires only when `rules` changed, so label, annotation and ownerReference
-updates do not re-alert on a role that was already powerful. Roles with only `nonResourceURLs`
-rules, and aggregated ClusterRoles with no `rules` of their own, never fire.
+updates do not re-alert on a role that was already powerful. Aggregated ClusterRoles with no
+`rules` of their own never fire.
 
 The `clusterrole-aggregation-controller` is excluded because it rewrites the `rules` of
 aggregated ClusterRoles such as `admin` and `edit` on every reconcile, copying grants that were

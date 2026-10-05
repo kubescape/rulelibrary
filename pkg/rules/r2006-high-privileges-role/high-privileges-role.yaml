@@ -20,7 +20,9 @@ spec:
           ["*", "escalate", "bind", "impersonate", "create", "update", "patch", "list", "watch"]
             .filter(v, object.rules.exists(r, has(r.verbs) && v in r.verbs)).join('/') +
           ' on ' +
-          ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings", "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets"]
+          ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings",
+           "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets",
+           "*/exec", "*/attach", "*/token", "*/proxy"]
             .filter(res, object.rules.exists(r, has(r.resources) && res in r.resources)).join(',')
         uniqueId: >-
           event.Kind + '/' + (event.Namespace != '' ? event.Namespace + '/' : '') + event.Name
@@ -35,12 +37,16 @@ spec:
                 ? true
                 : object.rules != (has(oldObject.rules) ? oldObject.rules : [])) &&
               object.rules.exists(r,
-                has(r.verbs) && [
+                has(r.verbs) && has(r.resources) && has(r.apiGroups) && [
                   r.verbs.exists(v, v in ["*", "escalate", "bind", "impersonate"]),
-                  (has(r.resources) &&
+                  (r.apiGroups.exists(g, g in ["", "*"]) &&
                     r.verbs.exists(v, v in ["create", "update", "patch"]) &&
-                    r.resources.exists(res, res in ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings", "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets"])),
-                  (has(r.resources) &&
+                    r.resources.exists(res, res in ["*", "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets",
+                                                    "*/exec", "*/attach", "*/token", "*/proxy"])),
+                  (r.apiGroups.exists(g, g in ["rbac.authorization.k8s.io", "*"]) &&
+                    r.verbs.exists(v, v in ["create", "update", "patch"]) &&
+                    r.resources.exists(res, res in ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings"])),
+                  (r.apiGroups.exists(g, g in ["", "*"]) &&
                     r.verbs.exists(v, v in ["list", "watch"]) &&
                     r.resources.exists(res, res in ["*", "secrets"]))
                 ].exists(b, b))

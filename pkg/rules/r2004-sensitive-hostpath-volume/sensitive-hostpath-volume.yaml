@@ -10,7 +10,7 @@ spec:
     - name: "Pod created with sensitive hostPath volume"
       enabled: true
       id: "R2004"
-      description: "Detects pod creation with a hostPath volume on a sensitive host location such as /, /etc, /var/lib/kubelet or the container runtime socket, via the Kubernetes admission webhook"
+      description: "Detects pod creation with a hostPath volume on a sensitive host location such as /, /etc, /var/lib/kubelet or the container runtime socket directories, via the Kubernetes admission webhook"
       expressions:
         message: >-
           'Pod created with sensitive hostPath volume: ' +
@@ -30,18 +30,16 @@ spec:
               event.Operation == "CREATE" &&
               !(event.Namespace in ["kube-system", "kube-public", "kube-node-lease", "kubescape"]) &&
               has(object.spec) && has(object.spec.volumes) &&
-              object.spec.volumes.exists(v,
-                has(v.hostPath) && has(v.hostPath.path) &&
-                [
-                  string(v.hostPath.path) in ["/", "/etc", "/proc", "/root", "/home", "/var/lib/kubelet",
-                                              "/var/lib/docker/overlay2", "/etc/kubernetes", "/var/run", "/run",
-                                              "/var/run/docker.sock", "/run/docker.sock",
-                                              "/var/run/containerd/containerd.sock", "/run/containerd/containerd.sock",
-                                              "/var/run/crio/crio.sock", "/run/crio/crio.sock"],
-                  ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/", "/etc/kubernetes/"].exists(p,
-                    string(v.hostPath.path).startsWith(p))
-                ].exists(b, b)
-              )
+              object.spec.volumes
+                .filter(v, has(v.hostPath) && has(v.hostPath.path))
+                .map(v, (string(v.hostPath.path) + "/")
+                  .replace("//", "/").replace("//", "/").replace("//", "/")
+                  .replace("/./", "/").replace("/./", "/"))
+                .exists(p, [
+                  p == "/",
+                  ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
+                   "/var/lib/docker/overlay2/", "/var/run/", "/run/"].exists(d, p.startsWith(d))
+                ].exists(b, b))
       profileDependency: 2
       severity: 8
       supportPolicy: false
