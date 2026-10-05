@@ -121,10 +121,12 @@ func evalExpr(env *cel.Env, expr string, act map[string]any) (any, error) {
 }
 
 // EvaluateAdmissionRule evaluates one rule's k8s-admission expressions
-// against the event. A rule matches when any of its admission expressions
-// is true, which is how the operator combines them. On a match the message
-// and uniqueId templates are evaluated too, so a template that only fails at
-// runtime shows up in tests.
+// against the event with the operator's contract
+// (kubescape/operator admission/cel.AdmissionCEL.EvaluateRuleWithContext):
+// every expression for the event type must be true (AND), a rule with no
+// admission expression never matches, a non-bool expression is an error.
+// On a match the message and uniqueId templates are evaluated too and must
+// return strings, as EvaluateStringExpression requires.
 func EvaluateAdmissionRule(rule v1.Rule, event AdmissionEvent) (AdmissionResult, error) {
 	env, err := newAdmissionEnv()
 	if err != nil {
@@ -132,44 +134,54 @@ func EvaluateAdmissionRule(rule v1.Rule, event AdmissionEvent) (AdmissionResult,
 	}
 	act := event.activation()
 
-	matched := false
+	sawExpression := false
 	for _, ex := range rule.Expressions.RuleExpression {
 		if string(ex.EventType) != AdmissionEventType {
 			continue
 		}
+		sawExpression = true
 		out, err := evalExpr(env, ex.Expression, act)
 		if err != nil {
 			return AdmissionResult{}, fmt.Errorf("rule %s expression: %w", rule.ID, err)
 		}
 		b, ok := out.(bool)
 		if !ok {
-			return AdmissionResult{}, fmt.Errorf("rule %s expression returned %T, want bool", rule.ID, out)
+			return AdmissionResult{}, fmt.Errorf("rule %s expression returned %T, expected bool", rule.ID, out)
 		}
-		if b {
-			matched = true
-			break
+		if !b {
+			return AdmissionResult{}, nil
 		}
 	}
-	if !matched {
+	if !sawExpression {
 		return AdmissionResult{}, nil
 	}
 
 	res := AdmissionResult{Matched: true}
 	if rule.Expressions.Message != "" {
-		out, err := evalExpr(env, rule.Expressions.Message, act)
+		res.Message, err = evalStringExpr(env, rule.Expressions.Message, act)
 		if err != nil {
 			return res, fmt.Errorf("rule %s message: %w", rule.ID, err)
 		}
-		res.Message, _ = out.(string)
 	}
 	if rule.Expressions.UniqueID != "" {
-		out, err := evalExpr(env, rule.Expressions.UniqueID, act)
+		res.UniqueID, err = evalStringExpr(env, rule.Expressions.UniqueID, act)
 		if err != nil {
 			return res, fmt.Errorf("rule %s uniqueId: %w", rule.ID, err)
 		}
-		res.UniqueID, _ = out.(string)
 	}
 	return res, nil
+}
+
+func evalStringExpr(env *cel.Env, expr string, act map[string]any) (string, error) {
+	out, err := evalExpr(env, expr, act)
+	if err != nil {
+		return "", err
+	}
+	s, ok := out.(string)
+	if !ok {
+		return "", fmt.Errorf("expression returned %T, expected string", out)
+	}
+	return s, nil
 }
 
 var admissionKindConstraint = regexp.MustCompile(`event\.Kind\s*==\s*"[^"]+"`)

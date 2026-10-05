@@ -49,9 +49,9 @@ event.Kind == "Pod" && event.Operation == "CREATE" &&
 has(object.spec.volumes) &&
 object.spec.volumes
   .filter(v, has(v.hostPath) && has(v.hostPath.path))
-  .map(v, (string(v.hostPath.path) + "/")
-    .replace("//", "/").replace("//", "/").replace("//", "/")
-    .replace("/./", "/").replace("/./", "/"))
+  .map(v, "/" + string(v.hostPath.path).split("/")
+    .filter(c, c != "" && c != ".")
+    .map(c, c + "/").join(""))
   .exists(p, [
     p == "/",
     ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
@@ -59,10 +59,13 @@ object.spec.volumes
   ].exists(b, b))
 ```
 
-`object` is the admitted Pod as an unstructured map. Each hostPath is normalised by appending
-a slash, collapsing repeated slashes (three passes cover up to eight in a row) and removing
-`/./` components (two passes). After that every sensitive location is a single prefix check:
-`/etc/` matches `/etc`, `/etc/`, `/./etc`, `/etc/kubernetes/pki` and `/etc/.`, but not `/etcd`.
+`object` is the admitted Pod as an unstructured map. Each hostPath is normalised by path
+component: the path is split on `/`, empty and single-dot components are discarded, and the
+rest are joined back with a leading and trailing slash. Any number of repeated separators or
+`.` components collapses, so there is no bound an attacker can exceed. `..` needs no handling
+because Kubernetes rejects it in a hostPath. After that every sensitive location is a single
+prefix check: `/etc/` matches `/etc`, `/etc/`, `/./etc`, `/////etc`, `/etc/kubernetes/pki`
+and `/etc/.`, but not `/etcd`.
 The root check is a plain equality with `/`. The two checks are combined with a list `exists`
 rather than `||`, because the operator's Kind pre-filter falls back to evaluating every
 admission event if any loaded expression contains `||`.

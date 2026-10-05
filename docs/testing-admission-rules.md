@@ -7,8 +7,11 @@ admission variables, so these rules get their own small harness in `pkg/common/a
 ## What the harness provides
 
 `common.EvaluateAdmissionRule(rule, event)` compiles the rule's `k8s-admission` expressions
-with cel-go and evaluates them against an `AdmissionEvent`. On a match it also evaluates the
-`message` and `uniqueId` templates, so a template that only fails at runtime fails the test.
+with cel-go and evaluates them against an `AdmissionEvent` under the operator's contract: every
+`k8s-admission` expression must be true (AND), a rule with no such expression never matches, and
+an expression that does not return a bool is an error. On a match it also evaluates the
+`message` and `uniqueId` templates, which must return strings, so a template that only fails
+at runtime fails the test. `pkg/common/admission_test.go` pins that contract.
 
 The environment mirrors `kubescape/operator` `admission/cel`:
 

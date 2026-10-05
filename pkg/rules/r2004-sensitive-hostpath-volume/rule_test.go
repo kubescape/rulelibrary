@@ -51,6 +51,11 @@ func TestR2004SensitiveHostPathVolume(t *testing.T) {
 		{"trailing dot /etc/.", podCreate("default", podWithHostPaths("/etc/.")), true},
 		{"root as //", podCreate("default", podWithHostPaths("//")), true},
 		{"root as /.", podCreate("default", podWithHostPaths("/.")), true},
+		{"seventeen slashes", podCreate("default", podWithHostPaths("/////////////////etc")), true},
+		{"eight dot components", podCreate("default", podWithHostPaths("/././././././././etc")), true},
+		{"long mixed run", podCreate("default", podWithHostPaths("//././//./././//var///lib//./kubelet/./pki")), true},
+		{"long run to root", podCreate("default", podWithHostPaths("/./././././////./")), true},
+		{"long run benign stays benign", podCreate("default", podWithHostPaths("/////./././var///log")), false},
 		// Review finding: runtime socket parent directories.
 		{"/run/containerd", podCreate("default", podWithHostPaths("/run/containerd")), true},
 		{"/var/run/containerd", podCreate("default", podWithHostPaths("/var/run/containerd")), true},

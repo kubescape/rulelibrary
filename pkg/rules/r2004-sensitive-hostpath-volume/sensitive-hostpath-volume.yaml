@@ -32,9 +32,9 @@ spec:
               has(object.spec) && has(object.spec.volumes) &&
               object.spec.volumes
                 .filter(v, has(v.hostPath) && has(v.hostPath.path))
-                .map(v, (string(v.hostPath.path) + "/")
-                  .replace("//", "/").replace("//", "/").replace("//", "/")
-                  .replace("/./", "/").replace("/./", "/"))
+                .map(v, "/" + string(v.hostPath.path).split("/")
+                  .filter(c, c != "" && c != ".")
+                  .map(c, c + "/").join(""))
                 .exists(p, [
                   p == "/",
                   ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
