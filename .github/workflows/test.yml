@@ -6,21 +6,23 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions: read-all
+
 jobs:
   test:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@7b8cf10d4e4a01d4992d18a89f4d7dc5a3e6d6f4 # v4.3.0
       with:
         go-version: '1.24'
         
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3.5.0
       with:
         path: |
           ~/.cache/go-build
@@ -45,7 +47,7 @@ jobs:
       run: go test -coverprofile=coverage.out ./...
       
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
       with:
         file: ./coverage.out
         flags: unittests
@@ -53,7 +55,7 @@ jobs:
         fail_ci_if_error: false
         
     - name: Install bats
-      uses: bats-core/bats-action@3.0.0
+      uses: bats-core/bats-action@2104b40bb7b6c2d5110b23a26b0bf265ab8027db # 3.0.0
 
     - name: Run README check tests
       run: bats scripts/check_readmes_test.bats
@@ -62,8 +64,8 @@ jobs:
       run: make generate-rules-crd
         
     - name: Upload Rules CRD as artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: rules-crd
         path: rules-crd.yaml
-        retention-days: 30 
+        retention-days: 30
