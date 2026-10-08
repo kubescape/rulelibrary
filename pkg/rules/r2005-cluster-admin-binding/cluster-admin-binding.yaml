@@ -1,0 +1,45 @@
+apiVersion: kubescape.io/v1
+kind: Rules
+metadata:
+  name: cluster-admin-binding-rule
+  namespace: kubescape
+  labels:
+    app: kubescape
+spec:
+  rules:
+    - name: "cluster-admin role bound"
+      enabled: true
+      id: "R2005"
+      description: "Detects a ClusterRoleBinding or RoleBinding that grants the cluster-admin ClusterRole, created or given new subjects, via the Kubernetes admission webhook"
+      expressions:
+        message: >-
+          'cluster-admin granted via ' + event.Kind + ' ' +
+          (event.Namespace != '' ? event.Namespace + '/' : '') + event.Name + ' to ' +
+          (has(object.subjects)
+            ? object.subjects.map(s, string(s.kind) + ':' + (has(s.namespace) ? string(s.namespace) + '/' : '') + string(s.name)).join(', ')
+            : 'no subjects') +
+          ' by ' + event.UserInfo.Username
+        uniqueId: >-
+          event.Kind + '/' + (event.Namespace != '' ? event.Namespace + '/' : '') + event.Name
+        ruleExpression:
+          - eventType: "k8s-admission"
+            expression: >-
+              [event.Kind == "ClusterRoleBinding", event.Kind == "RoleBinding"].exists(k, k) &&
+              event.Operation in ["CREATE", "UPDATE"] &&
+              has(object.roleRef) && has(object.roleRef.kind) && has(object.roleRef.name) &&
+              object.roleRef.kind == "ClusterRole" &&
+              object.roleRef.name == "cluster-admin" &&
+              (event.Operation == "CREATE"
+                ? true
+                : (has(object.subjects) ? object.subjects : []) != (has(oldObject.subjects) ? oldObject.subjects : []))
+      profileDependency: 2
+      severity: 8
+      supportPolicy: false
+      isTriggerAlert: true
+      mitreTactic: "TA0003"
+      mitreTechnique: "T1098.006"
+      tags:
+        - "context:kubernetes"
+        - "admission"
+        - "rbac"
+        - "privilege-escalation"

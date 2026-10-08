@@ -4,6 +4,7 @@ go 1.25.8
 
 require (
 	github.com/armosec/armoapi-go v0.0.707
+	github.com/google/cel-go v0.26.1
 	github.com/goradd/maps v1.3.0
 	github.com/inspektor-gadget/inspektor-gadget v0.45.1-0.20251020222545-c91c23581ebf
 	github.com/kubescape/node-agent v0.3.147
@@ -113,7 +114,6 @@ require (
 	github.com/gohugoio/hashstructure v0.6.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.26.1 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-containerregistry v0.21.2 // indirect
