@@ -20,7 +20,7 @@ Mapped to **MITRE T1611 — Escape to Host** under **TA0004 — Privilege Escala
 
 ```
 event.pcomm != 'runc'
-  AND !ap.was_syscall_used(containerId, 'unshare')
+  AND !cp.was_syscall_used(containerId, 'unshare')
 ```
 
 The first clause filters out the one legitimate caller (the container runtime during setup). The second suppresses any workload that was observed using `unshare` during learning, which is uncommon but not impossible for some niche workloads.

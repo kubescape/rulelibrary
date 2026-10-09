@@ -25,7 +25,7 @@ event.path is under one of the watched prefixes
   AND event.path is NOT under /run/secrets/kubernetes.io/serviceaccount
   AND event.path is NOT under /var/run/secrets/kubernetes.io/serviceaccount
   AND event.path is NOT under /tmp
-  AND !ap.was_path_opened(containerId, event.path)
+  AND !cp.was_path_opened(containerId, event.path)
 ```
 
 The `/tmp` and Kubernetes service-account paths are excluded because they have their own dedicated rules; including them here would produce duplicate alerts on the same activity.

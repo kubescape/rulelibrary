@@ -20,7 +20,7 @@ Mapped to **MITRE T1005 — Data from Local System** under **TA0006 — Credenti
 
 ```
 (event.oldPath.startsWith('/etc/shadow') OR event.oldPath.startsWith('/etc/sudoers'))
-  AND !ap.was_path_opened(containerId, event.oldPath)
+  AND !cp.was_path_opened(containerId, event.oldPath)
 ```
 
 `event.oldPath` is the symlink's target (what it points at). The rule fires when the target is one of the sensitive prefixes and the workload was not observed legitimately opening that target during learning. The profile check exists so workloads that genuinely read these files during normal operation (like PAM-using authentication code) suppress the rule.

@@ -23,12 +23,12 @@ Two event types, evaluated independently:
 ```
 exec:
   (event.comm == 'kubectl' || event.exepath.endsWith('/kubectl'))
-    AND !ap.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
+    AND !cp.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
 
 network:
   event.pktType == 'OUTGOING'
     AND k8s.is_api_server_address(event.dstAddr)
-    AND !nn.was_address_in_egress(containerId, event.dstAddr)
+    AND !cp.was_address_in_egress(containerId, event.dstAddr)
 ```
 
 The exec arm catches the binary by name; the network arm catches any outbound to the cluster's API endpoint(s), so a Go or Python client using the in-cluster config also triggers when the workload was not previously observed talking to the API server.

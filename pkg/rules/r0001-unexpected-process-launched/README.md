@@ -23,7 +23,7 @@ The node agent builds a per-container **application profile** during a learning 
 Simplified CEL:
 
 ```
-!ap.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
+!cp.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
 ```
 
 The exec path is resolved exepath-first to stay symmetric with the recording side, which stores the kernel-resolved path. The resolution is a plain CEL ternary (no special engine support required, so it runs on every agent version):
