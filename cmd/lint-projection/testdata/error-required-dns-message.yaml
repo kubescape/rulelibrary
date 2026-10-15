@@ -1,0 +1,9 @@
+spec:
+  rules:
+    - id: RDNS
+      profileDependency: 0
+      expressions:
+        message: "string(.cp.was_executed(event.containerId,event.exepath))"
+        ruleExpression:
+          - eventType: dns
+            expression: "!cp.was_dns_resolved(event.containerId,event.name)"

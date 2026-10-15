@@ -6,45 +6,79 @@
 | MITRE Tactic | Command and Control (TA0011) |
 | MITRE Technique | Application Layer Protocol: DNS (T1071.004) |
 | Platforms | Host, Kubernetes, ECS |
-| Requires Application Profile | Yes (uses Network Neighborhood) |
+| Requires Container Profile | Yes — completed/full, DNS-aware and nontruncated |
 
 ## Description
 
-Detects DNS queries from a host or container to domains that were not observed in the container's Network Neighborhood during the learning window. Cluster-internal lookups (anything ending in `.svc.cluster.local.`) are excluded so the rule focuses on external destinations. A workload's external DNS pattern is usually narrow and predictable; any new domain is either a new dependency rollout or an outbound channel the attacker wants to use.
+Detects a successful answered DNS response for a name absent from the container's
+learned DNS baseline. DNS-only, cluster-internal and reverse lookups are learned
+directly, even without a connection. A new name after learning can indicate a
+legitimate dependency change or unexpected outbound activity.
 
 ## Attack Technique
 
-Mapped to **MITRE T1071.004 — Application Layer Protocol: DNS** under **TA0011 — Command and Control**. DNS is a near-universally-allowed egress channel, which makes it the first protocol attackers reach for: command-and-control beacons, DNS-tunneled exfiltration, payload-fetch from attacker-controlled domains, and lookups for cloud-metadata or third-party APIs all surface here. Catching them at the DNS layer is cheap and language-agnostic.
+Mapped to **MITRE T1071.004 — Application Layer Protocol: DNS**, under
+**TA0011 — Command and Control**. Attackers can resolve infrastructure for
+command-and-control, payload retrieval or DNS-tunneled exfiltration. A new name
+is an investigation signal; this rule alone does not establish malicious intent.
 
 ## How It Works
 
-The node agent records every external (non-cluster-internal) domain queried during the learning window into the container's Network Neighborhood. After the baseline is finalized, every DNS event is matched:
+During the existing container learning window, successful DNS responses with
+answers contribute canonical names to `spec.dnsLookups`. After learning:
 
-```
-!event.name.endsWith('.svc.cluster.local.')
-  AND !nn.is_domain_in_egress(containerId, event.name)
+```cel
+event.qr == 'R' && event.numAnswers > 0 &&
+has(event.rcode) && event.rcode == 'Success' &&
+!cp.was_dns_resolved(event.containerId, event.name)
 ```
 
-The first clause filters Kubernetes service discovery noise; the second checks whether the destination domain was seen during learning.
+The helper checks DNS history, independently of connection destinations.
+Queries, error responses and empty answers cannot establish anomalies. Missing,
+legacy, partial, TooLarge and DNS-truncated profiles remain silent. IP rotation
+does not affect name matching. Cluster and reverse names have no suffix exemption.
+
+The baseline freezes after completion. Alerts never teach new names. The name
+cap is 4096 per container and the supporting address cap is 16 per name; name
+truncation makes the baseline unsuitable for DNS anomaly matching.
 
 ## Investigation Steps
 
-1. **Resolve the domain to its purpose.** The domain itself often gives away the intent: a typosquat of a CDN, an attacker-themed name, a dynamic-DNS provider, a Pastebin-like service, or a known C2 framework's default domain are all diagnostic.
-2. **Identify the requesting process.** `event.comm` and the container name in `event.containerName` point at the process. A network-facing service suddenly resolving `paste.ee` or a cloud-metadata host is much more interesting than a known cron job hitting a software-update endpoint.
-3. **Pull surrounding events.** A DNS anomaly is often followed by a network connection to the resolved address (R0011 may fire), a download (`curl`/`wget` exec), or a fileless execution. Cross-correlation often confirms or refutes the alert quickly.
-4. **Check threat-intel feeds.** The domain may already be tagged as known-bad. A clean reputation does not exonerate (newly-registered domains are common attacker tradecraft) but a known-bad tag is a strong escalation signal.
-5. **Decide: legitimate change or attack.** If legitimate, allowlist the domain for the workload. If suspicious, isolate the container and begin incident response.
+1. Identify the domain's purpose and compare it with the workload's expected
+   dependencies. Check reputation and registration context where available;
+   a new or clean reputation alone does not establish whether it is benign.
+2. Identify the requesting process using executable path, process name, PID,
+   container and workload metadata. Examine its image/version and recent changes.
+3. Inspect the completed profile's DNS entries and readiness. A recorded network
+   destination is not evidence that this DNS name was learned.
+4. Correlate the lookup with surrounding connections, downloaded files and
+   process executions. For internal names, check the intended Service/workload;
+   for reverse names, identify the address and expected discovery behavior.
+5. Determine whether the name represents an authorized change or suspicious
+   activity before accepting it or starting a new learning window.
 
 ## Remediation
 
-**If the lookup is malicious:** apply an egress policy that denies the domain (or denies all DNS to the resolver if the workload should have no external DNS at all), isolate the container's network egress, preserve memory and disk, rotate any credentials reachable from the workload (see "blast radius"), and begin incident response. Look for the upstream activity that brought the domain into the workload's behavior — a freshly-dropped binary or a config change is the usual ingress.
+**Malicious activity:** contain the affected workload, restrict the unwanted
+communication, preserve relevant evidence, and investigate the process and
+credentials involved according to the incident-response procedure.
 
-**If the lookup is legitimate:** allowlist the specific domain (and ideally only that domain) via a per-rule policy. The Network Neighborhood will pick the domain up at the next baseline pass.
-
-Some workloads (CI runners, orchestrators, scrapers) make DNS queries to a long tail of unpredictable domains by design and are unsuited for DNS anomaly detection.
+**Legitimate activity:** apply a scoped Risk Acceptance or explicitly relearn
+an updated workload in a trusted state. A repeated alert does not update the
+baseline, and there is no scheduled baseline pass that automatically accepts it.
+Stable host identities and mutable image tags require explicit relearning after
+software changes that leave the profile identity unchanged.
 
 ## False Positives
 
-- **Long-tail external dependencies the workload uses only occasionally.** A monthly software-update check, a billing-API call once per cycle, or a vendor health check that was not exercised during learning.
-- **CDN domain rotation.** Some services rotate hostnames (e.g. signed-URL hosts under `*.cloudfront.net` or `*.s3.amazonaws.com`) that the baseline did not see verbatim.
-- **Workloads with broad external surface by design.** Web scrapers, build orchestrators, and CI runners visit domains that cannot be enumerated up front.
+- Infrequently used dependencies or maintenance endpoints not exercised during learning.
+- Rotating CDN hostnames; changing IP addresses alone do not cause a DNS mismatch.
+- Authorized new cluster services, reverse lookups or workload dependencies after completion.
+- Scrapers, build orchestrators and CI runners with intentionally unpredictable name sets.
+
+## Rollout
+
+Deploy DNS-aware storage and agents first. After all agents are upgraded,
+explicitly relearn old and mixed-version profiles, including those already
+carrying a DNS version marker. Then enable this rule version with a compatible
+released agent version. Older agents cannot compile `cp.was_dns_resolved`.

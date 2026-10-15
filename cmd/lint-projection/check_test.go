@@ -15,6 +15,9 @@ func TestLintFile(t *testing.T) {
 		wantSubstrs    []string
 	}{
 		{"testdata/valid-required.yaml", nil, nil},
+		{"testdata/valid-required-dns.yaml", nil, nil},
+		{"testdata/error-required-dns-message.yaml", []Severity{SeverityError}, []string{"C1", "must be present"}},
+		{"testdata/error-required-dns-mixed.yaml", []Severity{SeverityError}, []string{"C1", "must be present"}},
 		{"testdata/valid-optional-all.yaml", nil, nil},
 		{"testdata/valid-notrequired-no-decl.yaml", nil, nil},
 		{"testdata/error-required-missing.yaml", []Severity{SeverityError}, []string{"C1", "must be present"}},
@@ -51,4 +54,28 @@ func TestLintExitCode(t *testing.T) {
 		}
 	}
 	assert.True(t, hasError)
+}
+
+func TestDNSProfileDoesNotRequireSelectiveProjection(t *testing.T) {
+	for _, tc := range []struct {
+		expression string
+		want       bool
+	}{
+		{"!cp.was_dns_resolved(event.containerId,event.name)", true},
+		{"!.cp.was_dns_resolved(event.containerId,event.name)", true},
+		{"cp.was_dns_resolved(event.containerId,event.name) && .cp.was_executed(event.containerId,event.exepath)", false},
+		{"cp.was_dns_resolved(event.containerId,event.name) && .ap.was_executed(event.containerId,event.exepath)", false},
+		{"cp.was_dns_resolved(event.containerId,event.name) && .nn.is_domain_in_egress(event.containerId,event.name)", false},
+		{"!cp.was_dns_resolved_by_process(event.containerId,event.name,event.exepath)", true},
+		{"event.args.exists(a, cp.was_dns_resolved(event.containerId,a))", true},
+		{"cp.was_dns_resolved(event.containerId,event.name) && ap.was_executed(event.containerId,event.exepath)", false},
+		{"cp.was_dns_resolved(event.containerId,event.name) && nn.is_domain_in_egress(event.containerId,event.name)", false},
+		{"'cp.was_dns_resolved(event.containerId,event.name)' == ''", false},
+		{"true // cp.was_dns_resolved(event.containerId,event.name)", false},
+		{"cp.was_dns_resolved(", false},
+	} {
+		if got := usesOnlyDNSProfile([]string{tc.expression}); got != tc.want {
+			t.Errorf("%q: got %v, want %v", tc.expression, got, tc.want)
+		}
+	}
 }
