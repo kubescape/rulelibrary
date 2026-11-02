@@ -768,3 +768,218 @@ spec:
           - "context:kubernetes"
           - "admission"
           - "network"
+      - name: "Pod shares host namespace"
+        enabled: true
+        id: "R2002"
+        description: "Detects pod creation with hostPID, hostIPC or hostNetwork enabled, via the Kubernetes admission webhook"
+        expressions:
+          message: >-
+            'Pod shares host namespace (' +
+            ["hostPID", "hostIPC", "hostNetwork"].filter(f, f in object.spec && object.spec[f] == true).join(', ') +
+            '): ' + event.Namespace + '/' +
+            (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')) +
+            ' by ' + event.UserInfo.Username
+          uniqueId: >-
+            event.Namespace + '/' +
+            (has(object.metadata.ownerReferences) && object.metadata.ownerReferences.size() > 0
+              ? string(object.metadata.ownerReferences[0].kind) + '/' + string(object.metadata.ownerReferences[0].name)
+              : (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')))
+          ruleExpression:
+            - eventType: "k8s-admission"
+              expression: >-
+                event.Kind == "Pod" &&
+                event.Operation == "CREATE" &&
+                !(event.Namespace in ["kube-system", "kube-public", "kube-node-lease", "kubescape"]) &&
+                has(object.spec) &&
+                ["hostPID", "hostIPC", "hostNetwork"].exists(f, f in object.spec && object.spec[f] == true)
+        profileDependency: 2
+        severity: 6
+        supportPolicy: false
+        isTriggerAlert: true
+        mitreTactic: "TA0004"
+        mitreTechnique: "T1611"
+        tags:
+          - "context:kubernetes"
+          - "admission"
+          - "container-escape"
+          - "host-namespace"
+      - name: "Privileged pod created"
+        enabled: true
+        id: "R2003"
+        description: "Detects pod creation where a container runs privileged or adds a host-breaking Linux capability, via the Kubernetes admission webhook"
+        expressions:
+          message: >-
+            'Privileged pod created: ' + event.Namespace + '/' +
+            (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')) +
+            ' by ' + event.UserInfo.Username
+          uniqueId: >-
+            event.Namespace + '/' +
+            (has(object.metadata.ownerReferences) && object.metadata.ownerReferences.size() > 0
+              ? string(object.metadata.ownerReferences[0].kind) + '/' + string(object.metadata.ownerReferences[0].name)
+              : (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')))
+          ruleExpression:
+            - eventType: "k8s-admission"
+              expression: >-
+                event.Kind == "Pod" &&
+                event.Operation == "CREATE" &&
+                !(event.Namespace in ["kube-system", "kube-public", "kube-node-lease", "kubescape"]) &&
+                has(object.spec) && has(object.spec.containers) &&
+                (object.spec.containers
+                  + (has(object.spec.initContainers) ? object.spec.initContainers : [])
+                  + (has(object.spec.ephemeralContainers) ? object.spec.ephemeralContainers : [])
+                ).exists(c,
+                  has(c.securityContext) &&
+                  [
+                    has(c.securityContext.privileged) && c.securityContext.privileged == true,
+                    has(c.securityContext.capabilities) && has(c.securityContext.capabilities.add) &&
+                      c.securityContext.capabilities.add.exists(cap,
+                        cap in ["ALL", "SYS_ADMIN", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO", "SYS_BOOT",
+                                "NET_ADMIN", "DAC_READ_SEARCH", "BPF", "PERFMON", "SYS_TIME"])
+                  ].exists(b, b)
+                )
+        profileDependency: 2
+        severity: 8
+        supportPolicy: false
+        isTriggerAlert: true
+        mitreTactic: "TA0004"
+        mitreTechnique: "T1611"
+        tags:
+          - "context:kubernetes"
+          - "admission"
+          - "container-escape"
+          - "privileged"
+          - "capabilities"
+      - name: "Pod created with sensitive hostPath volume"
+        enabled: true
+        id: "R2004"
+        description: "Detects pod creation with a hostPath volume on a sensitive host location such as /, /etc, /var/lib/kubelet or the container runtime socket directories, via the Kubernetes admission webhook"
+        expressions:
+          message: >-
+            'Pod created with sensitive hostPath volume: ' +
+            object.spec.volumes.filter(v, has(v.hostPath) && has(v.hostPath.path)).map(v, string(v.hostPath.path)).join(', ') +
+            ' in ' + event.Namespace + '/' +
+            (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')) +
+            ' by ' + event.UserInfo.Username
+          uniqueId: >-
+            event.Namespace + '/' +
+            (has(object.metadata.ownerReferences) && object.metadata.ownerReferences.size() > 0
+              ? string(object.metadata.ownerReferences[0].kind) + '/' + string(object.metadata.ownerReferences[0].name)
+              : (event.Name != '' ? event.Name : (has(object.metadata.generateName) ? string(object.metadata.generateName) : 'unnamed')))
+          ruleExpression:
+            - eventType: "k8s-admission"
+              expression: >-
+                event.Kind == "Pod" &&
+                event.Operation == "CREATE" &&
+                !(event.Namespace in ["kube-system", "kube-public", "kube-node-lease", "kubescape"]) &&
+                has(object.spec) && has(object.spec.volumes) &&
+                object.spec.volumes
+                  .filter(v, has(v.hostPath) && has(v.hostPath.path))
+                  .map(v, "/" + string(v.hostPath.path).split("/")
+                    .filter(c, c != "" && c != ".")
+                    .map(c, c + "/").join(""))
+                  .exists(p, [
+                    p == "/",
+                    ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
+                     "/var/lib/docker/overlay2/", "/var/run/", "/run/"].exists(d, p.startsWith(d))
+                  ].exists(b, b))
+        profileDependency: 2
+        severity: 8
+        supportPolicy: false
+        isTriggerAlert: true
+        mitreTactic: "TA0004"
+        mitreTechnique: "T1611"
+        tags:
+          - "context:kubernetes"
+          - "admission"
+          - "container-escape"
+          - "hostpath"
+      - name: "cluster-admin role bound"
+        enabled: true
+        id: "R2005"
+        description: "Detects a ClusterRoleBinding or RoleBinding that grants the cluster-admin ClusterRole, created or given new subjects, via the Kubernetes admission webhook"
+        expressions:
+          message: >-
+            'cluster-admin granted via ' + event.Kind + ' ' +
+            (event.Namespace != '' ? event.Namespace + '/' : '') + event.Name + ' to ' +
+            (has(object.subjects)
+              ? object.subjects.map(s, string(s.kind) + ':' + (has(s.namespace) ? string(s.namespace) + '/' : '') + string(s.name)).join(', ')
+              : 'no subjects') +
+            ' by ' + event.UserInfo.Username
+          uniqueId: >-
+            event.Kind + '/' + (event.Namespace != '' ? event.Namespace + '/' : '') + event.Name
+          ruleExpression:
+            - eventType: "k8s-admission"
+              expression: >-
+                [event.Kind == "ClusterRoleBinding", event.Kind == "RoleBinding"].exists(k, k) &&
+                event.Operation in ["CREATE", "UPDATE"] &&
+                has(object.roleRef) && has(object.roleRef.kind) && has(object.roleRef.name) &&
+                object.roleRef.kind == "ClusterRole" &&
+                object.roleRef.name == "cluster-admin" &&
+                (event.Operation == "CREATE"
+                  ? true
+                  : (has(object.subjects) ? object.subjects : []) != (has(oldObject.subjects) ? oldObject.subjects : []))
+        profileDependency: 2
+        severity: 8
+        supportPolicy: false
+        isTriggerAlert: true
+        mitreTactic: "TA0003"
+        mitreTechnique: "T1098.006"
+        tags:
+          - "context:kubernetes"
+          - "admission"
+          - "rbac"
+          - "privilege-escalation"
+      - name: "High privileges role created"
+        enabled: true
+        id: "R2006"
+        description: "Detects a ClusterRole or Role that grants wildcard verbs, escalate/bind/impersonate, write access to RBAC objects, pod exec, token or secret resources, or secret enumeration, created or widened via the Kubernetes admission webhook"
+        expressions:
+          message: >-
+            'High privileges ' + event.Kind + ' ' +
+            (event.Namespace != '' ? event.Namespace + '/' : '') + event.Name +
+            (event.Operation == "CREATE" ? ' created' : ' updated') +
+            ' by ' + event.UserInfo.Username + ' granting ' +
+            ["*", "escalate", "bind", "impersonate", "create", "update", "patch", "list", "watch"]
+              .filter(v, object.rules.exists(r, has(r.verbs) && v in r.verbs)).join('/') +
+            ' on ' +
+            ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings",
+             "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets",
+             "*/exec", "*/attach", "*/token", "*/proxy"]
+              .filter(res, object.rules.exists(r, has(r.resources) && res in r.resources)).join(',')
+          uniqueId: >-
+            event.Kind + '/' + (event.Namespace != '' ? event.Namespace + '/' : '') + event.Name
+          ruleExpression:
+            - eventType: "k8s-admission"
+              expression: >-
+                [event.Kind == "ClusterRole", event.Kind == "Role"].exists(k, k) &&
+                event.Operation in ["CREATE", "UPDATE"] &&
+                event.UserInfo.Username != "system:serviceaccount:kube-system:clusterrole-aggregation-controller" &&
+                has(object.rules) &&
+                (event.Operation == "CREATE"
+                  ? true
+                  : object.rules != (has(oldObject.rules) ? oldObject.rules : [])) &&
+                object.rules.exists(r,
+                  has(r.verbs) && has(r.resources) && has(r.apiGroups) && [
+                    r.verbs.exists(v, v in ["*", "escalate", "bind", "impersonate"]),
+                    (r.apiGroups.exists(g, g in ["", "*"]) &&
+                      r.verbs.exists(v, v in ["create", "update", "patch"]) &&
+                      r.resources.exists(res, res in ["*", "pods/exec", "pods/attach", "serviceaccounts/token", "nodes/proxy", "secrets",
+                                                      "*/exec", "*/attach", "*/token", "*/proxy"])),
+                    (r.apiGroups.exists(g, g in ["rbac.authorization.k8s.io", "*"]) &&
+                      r.verbs.exists(v, v in ["create", "update", "patch"]) &&
+                      r.resources.exists(res, res in ["*", "clusterroles", "clusterrolebindings", "roles", "rolebindings"])),
+                    (r.apiGroups.exists(g, g in ["", "*"]) &&
+                      r.verbs.exists(v, v in ["list", "watch"]) &&
+                      r.resources.exists(res, res in ["*", "secrets"]))
+                  ].exists(b, b))
+        profileDependency: 2
+        severity: 8
+        supportPolicy: false
+        isTriggerAlert: true
+        mitreTactic: "TA0004"
+        mitreTechnique: "T1098.006"
+        tags:
+          - "context:kubernetes"
+          - "admission"
+          - "rbac"
+          - "privilege-escalation"
