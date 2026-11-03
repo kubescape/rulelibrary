@@ -1,0 +1,8 @@
+spec:
+  rules:
+    - id: RDNS
+      profileDependency: 0
+      expressions:
+        ruleExpression:
+          - eventType: dns
+            expression: "!cp.was_dns_resolved(event.containerId,event.name) && !ap.was_executed(event.containerId,event.exepath)"

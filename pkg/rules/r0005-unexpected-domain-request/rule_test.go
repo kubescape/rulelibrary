@@ -1,129 +1,63 @@
 package r0005unexpecteddomainrequest
 
 import (
-	"testing"
-	"time"
-
-	"github.com/goradd/maps"
-	"github.com/kubescape/node-agent/pkg/config"
-	"github.com/kubescape/node-agent/pkg/ebpf/events"
-	"github.com/kubescape/node-agent/pkg/objectcache"
-	"github.com/kubescape/node-agent/pkg/utils"
-	"github.com/kubescape/storage/pkg/apis/softwarecomposition/v1beta1"
-
-	objectcachev1 "github.com/kubescape/node-agent/pkg/objectcache/v1"
-	celengine "github.com/kubescape/node-agent/pkg/rulemanager/cel"
-	"github.com/kubescape/node-agent/pkg/rulemanager/cel/libraries/cache"
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
+	"github.com/google/cel-go/common/types/ref"
 	"github.com/kubescape/rulelibrary/pkg/common"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
-func TestR0005UnexpectedDomainRequest(t *testing.T) {
-	ruleSpec, err := common.LoadRuleFromYAML("unexpected-domain-request.yaml")
-	if err != nil {
-		t.Fatalf("Failed to load rule: %v", err)
-	}
-
-	// Create a DNS event
-	e := &utils.StructEvent{
-		Comm:        "test-process",
-		Container:   "test",
-		ContainerID: "test",
-		DNSName:     "test.com",
-		EventType:   utils.DnsEventType,
-		Pid:         1234,
-		Qr:          utils.DNSPktTypeQuery,
-	}
-
-	objCache := &objectcachev1.RuleObjectCacheMock{
-		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
-	}
-
-	objCache.SetSharedContainerData("test", &objectcache.WatchedContainerData{
-		ContainerType: objectcache.Container,
-		ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
-			objectcache.Container: {
-				{
-					Name: "test",
-				},
-			},
-		},
-	})
-
-	celEngine, err := celengine.NewCEL(objCache, config.Config{
-		CelConfigCache: cache.FunctionCacheConfig{
-			MaxSize: 1000,
-			TTL:     1 * time.Microsecond,
-		},
-	})
-	if err != nil {
-		t.Fatalf("Failed to create CEL engine: %v", err)
-	}
-	enrichedEvent := &events.EnrichedEvent{
-		Event: e,
-	}
-
-	// Test without profile - should trigger alert
-	ok, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
-	if err != nil {
-		t.Fatalf("Failed to evaluate rule: %v", err)
-	}
-	if !ok {
-		t.Fatalf("Rule evaluation failed - should have detected unexpected domain")
-	}
-
-	// Evaluate the message
-	message, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.Message)
-	if err != nil {
-		t.Fatalf("Failed to evaluate message: %v", err)
-	}
-	if message != "Unexpected domain communication: test.com from: test" {
-		t.Fatalf("Message evaluation failed, got: %s", message)
-	}
-
-	// Evaluate the unique id
-	uniqueId, err := celEngine.EvaluateExpression(enrichedEvent, ruleSpec.Rules[0].Expressions.UniqueID)
-	if err != nil {
-		t.Fatalf("Failed to evaluate unique id: %v", err)
-	}
-	if uniqueId != "test-process_test.com" {
-		t.Fatalf("Unique id evaluation failed, got: %s", uniqueId)
-	}
-
-	// Sleep for 1 millisecond to make sure the cache is expired
-	time.Sleep(1 * time.Millisecond)
-
-	// Test with whitelisted domain in profile
-	profile := objCache.GetNetworkNeighborhood("test")
-	if profile == nil {
-		profile = &v1beta1.NetworkNeighborhood{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.NetworkNeighborhoodContainer{
-			Name: "test",
-			Egress: []v1beta1.NetworkNeighbor{
-				{
-					DNSNames: []string{"test.com"},
-				},
-			},
+// The rule delegates baseline matching to the agent. Mock that boundary here;
+// learning, profile readiness and persistence are integration-tested in node-agent.
+func TestR0005DNSBaseline(t *testing.T) {
+	rule, err := common.LoadRuleFromYAML("unexpected-domain-request.yaml")
+	require.NoError(t, err)
+	require.EqualValues(t, 0, rule.Rules[0].ProfileDependency)
+	for _, tc := range []struct {
+		name, domain, qr, rcode           string
+		answers                           int64
+		known, unavailable, want, wantErr bool
+	}{
+		{name: "learned DNS only", domain: "example.com.", qr: "R", rcode: "Success", answers: 1, known: true},
+		{name: "learned cluster name", domain: "db.default.svc.cluster.local.", qr: "R", rcode: "Success", answers: 1, known: true},
+		{name: "unlearned cluster name", domain: "new.default.svc.cluster.local.", qr: "R", rcode: "Success", answers: 1, want: true},
+		{name: "new name", domain: "new.example.com.", qr: "R", rcode: "Success", answers: 1, want: true},
+		{name: "connection does not teach DNS", domain: "connection-only.example.", qr: "R", rcode: "Success", answers: 1, want: true},
+		{name: "unavailable baseline", domain: "new.example.com.", qr: "R", rcode: "Success", answers: 1, unavailable: true, wantErr: true},
+		{name: "query", domain: "new.example.com.", qr: "Q"},
+		{name: "NXDOMAIN", domain: "new.example.com.", qr: "R", rcode: "NameError"},
+		{name: "empty answer", domain: "new.example.com.", qr: "R", rcode: "Success"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			env, err := cel.NewEnv(cel.Variable("event", cel.MapType(cel.StringType, cel.DynType)), cel.Function("cp.was_dns_resolved", cel.Overload("test_dns_baseline", []*cel.Type{cel.StringType, cel.StringType}, cel.BoolType, cel.BinaryBinding(func(id, name ref.Val) ref.Val {
+				calls++
+				require.Equal(t, "container", id.Value())
+				require.Equal(t, tc.domain, name.Value())
+				if tc.unavailable {
+					return types.NewErr("profile not available")
+				}
+				return types.Bool(tc.known)
+			}))))
+			require.NoError(t, err)
+			ast, issues := env.Compile(rule.Rules[0].Expressions.RuleExpression[0].Expression)
+			require.NoError(t, issues.Err())
+			program, err := env.Program(ast)
+			require.NoError(t, err)
+			result, _, err := program.Eval(map[string]any{"event": map[string]any{"containerId": "container", "name": tc.domain, "qr": tc.qr, "numAnswers": tc.answers, "rcode": tc.rcode}})
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, result.Value())
+			if tc.qr != "R" || tc.answers == 0 || tc.rcode != "Success" {
+				require.Zero(t, calls)
+			} else {
+				require.Equal(t, 1, calls)
+			}
 		})
-
-		objCache.SetNetworkNeighborhood(profile)
-	}
-
-	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
-	if err != nil {
-		t.Fatalf("Failed to evaluate rule: %v", err)
-	}
-	if ok {
-		t.Fatalf("Rule evaluation should have failed since domain is whitelisted")
-	}
-
-	// Test with in-cluster communication (should be ignored)
-	e.DNSName = "kubernetes.default.svc.cluster.local."
-
-	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
-	if err != nil {
-		t.Fatalf("Failed to evaluate rule: %v", err)
-	}
-	if ok {
-		t.Fatalf("Rule evaluation should have failed for in-cluster communication")
 	}
 }

@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/google/cel-go/cel"
+	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"os"
+	"strings"
 
 	"github.com/armosec/armoapi-go/armotypes"
 	"gopkg.in/yaml.v3"
@@ -29,10 +32,17 @@ func (f Finding) String() string {
 }
 
 // ruleDoc mirrors the relevant fields of a kubescape/rulelibrary rule YAML.
-// We only need profileDependency and profileDataRequired here.
+// DNS-only profile calls use an always-retained baseline rather than selective projection.
 type ruleDoc struct {
 	Spec struct {
 		Rules []struct {
+			Expressions struct {
+				Message        string `yaml:"message"`
+				UniqueID       string `yaml:"uniqueId"`
+				RuleExpression []struct {
+					Expression string `yaml:"expression"`
+				} `yaml:"ruleExpression"`
+			} `yaml:"expressions"`
 			ID                  string                         `yaml:"id"`
 			ProfileDependency   armotypes.ProfileDependency    `yaml:"profileDependency"`
 			ProfileDataRequired *armotypes.ProfileDataRequired `yaml:"profileDataRequired,omitempty"`
@@ -62,7 +72,27 @@ func lintFile(path string) []Finding {
 	var findings []Finding
 	for _, r := range doc.Spec.Rules {
 		line := lineByID[r.ID]
-		findings = append(findings, checkRule(path, line, r.ID, r.ProfileDependency, r.ProfileDataRequired)...)
+		ruleFindings := checkRule(path, line, r.ID, r.ProfileDependency, r.ProfileDataRequired)
+		expressions := make([]string, 0, len(r.Expressions.RuleExpression))
+		for _, expression := range r.Expressions.RuleExpression {
+			expressions = append(expressions, expression.Expression)
+		}
+		for _, expression := range []string{r.Expressions.Message, r.Expressions.UniqueID} {
+			if expression != "" {
+				expressions = append(expressions, expression)
+			}
+		}
+		// DNS is always retained by the agent and has no selective projection declaration.
+		if usesOnlyDNSProfile(expressions) {
+			filtered := ruleFindings[:0]
+			for _, finding := range ruleFindings {
+				if finding.Check != "C1" {
+					filtered = append(filtered, finding)
+				}
+			}
+			ruleFindings = filtered
+		}
+		findings = append(findings, ruleFindings...)
 	}
 	return findings
 }
@@ -137,4 +167,79 @@ func findMappingValue(n *yaml.Node, key string) *yaml.Node {
 		}
 	}
 	return nil
+}
+
+// usesOnlyDNSProfile parses calls rather than matching text: comments and string
+// literals cannot exempt a rule that still needs selective profile projection.
+func usesOnlyDNSProfile(expressions []string) bool {
+	env, err := cel.NewEnv()
+	if err != nil {
+		return false
+	}
+	dns, projected := false, false
+	var qualifiedName func(*exprpb.Expr) string
+	qualifiedName = func(expression *exprpb.Expr) string {
+		if expression == nil {
+			return ""
+		}
+		if ident := expression.GetIdentExpr(); ident != nil {
+			return ident.Name
+		}
+		if selectExpr := expression.GetSelectExpr(); selectExpr != nil {
+			prefix := qualifiedName(selectExpr.Operand)
+			if prefix != "" {
+				return prefix + "." + selectExpr.Field
+			}
+		}
+		return ""
+	}
+	var visit func(*exprpb.Expr)
+	visit = func(expression *exprpb.Expr) {
+		if expression == nil {
+			return
+		}
+		switch node := expression.ExprKind.(type) {
+		case *exprpb.Expr_CallExpr:
+			name := node.CallExpr.Function
+			if prefix := qualifiedName(node.CallExpr.Target); prefix != "" {
+				name = prefix + "." + name
+			}
+			name = strings.TrimPrefix(name, ".")
+			if name == "cp.was_dns_resolved" || name == "cp.was_dns_resolved_by_process" {
+				dns = true
+			} else if strings.HasPrefix(name, "cp.") || strings.HasPrefix(name, "ap.") || strings.HasPrefix(name, "nn.") {
+				projected = true
+			}
+			visit(node.CallExpr.Target)
+			for _, arg := range node.CallExpr.Args {
+				visit(arg)
+			}
+		case *exprpb.Expr_SelectExpr:
+			visit(node.SelectExpr.Operand)
+		case *exprpb.Expr_ListExpr:
+			for _, element := range node.ListExpr.Elements {
+				visit(element)
+			}
+		case *exprpb.Expr_StructExpr:
+			for _, entry := range node.StructExpr.Entries {
+				visit(entry.GetMapKey())
+				visit(entry.Value)
+			}
+		case *exprpb.Expr_ComprehensionExpr:
+			c := node.ComprehensionExpr
+			visit(c.IterRange)
+			visit(c.AccuInit)
+			visit(c.LoopCondition)
+			visit(c.LoopStep)
+			visit(c.Result)
+		}
+	}
+	for _, expression := range expressions {
+		ast, issues := env.Parse(expression)
+		if issues.Err() != nil {
+			return false
+		}
+		visit(ast.Expr())
+	}
+	return dns && !projected
 }
