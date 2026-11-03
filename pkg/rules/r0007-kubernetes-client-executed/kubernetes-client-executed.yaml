@@ -26,8 +26,8 @@ spec:
       severity: 5 # Medium
       supportPolicy: false
       isTriggerAlert: false
-      mitreTactic: "TA0008"
-      mitreTechnique: "T1210"
+      mitreTactic: "TA0007"
+      mitreTechnique: "T1613"
       tags:
         - "context:kubernetes"
         - "exec"

@@ -24,11 +24,11 @@ spec:
       profileDependency: 1
       profileDataRequired:
         egressAddresses: all
-      severity: 3
+      severity: 8 # High
       supportPolicy: false
       isTriggerAlert: false
-      mitreTactic: "TA0011"
-      mitreTechnique: "T1071"
+      mitreTactic: "TA0040"
+      mitreTechnique: "T1496.001"
       tags:
         - "context:kubernetes"
         - "context:host"

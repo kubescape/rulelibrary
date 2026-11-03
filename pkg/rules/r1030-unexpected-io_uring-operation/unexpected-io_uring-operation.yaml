@@ -23,8 +23,8 @@ spec:
       severity: 5
       supportPolicy: true
       isTriggerAlert: true
-      mitreTactic: "TA0002"
-      mitreTechnique: "T1218"
+      mitreTactic: "TA0005"
+      mitreTechnique: "T1014"
       tags:
         - "context:kubernetes"
         - "context:container"
