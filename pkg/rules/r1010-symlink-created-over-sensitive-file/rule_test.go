@@ -122,11 +122,17 @@ func TestR1010SymlinkCreatedOverSensitiveFile(t *testing.T) {
 
 	objCache.SetContainerProfile(profile)
 
+	// Back to the sensitive path, so the rule reaches the profile check: the
+	// profile has opened /etc/shadow, which must suppress the alert.
+	e.OldPath = "/etc/shadow"
+	e.NewPath = "/etc/abc"
+	time.Sleep(1 * time.Millisecond)
+
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
 	if err != nil {
 		t.Fatalf("Failed to evaluate rule: %v", err)
 	}
 	if ok {
-		t.Fatalf("Rule evaluation should have failed")
+		t.Fatalf("Rule evaluation should have failed: the profile opened /etc/shadow")
 	}
 }
