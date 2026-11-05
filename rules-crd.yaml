@@ -357,18 +357,21 @@ spec:
       - name: "Process Executed from /dev/shm"
         enabled: true
         id: "R1000"
-        description: "Detecting exec calls whose executable path or working directory is under /dev/shm, a world-writable memory-backed (tmpfs) directory."
+        description: "Detecting exec calls whose executed file, executable path or working directory is under /dev/shm, a world-writable memory-backed (tmpfs) directory."
         expressions:
-          message: "'Process executed from /dev/shm: ' + event.exepath + ' in directory ' + event.cwd"
-          uniqueId: "event.comm + '_' + event.exepath + '_' + event.pcomm"
+          message: "'Process executed from /dev/shm: ' + (event.file != '' ? event.file : event.exepath) + ' in directory ' + event.cwd"
+          uniqueId: "event.comm + '_' + (event.file != '' ? event.file : event.exepath) + '_' + event.pcomm"
           ruleExpression:
             - eventType: "exec"
               expression: >
                 (event.exepath == '/dev/shm' || event.exepath.startsWith('/dev/shm/')) ||
                 (event.cwd == '/dev/shm' || event.cwd.startsWith('/dev/shm/')) ||
-                (event.args.size() > 0 && (event.args[0] == '/dev/shm' || event.args[0].startsWith('/dev/shm/')))
+                (event.file == '/dev/shm' || event.file.startsWith('/dev/shm/'))
         profileDependency: 2
         severity: 8
+        # event.file exists from kubescape/node-agent v0.3.307; older agents
+        # skip the rule instead of failing to compile it.
+        agentVersionRequirement: ">=0.3.307"
         supportPolicy: false
         isTriggerAlert: true
         mitreTactic: "TA0002"
