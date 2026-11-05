@@ -129,20 +129,18 @@ func TestR1012HardlinkCreatedOverSensitiveFile(t *testing.T) {
 	}
 
 	// Test with profile - since profile is optional, we can test policy validation
-	profile := objCache.GetApplicationProfile("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.ApplicationProfile{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-			Name: "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			PolicyByRuleId: map[string]v1beta1.RulePolicy{
 				"R1012": {
 					AllowedProcesses: []string{"/usr/sbin/groupadd"},
 				},
 			},
-		})
+		}}
 	}
 
-	objCache.SetApplicationProfile(profile)
+	objCache.SetContainerProfile(profile)
 
 	// Test with whitelisted process
 	e.Comm = "/usr/sbin/groupadd"
@@ -150,7 +148,7 @@ func TestR1012HardlinkCreatedOverSensitiveFile(t *testing.T) {
 	e.NewPath = "/etc/abc"
 
 	v := rulemanager.NewRulePolicyValidator(objCache)
-	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &objectcache.ProjectedContainerProfile{PolicyByRuleId: profile.Spec.Containers[0].PolicyByRuleId})
+	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &objectcache.ProjectedContainerProfile{PolicyByRuleId: profile.Spec.PolicyByRuleId})
 	if err != nil {
 		t.Fatalf("Failed to validate rule policy: %v", err)
 	}

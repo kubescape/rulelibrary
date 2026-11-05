@@ -159,11 +159,9 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 	// Sleep for 1 millisecond to make sure the cache is expired
 	time.Sleep(1 * time.Millisecond)
 
-	nn := objCache.GetNetworkNeighborhood("test-container")
+	nn := objCache.GetContainerProfile("test-container")
 	if nn == nil {
-		nn = &v1beta1.NetworkNeighborhood{}
-		nn.Spec.Containers = append(nn.Spec.Containers, v1beta1.NetworkNeighborhoodContainer{
-			Name: "test",
+		nn = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			Egress: []v1beta1.NetworkNeighbor{
 				{
 					DNS:       "test.com",
@@ -171,9 +169,9 @@ func TestR1009CryptoMiningRelatedPort(t *testing.T) {
 					IPAddress: "4.4.4.4",
 				},
 			},
-		})
+		}}
 
-		objCache.SetNetworkNeighborhood(nn)
+		objCache.SetContainerProfile(nn)
 	}
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

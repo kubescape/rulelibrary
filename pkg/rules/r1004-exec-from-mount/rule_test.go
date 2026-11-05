@@ -136,23 +136,18 @@ func TestR1004ExecFromMount(t *testing.T) {
 	}
 
 	// Test with application profile that whitelists the exec
-	profile := &v1beta1.ApplicationProfile{
-		Spec: v1beta1.ApplicationProfileSpec{
-			Containers: []v1beta1.ApplicationProfileContainer{
+	profile := &v1beta1.ContainerProfile{
+		Spec: v1beta1.ContainerProfileSpec{
+			Execs: []v1beta1.ExecCalls{
 				{
-					Name: "test",
-					Execs: []v1beta1.ExecCalls{
-						{
-							Path: "/var/test1/test",
-							Args: []string{"/var/test1/test", "arg1"},
-						},
-					},
+					Path: "/var/test1/test",
+					Args: []string{"/var/test1/test", "arg1"},
 				},
 			},
 		},
 	}
 
-	objCache.SetApplicationProfile(profile)
+	objCache.SetContainerProfile(profile)
 
 	// Sleep for 1 millisecond to make sure the cache is expired
 	time.Sleep(1 * time.Millisecond)
@@ -353,17 +348,12 @@ func TestR1004ExepathFallback(t *testing.T) {
 			})
 			objCache.SetPodSpec(podSpec)
 
-			profile := &v1beta1.ApplicationProfile{
-				Spec: v1beta1.ApplicationProfileSpec{
-					Containers: []v1beta1.ApplicationProfileContainer{
-						{
-							Name:  "test",
-							Execs: tt.profileExecs,
-						},
-					},
+			profile := &v1beta1.ContainerProfile{
+				Spec: v1beta1.ContainerProfileSpec{
+					Execs: tt.profileExecs,
 				},
 			}
-			objCache.SetApplicationProfile(profile)
+			objCache.SetContainerProfile(profile)
 
 			celEngine, err := celengine.NewCEL(objCache, config.Config{
 				CelConfigCache: cache.FunctionCacheConfig{

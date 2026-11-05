@@ -41,12 +41,10 @@ func newObjCacheWithProfile() *objectcachev1.RuleObjectCacheMock {
 		},
 	})
 
-	profile := &v1beta1.ApplicationProfile{}
-	profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-		Name:  "test",
+	profile := &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 		Execs: recordedExecs(),
-	})
-	objCache.SetApplicationProfile(profile)
+	}}
+	objCache.SetContainerProfile(profile)
 	return objCache
 }
 

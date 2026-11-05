@@ -92,20 +92,18 @@ func TestR0002UnexpectedFileAccess(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Create profile
-	profile := objCache.GetApplicationProfile("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.ApplicationProfile{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-			Name: "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			Opens: []v1beta1.OpenCalls{
 				{
 					Path:  "/etc/test",
 					Flags: []string{"O_RDONLY"},
 				},
 			},
-		})
+		}}
 
-		objCache.SetApplicationProfile(profile)
+		objCache.SetContainerProfile(profile)
 	}
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

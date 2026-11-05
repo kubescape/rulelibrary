@@ -36,16 +36,11 @@ func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, 
 	}
 }
 
-// createTestProfile creates a test ApplicationProfile
-func createTestProfile(containerName string, execCalls []v1beta1.ExecCalls) *v1beta1.ApplicationProfile {
-	return &v1beta1.ApplicationProfile{
-		Spec: v1beta1.ApplicationProfileSpec{
-			Containers: []v1beta1.ApplicationProfileContainer{
-				{
-					Name:  containerName,
-					Execs: execCalls,
-				},
-			},
+// createTestProfile creates a test ContainerProfile
+func createTestProfile(execCalls []v1beta1.ExecCalls) *v1beta1.ContainerProfile {
+	return &v1beta1.ContainerProfile{
+		Spec: v1beta1.ContainerProfileSpec{
+			Execs: execCalls,
 		},
 	}
 }
@@ -60,7 +55,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 	tests := []struct {
 		name          string
 		event         *utils.StructEvent
-		profile       *v1beta1.ApplicationProfile
+		profile       *v1beta1.ContainerProfile
 		expectTrigger bool
 		description   string
 	}{
@@ -91,7 +86,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 		{
 			name:  "execution from upper layer with profile",
 			event: createTestExecEvent("test", "container123", "/tmp/whitelisted", "/tmp/whitelisted", "/", []string{"/tmp/whitelisted"}, true, false),
-			profile: createTestProfile("test", []v1beta1.ExecCalls{
+			profile: createTestProfile([]v1beta1.ExecCalls{
 				{Path: "/tmp/whitelisted", Args: []string{"/tmp/whitelisted"}},
 			}),
 			expectTrigger: false,
@@ -100,7 +95,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 		{
 			name:  "execution from base image with profile",
 			event: createTestExecEvent("test", "container123", "/bin/ls", "/bin/ls", "/", []string{"/bin/ls", "-la"}, false, false),
-			profile: createTestProfile("test", []v1beta1.ExecCalls{
+			profile: createTestProfile([]v1beta1.ExecCalls{
 				{Path: "/bin/ls", Args: []string{"/bin/ls", "-la"}},
 			}),
 			expectTrigger: false,
@@ -109,7 +104,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 		{
 			name:  "execution from upper layer with non-matching profile",
 			event: createTestExecEvent("test", "container123", "/tmp/malicious", "/tmp/malicious", "/", []string{"/tmp/malicious"}, true, false),
-			profile: createTestProfile("test", []v1beta1.ExecCalls{
+			profile: createTestProfile([]v1beta1.ExecCalls{
 				{Path: "/bin/ls", Args: []string{"/bin/ls"}},
 			}),
 			expectTrigger: true,
@@ -143,7 +138,7 @@ func TestR1001ExecBinaryNotInBaseImage(t *testing.T) {
 
 			// Set application profile if provided
 			if tt.profile != nil {
-				objCache.SetApplicationProfile(tt.profile)
+				objCache.SetContainerProfile(tt.profile)
 			}
 
 			// Create CEL engine
@@ -211,14 +206,14 @@ func TestR1001ExepathFallback(t *testing.T) {
 	tests := []struct {
 		name          string
 		event         *utils.StructEvent
-		profile       *v1beta1.ApplicationProfile
+		profile       *v1beta1.ContainerProfile
 		expectTrigger bool
 		description   string
 	}{
 		{
 			name:  "relative argv[0] suppressed via exepath",
 			event: createTestExecEvent("test", "container123", "python", "/usr/bin/python3", "/", []string{"./python"}, true, false),
-			profile: createTestProfile("test", []v1beta1.ExecCalls{
+			profile: createTestProfile([]v1beta1.ExecCalls{
 				{Path: "/usr/bin/python3", Args: []string{"./python"}},
 			}),
 			expectTrigger: false,
@@ -227,7 +222,7 @@ func TestR1001ExepathFallback(t *testing.T) {
 		{
 			name:  "empty argv[0] (fexecve) suppressed via exepath",
 			event: createTestExecEvent("test", "container123", "unix_chkpwd", "/usr/sbin/unix_chkpwd", "/", []string{"", "root"}, true, false),
-			profile: createTestProfile("test", []v1beta1.ExecCalls{
+			profile: createTestProfile([]v1beta1.ExecCalls{
 				{Path: "/usr/sbin/unix_chkpwd", Args: []string{"", "root"}},
 			}),
 			expectTrigger: false,
@@ -236,7 +231,7 @@ func TestR1001ExepathFallback(t *testing.T) {
 		{
 			name:  "empty exepath fallback guard — argv[0] match suppresses",
 			event: createTestExecEvent("test", "container123", "foo", "", "/", []string{"/usr/bin/foo"}, true, false),
-			profile: createTestProfile("test", []v1beta1.ExecCalls{
+			profile: createTestProfile([]v1beta1.ExecCalls{
 				{Path: "/usr/bin/foo", Args: []string{"/usr/bin/foo"}},
 			}),
 			expectTrigger: false,
@@ -245,7 +240,7 @@ func TestR1001ExepathFallback(t *testing.T) {
 		{
 			name:  "both miss — rule still fires",
 			event: createTestExecEvent("test", "container123", "newbinary", "/tmp/newbinary", "/", []string{"./newbinary"}, true, false),
-			profile: createTestProfile("test", []v1beta1.ExecCalls{
+			profile: createTestProfile([]v1beta1.ExecCalls{
 				{Path: "/usr/bin/something-else", Args: []string{"/usr/bin/something-else"}},
 			}),
 			expectTrigger: true,
@@ -268,7 +263,7 @@ func TestR1001ExepathFallback(t *testing.T) {
 			})
 
 			if tt.profile != nil {
-				objCache.SetApplicationProfile(tt.profile)
+				objCache.SetContainerProfile(tt.profile)
 			}
 
 			celEngine, err := celengine.NewCEL(objCache, config.Config{

@@ -100,11 +100,9 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Test with whitelisted address in network neighborhood
-	nn := objCache.GetNetworkNeighborhood("test")
+	nn := objCache.GetContainerProfile("test")
 	if nn == nil {
-		nn = &v1beta1.NetworkNeighborhood{}
-		nn.Spec.Containers = append(nn.Spec.Containers, v1beta1.NetworkNeighborhoodContainer{
-			Name: "test",
+		nn = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			Egress: []v1beta1.NetworkNeighbor{
 				{
 					DNS:       "cloudflare.com",
@@ -112,9 +110,9 @@ func TestR0011UnexpectedEgressNetworkTraffic(t *testing.T) {
 					IPAddress: "1.1.1.1",
 				},
 			},
-		})
+		}}
 
-		objCache.SetNetworkNeighborhood(nn)
+		objCache.SetContainerProfile(nn)
 	}
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

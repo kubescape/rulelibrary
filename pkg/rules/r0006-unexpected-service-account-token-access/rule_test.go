@@ -32,16 +32,11 @@ func createTestEvent(containerName, containerID, path string, flags []string) *u
 	}
 }
 
-// createTestProfile creates a test ApplicationProfile
-func createTestProfile(containerName string, openCalls []v1beta1.OpenCalls) *v1beta1.ApplicationProfile {
-	return &v1beta1.ApplicationProfile{
-		Spec: v1beta1.ApplicationProfileSpec{
-			Containers: []v1beta1.ApplicationProfileContainer{
-				{
-					Name:  containerName,
-					Opens: openCalls,
-				},
-			},
+// createTestProfile creates a test ContainerProfile
+func createTestProfile(openCalls []v1beta1.OpenCalls) *v1beta1.ContainerProfile {
+	return &v1beta1.ContainerProfile{
+		Spec: v1beta1.ContainerProfileSpec{
+			Opens: openCalls,
 		},
 	}
 }
@@ -56,7 +51,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 	tests := []struct {
 		name          string
 		event         *utils.StructEvent
-		profile       *v1beta1.ApplicationProfile
+		profile       *v1beta1.ContainerProfile
 		expectTrigger bool
 		description   string
 	}{
@@ -93,7 +88,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 		{
 			name:  "kubernetes service account token access with matching profile",
 			event: createTestEvent("test", "container123", "/run/secrets/kubernetes.io/serviceaccount/token", []string{"O_RDONLY"}),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/run/secrets/kubernetes.io/serviceaccount/token", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
@@ -102,7 +97,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 		{
 			name:  "eks service account token access with matching profile",
 			event: createTestEvent("test", "container123", "/run/secrets/eks.amazonaws.com/serviceaccount/token", []string{"O_RDONLY"}),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/run/secrets/eks.amazonaws.com/serviceaccount/token", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
@@ -111,7 +106,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 		{
 			name:  "service account token access with different profile path",
 			event: createTestEvent("test", "container123", "/run/secrets/kubernetes.io/serviceaccount/token", []string{"O_RDONLY"}),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/home/user/file.txt", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: true,
@@ -120,7 +115,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 		{
 			name:  "service account namespace access (not a token)",
 			event: createTestEvent("test", "container123", "/run/secrets/kubernetes.io/serviceaccount/namespace", []string{"O_RDONLY"}),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/run/secrets/kubernetes.io/serviceaccount/token", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
@@ -129,7 +124,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 		{
 			name:  "similar path but not service account token",
 			event: createTestEvent("test", "container123", "/run/secrets/kubernetes.io/other/token", []string{"O_RDONLY"}),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/run/secrets/kubernetes.io/serviceaccount/token", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
@@ -155,7 +150,7 @@ func TestR0006UnexpectedServiceAccountTokenAccess(t *testing.T) {
 			})
 			// Set application profile if provided
 			if tt.profile != nil {
-				objCache.SetApplicationProfile(tt.profile)
+				objCache.SetContainerProfile(tt.profile)
 			}
 
 			// Create CEL engine
@@ -245,7 +240,7 @@ func TestR0006WithTimestampPaths(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create event and profile
 			event := createTestEvent("test", "container123", tt.accessPath, []string{"O_RDONLY"})
-			profile := createTestProfile("test", []v1beta1.OpenCalls{
+			profile := createTestProfile([]v1beta1.OpenCalls{
 				{Path: tt.profilePath, Flags: []string{"O_RDONLY"}},
 			})
 
@@ -263,7 +258,7 @@ func TestR0006WithTimestampPaths(t *testing.T) {
 					},
 				},
 			})
-			objCache.SetApplicationProfile(profile)
+			objCache.SetContainerProfile(profile)
 
 			// Create CEL engine
 			celEngine, err := celengine.NewCEL(objCache, config.Config{

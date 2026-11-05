@@ -105,25 +105,23 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 		t.Fatalf("Rule evaluation should always return true for io_uring events regardless of opcode")
 	}
 
-	profile := objCache.GetApplicationProfile("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.ApplicationProfile{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-			Name: "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			PolicyByRuleId: map[string]v1beta1.RulePolicy{
 				"R1030": {
 					AllowedProcesses: []string{"/usr/bin/allowed-process"},
 				},
 			},
-		})
+		}}
 	}
 
-	objCache.SetApplicationProfile(profile)
+	objCache.SetContainerProfile(profile)
 
 	e.Comm = "/usr/bin/allowed-process"
 
 	v := rulemanager.NewRulePolicyValidator(objCache)
-	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &objectcache.ProjectedContainerProfile{PolicyByRuleId: profile.Spec.Containers[0].PolicyByRuleId})
+	ok, err = v.Validate(ruleSpec.Rules[0].ID, e.Comm, &objectcache.ProjectedContainerProfile{PolicyByRuleId: profile.Spec.PolicyByRuleId})
 	if err != nil {
 		t.Fatalf("Failed to validate rule policy: %v", err)
 	}

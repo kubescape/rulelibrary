@@ -94,15 +94,13 @@ func TestR0009EbpfProgramLoad(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Test with whitelisted bpf syscall in profile
-	profile := objCache.GetApplicationProfile("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.ApplicationProfile{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-			Name:     "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			Syscalls: []string{"bpf"},
-		})
+		}}
 
-		objCache.SetApplicationProfile(profile)
+		objCache.SetContainerProfile(profile)
 	}
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

@@ -95,20 +95,18 @@ func TestR0001UnexpectedProcessLaunched(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Create profile
-	profile := objCache.GetApplicationProfile("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.ApplicationProfile{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-			Name: "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			Execs: []v1beta1.ExecCalls{
 				{
 					Path: "/usr/bin/test-process",
 					Args: []string{"test-process", "arg1"},
 				},
 			},
-		})
+		}}
 
-		objCache.SetApplicationProfile(profile)
+		objCache.SetContainerProfile(profile)
 	}
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
@@ -230,12 +228,10 @@ func TestR0001ExepathFallback(t *testing.T) {
 				},
 			})
 
-			profile := &v1beta1.ApplicationProfile{}
-			profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-				Name:  "test",
+			profile := &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 				Execs: tt.profileExecs,
-			})
-			objCache.SetApplicationProfile(profile)
+			}}
+			objCache.SetContainerProfile(profile)
 
 			celEngine, err := celengine.NewCEL(objCache, config.Config{
 				CelConfigCache: cache.FunctionCacheConfig{

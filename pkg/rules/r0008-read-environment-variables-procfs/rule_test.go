@@ -32,16 +32,11 @@ func createTestEvent(containerName, containerID, path string, flags []string, pr
 	}
 }
 
-// createTestProfile creates a test ApplicationProfile
-func createTestProfile(containerName string, openCalls []v1beta1.OpenCalls) *v1beta1.ApplicationProfile {
-	return &v1beta1.ApplicationProfile{
-		Spec: v1beta1.ApplicationProfileSpec{
-			Containers: []v1beta1.ApplicationProfileContainer{
-				{
-					Name:  containerName,
-					Opens: openCalls,
-				},
-			},
+// createTestProfile creates a test ContainerProfile
+func createTestProfile(openCalls []v1beta1.OpenCalls) *v1beta1.ContainerProfile {
+	return &v1beta1.ContainerProfile{
+		Spec: v1beta1.ContainerProfileSpec{
+			Opens: openCalls,
 		},
 	}
 }
@@ -56,7 +51,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 	tests := []struct {
 		name          string
 		event         *utils.StructEvent
-		profile       *v1beta1.ApplicationProfile
+		profile       *v1beta1.ContainerProfile
 		expectTrigger bool
 		description   string
 	}{
@@ -87,7 +82,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		{
 			name:  "procfs environ access with matching profile",
 			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "node"),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/proc/1234/environ", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
@@ -96,7 +91,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		{
 			name:  "procfs environ access with dynamic identifier profile",
 			event: createTestEvent("test", "container123", "/proc/567/environ", []string{"O_RDONLY"}, "java"),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/proc/" + dynamicpathdetector.DynamicIdentifier + "/environ", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: false,
@@ -105,7 +100,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		{
 			name:  "procfs environ access with non-matching profile",
 			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "curl"),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/home/user/file.txt", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: true,
@@ -114,7 +109,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		{
 			name:  "procfs environ access with procfs non-environ profile",
 			event: createTestEvent("test", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "ruby"),
-			profile: createTestProfile("test", []v1beta1.OpenCalls{
+			profile: createTestProfile([]v1beta1.OpenCalls{
 				{Path: "/proc/1/cmdline", Flags: []string{"O_RDONLY"}},
 			}),
 			expectTrigger: true,
@@ -123,7 +118,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 		{
 			name:          "different container name",
 			event:         createTestEvent("test2", "container123", "/proc/1/environ", []string{"O_RDONLY"}, "perl"),
-			profile:       createTestProfile("test", []v1beta1.OpenCalls{{Path: "/proc/1/environ", Flags: []string{"O_RDONLY"}}}),
+			profile:       createTestProfile([]v1beta1.OpenCalls{{Path: "/proc/1/environ", Flags: []string{"O_RDONLY"}}}),
 			expectTrigger: false,
 			description:   "Should not trigger when no profile exists for the container",
 		},
@@ -148,7 +143,7 @@ func TestR0008ReadEnvironmentVariablesProcFS(t *testing.T) {
 
 			// Set application profile if provided
 			if tt.profile != nil {
-				objCache.SetApplicationProfile(tt.profile)
+				objCache.SetContainerProfile(tt.profile)
 			}
 
 			// Create CEL engine
