@@ -16,7 +16,9 @@ import (
 )
 
 // createTestExecEvent creates a test ExecEvent
-func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, args []string) *utils.StructEvent {
+// file is the kernel-executed file (event.file); for a shebang script it is the
+// script while exePath is the interpreter. Pass "" for agents that don't emit it.
+func createTestExecEvent(containerName, containerID, comm, exePath, file, cwd string, args []string) *utils.StructEvent {
 	return &utils.StructEvent{
 		Args:        args,
 		Comm:        comm,
@@ -25,6 +27,7 @@ func createTestExecEvent(containerName, containerID, comm, exePath, cwd string, 
 		Cwd:         cwd,
 		EventType:   utils.ExecveEventType,
 		ExePath:     exePath,
+		File:        file,
 		Gid:         0,
 		Pcomm:       "parent-process",
 		Pid:         1234,
@@ -48,61 +51,73 @@ func TestR1000ExecFromMaliciousSource(t *testing.T) {
 	}{
 		{
 			name:          "normal execution",
-			event:         createTestExecEvent("test", "container123", "/test", "/usr/bin/test", "/", []string{"/usr/bin/test"}),
+			event:         createTestExecEvent("test", "container123", "/test", "/usr/bin/test", "/usr/bin/test", "/", []string{"/usr/bin/test"}),
 			expectTrigger: false,
 			description:   "Should not trigger for normal execution paths",
 		},
 		{
 			name:          "execution from /bin",
-			event:         createTestExecEvent("test", "container123", "/run.sh", "/bin/sh", "/", []string{"/bin/sh", "/run.sh"}),
+			event:         createTestExecEvent("test", "container123", "/run.sh", "/bin/sh", "/bin/sh", "/", []string{"/bin/sh", "/run.sh"}),
 			expectTrigger: false,
 			description:   "Should not trigger for execution from legitimate system paths",
 		},
 		{
 			name:          "execution with ExePath from /dev/shm",
-			event:         createTestExecEvent("test", "container123", "malicious", "/dev/shm/malicious", "/", []string{"/dev/shm/malicious"}),
+			event:         createTestExecEvent("test", "container123", "malicious", "/dev/shm/malicious", "/dev/shm/malicious", "/", []string{"/dev/shm/malicious"}),
 			expectTrigger: true,
 			description:   "Should trigger when ExePath starts with /dev/shm",
 		},
 		{
 			name:          "execution with Cwd in /dev/shm",
-			event:         createTestExecEvent("test", "container123", "./run.sh", "/bin/sh", "/dev/shm", []string{"/bin/sh", "./run.sh"}),
+			event:         createTestExecEvent("test", "container123", "./run.sh", "/bin/sh", "/bin/sh", "/dev/shm", []string{"/bin/sh", "./run.sh"}),
 			expectTrigger: true,
 			description:   "Should trigger when current working directory is /dev/shm",
 		},
 		{
-			name:          "execution with args path from /dev/shm",
-			event:         createTestExecEvent("test", "container123", "/dev/shm/run.sh", "/dev/shm/run.sh", "/", []string{"/dev/shm/run.sh"}),
+			name:          "shebang script in /dev/shm",
+			event:         createTestExecEvent("test", "container123", "run.sh", "/bin/sh", "/dev/shm/run.sh", "/", []string{"/bin/sh", "/dev/shm/run.sh"}),
 			expectTrigger: true,
-			description:   "Should trigger when ExePath starts with /dev/shm",
+			description:   "Should trigger when the executed file is in /dev/shm even though ExePath is the interpreter",
+		},
+		{
+			name:          "argv[0] spoofed to /dev/shm",
+			event:         createTestExecEvent("test", "container123", "sleep", "/usr/bin/sleep", "/usr/bin/sleep", "/", []string{"/dev/shm/x", "100"}),
+			expectTrigger: false,
+			description:   "Should not trigger on a caller-chosen argv[0] (exec -a) when nothing executed is in /dev/shm",
+		},
+		{
+			name:          "agent without event.file, ExePath in /dev/shm",
+			event:         createTestExecEvent("test", "container123", "malicious", "/dev/shm/malicious", "", "/", []string{"/dev/shm/malicious"}),
+			expectTrigger: true,
+			description:   "Should still trigger on ExePath when event.file is empty",
 		},
 		{
 			name:          "execution with relative path in /dev/shm cwd",
-			event:         createTestExecEvent("test", "container123", "./run.sh", "/bin/sh", "/dev/shm", []string{"/bin/sh", "./run.sh"}),
+			event:         createTestExecEvent("test", "container123", "./run.sh", "/bin/sh", "/bin/sh", "/dev/shm", []string{"/bin/sh", "./run.sh"}),
 			expectTrigger: true,
 			description:   "Should trigger when executing relative path in /dev/shm directory",
 		},
 		{
 			name:          "legitimate motd execution",
-			event:         createTestExecEvent("test", "container123", "50-motd-news", "/bin/sh", "/", []string{"/bin/sh", "/etc/update-motd.d/50-motd-news", "--force"}),
+			event:         createTestExecEvent("test", "container123", "50-motd-news", "/bin/sh", "/bin/sh", "/", []string{"/bin/sh", "/etc/update-motd.d/50-motd-news", "--force"}),
 			expectTrigger: false,
 			description:   "Should not trigger for legitimate system processes like motd",
 		},
 		{
 			name:          "execution with /dev/shm in subdirectory",
-			event:         createTestExecEvent("test", "container123", "script", "/dev/shm/subdir/script", "/", []string{"/dev/shm/subdir/script"}),
+			event:         createTestExecEvent("test", "container123", "script", "/dev/shm/subdir/script", "/dev/shm/subdir/script", "/", []string{"/dev/shm/subdir/script"}),
 			expectTrigger: true,
 			description:   "Should trigger for executions from /dev/shm subdirectories",
 		},
 		{
 			name:          "execution with cwd /dev/shm subdirectory",
-			event:         createTestExecEvent("test", "container123", "./test", "/usr/bin/test", "/dev/shm/temp", []string{"/usr/bin/test", "./test"}),
+			event:         createTestExecEvent("test", "container123", "./test", "/usr/bin/test", "/usr/bin/test", "/dev/shm/temp", []string{"/usr/bin/test", "./test"}),
 			expectTrigger: true,
 			description:   "Should trigger when cwd is a subdirectory of /dev/shm",
 		},
 		{
 			name:          "execution containing dev/shm but not starting with it",
-			event:         createTestExecEvent("test", "container123", "test", "/home/user/dev/shm/test", "/", []string{"/home/user/dev/shm/test"}),
+			event:         createTestExecEvent("test", "container123", "test", "/home/user/dev/shm/test", "/home/user/dev/shm/test", "/", []string{"/home/user/dev/shm/test"}),
 			expectTrigger: false,
 			description:   "Should not trigger for paths containing but not starting with /dev/shm",
 		},
@@ -159,7 +174,11 @@ func TestR1000ExecFromMaliciousSource(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate message: %v", err)
 				}
-				expectedMessage := "Process executed from /dev/shm: " + tt.event.ExePath + " in directory " + tt.event.Cwd
+				reportedPath := tt.event.File
+				if reportedPath == "" {
+					reportedPath = tt.event.ExePath
+				}
+				expectedMessage := "Process executed from /dev/shm: " + reportedPath + " in directory " + tt.event.Cwd
 				if message != expectedMessage {
 					t.Errorf("Message evaluation failed. Expected: %s, Got: %s", expectedMessage, message)
 				}
@@ -169,7 +188,7 @@ func TestR1000ExecFromMaliciousSource(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to evaluate unique ID: %v", err)
 				}
-				expectedUniqueID := tt.event.Comm + "_" + tt.event.ExePath + "_" + tt.event.Pcomm
+				expectedUniqueID := tt.event.Comm + "_" + reportedPath + "_" + tt.event.Pcomm
 				if uniqueID != expectedUniqueID {
 					t.Errorf("Unique ID evaluation failed. Expected: %s, Got: %s", expectedUniqueID, uniqueID)
 				}
@@ -246,7 +265,7 @@ func TestR1000MaliciousPathVariants(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create event
-			event := createTestExecEvent("test", "container123", "test-process", tt.exePath, tt.cwd, tt.args)
+			event := createTestExecEvent("test", "container123", "test-process", tt.exePath, tt.exePath, tt.cwd, tt.args)
 
 			// Create object cache
 			objCache := &objectcachev1.RuleObjectCacheMock{
