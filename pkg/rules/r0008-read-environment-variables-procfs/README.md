@@ -23,7 +23,7 @@ The rule fires on any `open` event matching the procfs environ path that was not
 ```
 event.path.startsWith('/proc/')
   AND event.path.endsWith('/environ')
-  AND !ap.was_path_opened_with_suffix(containerId, '/environ')
+  AND !cp.was_path_opened_with_suffix(containerId, '/environ')
 ```
 
 The suffix-based suppression covers both `/proc/self/environ` and `/proc/<pid>/environ` paths, so legitimate self-reads (an app reading its own environment) are correctly allowlisted by the workload's baseline if they happened during learning.

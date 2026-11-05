@@ -23,7 +23,7 @@ The rule fires on outbound TCP/UDP connections where the destination is not priv
 ```
 event.pktType == 'OUTGOING'
   AND !net.is_private_ip(event.dstAddr)
-  AND !nn.was_address_in_egress(containerId, event.dstAddr)
+  AND !cp.was_address_in_egress(containerId, event.dstAddr)
 ```
 
 `net.is_private_ip` covers RFC1918, RFC4193, and loopback/link-local ranges, so cluster-internal and host-internal traffic is silently filtered. Only the public-Internet destinations the workload never demonstrated talking to surface.

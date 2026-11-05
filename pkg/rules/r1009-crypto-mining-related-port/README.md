@@ -26,7 +26,7 @@ Pure network-event signature with a network-baseline suppression:
 event.proto == 'TCP'
   AND event.pktType == 'OUTGOING'
   AND event.dstPort in [3333, 45700]
-  AND !nn.was_address_in_egress(event.containerId, event.dstAddr)
+  AND !cp.was_address_in_egress(event.containerId, event.dstAddr)
 ```
 
 Four gates:

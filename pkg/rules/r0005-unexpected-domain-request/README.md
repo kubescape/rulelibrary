@@ -22,7 +22,7 @@ The node agent records every external (non-cluster-internal) domain queried duri
 
 ```
 !event.name.endsWith('.svc.cluster.local.')
-  AND !nn.is_domain_in_egress(containerId, event.name)
+  AND !cp.is_domain_in_egress(containerId, event.name)
 ```
 
 The first clause filters Kubernetes service discovery noise; the second checks whether the destination domain was seen during learning.

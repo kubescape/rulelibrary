@@ -16,7 +16,7 @@ spec:
         uniqueId: "event.comm + '_' + event.oldPath"
         ruleExpression:
           - eventType: "symlink"
-            expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !ap.was_path_opened(event.containerId, event.oldPath)"
+            expression: "(event.oldPath.startsWith('/etc/shadow') || event.oldPath.startsWith('/etc/sudoers')) && !cp.was_path_opened(event.containerId, event.oldPath)"
       profileDependency: 1
       profileDataRequired:
         opens:

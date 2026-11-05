@@ -22,7 +22,7 @@ The rule fires on any `bpf` syscall with `cmd == BPF_PROG_LOAD` (numeric value 5
 
 ```
 event.cmd == 5  // BPF_PROG_LOAD
-  AND !ap.was_syscall_used(containerId, 'bpf')
+  AND !cp.was_syscall_used(containerId, 'bpf')
 ```
 
 If the application profile is available, prior baselined use of the `bpf` syscall suppresses the rule for that workload. The rule fires when no baseline exists or when the workload never demonstrated `bpf` use during learning.

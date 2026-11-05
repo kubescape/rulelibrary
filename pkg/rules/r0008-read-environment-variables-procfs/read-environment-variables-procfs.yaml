@@ -19,7 +19,7 @@ spec:
             expression: >
               event.path.startsWith('/proc/') && 
               event.path.endsWith('/environ') &&
-              !ap.was_path_opened_with_suffix(event.containerId, '/environ')
+              !cp.was_path_opened_with_suffix(event.containerId, '/environ')
       state:
         includePrefixes:
           - /proc
