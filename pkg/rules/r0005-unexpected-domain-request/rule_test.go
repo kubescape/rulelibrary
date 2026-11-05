@@ -93,19 +93,17 @@ func TestR0005UnexpectedDomainRequest(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Test with whitelisted domain in profile
-	profile := objCache.GetNetworkNeighborhood("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.NetworkNeighborhood{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.NetworkNeighborhoodContainer{
-			Name: "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			Egress: []v1beta1.NetworkNeighbor{
 				{
 					DNSNames: []string{"test.com"},
 				},
 			},
-		})
+		}}
 
-		objCache.SetNetworkNeighborhood(profile)
+		objCache.SetContainerProfile(profile)
 	}
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)

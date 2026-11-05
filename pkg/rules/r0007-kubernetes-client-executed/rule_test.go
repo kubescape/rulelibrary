@@ -95,20 +95,18 @@ func TestR0007KubernetesClientExecuted(t *testing.T) {
 	time.Sleep(1 * time.Millisecond)
 
 	// Test with whitelisted kubectl in profile
-	profile := objCache.GetApplicationProfile("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.ApplicationProfile{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-			Name: "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			Execs: []v1beta1.ExecCalls{
 				{
 					Path: "/usr/bin/kubectl",
 					Args: []string{"kubectl", "get", "pods"},
 				},
 			},
-		})
+		}}
 
-		objCache.SetApplicationProfile(profile)
+		objCache.SetContainerProfile(profile)
 	}
 
 	ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
@@ -230,14 +228,12 @@ func TestR0007ExepathFallback(t *testing.T) {
 			})
 
 			if tt.profileExecs != nil {
-				profile := &v1beta1.ApplicationProfile{
-					Spec: v1beta1.ApplicationProfileSpec{
-						Containers: []v1beta1.ApplicationProfileContainer{
-							{Name: "test", Execs: tt.profileExecs},
-						},
+				profile := &v1beta1.ContainerProfile{
+					Spec: v1beta1.ContainerProfileSpec{
+						Execs: tt.profileExecs,
 					},
 				}
-				objCache.SetApplicationProfile(profile)
+				objCache.SetContainerProfile(profile)
 			}
 
 			celEngine, err := celengine.NewCEL(objCache, config.Config{

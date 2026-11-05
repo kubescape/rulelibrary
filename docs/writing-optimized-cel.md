@@ -13,9 +13,9 @@ multiplier.
 ## The one mechanism you need to understand
 
 The node-agent CEL engine compiles each rule through two static optimizers
-(`kubescape/node-agent`, `pkg/rulemanager/cel/cel.go`, cel-go **v0.26.1**):
+(`kubescape/node-agent`, `pkg/rulemanager/cel/cel.go` as of v0.3.308, cel-go **v0.29.2**):
 
-- **Set-membership optimizer** (`ext.NewSetMembershipOptimizer`). Per `cel-go@v0.26.1/ext/sets.go`,
+- **Set-membership optimizer** (`ext.NewSetMembershipOptimizer`). Per `cel-go@v0.29.2/ext/sets.go`,
   it rewrites `x in [<list of constants>]` — where every element is a constant
   `string`/`int`/`uint`/`bool` — into a **map-keyed lookup** at compile time. It matches on the
   **`in` operator only**, with **no size threshold** (it fires even for two elements).

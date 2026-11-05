@@ -136,20 +136,18 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	}
 
 	// Test with profile - policy validation for open events
-	profile := objCache.GetApplicationProfile("test")
+	profile := objCache.GetContainerProfile("test")
 	if profile == nil {
-		profile = &v1beta1.ApplicationProfile{}
-		profile.Spec.Containers = append(profile.Spec.Containers, v1beta1.ApplicationProfileContainer{
-			Name: "test",
+		profile = &v1beta1.ContainerProfile{Spec: v1beta1.ContainerProfileSpec{
 			PolicyByRuleId: map[string]v1beta1.RulePolicy{
 				"R1011": {
 					AllowedProcesses: []string{"test"},
 				},
 			},
-		})
+		}}
 	}
 
-	objCache.SetApplicationProfile(profile)
+	objCache.SetContainerProfile(profile)
 
 	// Test policy validation with whitelisted process
 	openEvent.Comm = "test"
@@ -157,7 +155,7 @@ func TestR1011LdPreloadHook(t *testing.T) {
 	openEvent.FlagsRaw = 1
 
 	v := rulemanager.NewRulePolicyValidator(objCache)
-	ok, err = v.Validate(ruleSpec.Rules[0].ID, openEvent.Comm, &objectcache.ProjectedContainerProfile{PolicyByRuleId: profile.Spec.Containers[0].PolicyByRuleId})
+	ok, err = v.Validate(ruleSpec.Rules[0].ID, openEvent.Comm, &objectcache.ProjectedContainerProfile{PolicyByRuleId: profile.Spec.PolicyByRuleId})
 	if err != nil {
 		t.Fatalf("Failed to validate rule policy: %v", err)
 	}
