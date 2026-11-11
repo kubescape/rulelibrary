@@ -24,6 +24,12 @@ capability:
 `ALL`, `SYS_ADMIN`, `SYS_MODULE`, `SYS_PTRACE`, `SYS_RAWIO`, `SYS_BOOT`, `NET_ADMIN`,
 `DAC_READ_SEARCH`, `BPF`, `PERFMON`, `SYS_TIME`.
 
+Capability names are compared case-insensitively and with an optional `CAP_` prefix, because
+that is how the container runtimes read them: containerd upper-cases every added capability
+(and matches `ALL` in any case), and CRI-O also accepts a `CAP_`-prefixed name. Kubernetes
+does not validate the names, so `sys_admin`, `Sys_Admin`, `CAP_SYS_ADMIN` and `all` grant the
+same capability as `SYS_ADMIN` and `ALL` and are matched too.
+
 Pods created in `kube-system`, `kube-public`, `kube-node-lease` and `kubescape` are excluded,
 because kube-proxy, CNI, CSI and the Kubescape node-agent are privileged by design.
 
@@ -52,7 +58,9 @@ event.Kind == "Pod" && event.Operation == "CREATE" &&
   [
     has(c.securityContext.privileged) && c.securityContext.privileged == true,
     has(c.securityContext.capabilities) && has(c.securityContext.capabilities.add) &&
-      c.securityContext.capabilities.add.exists(cap, cap in [ ... ])
+      c.securityContext.capabilities.add
+        .map(cap, string(cap).upperAscii())
+        .exists(cap, (cap.startsWith("CAP_") ? cap.substring(4) : cap) in [ ... ])
   ].exists(b, b)
 )
 ```
@@ -61,7 +69,8 @@ event.Kind == "Pod" && event.Operation == "CREATE" &&
 concatenated and scanned once. The two conditions are combined with a list `exists` rather than
 `||`, because the operator's Kind pre-filter falls back to evaluating every admission event if
 any loaded expression contains `||`. The expression keys on a literal `event.Kind == "Pod"` for
-the same reason.
+the same reason. Each added capability is upper-cased and stripped of a leading `CAP_` before
+the list lookup, so spelling variants that the runtime accepts cannot slip past the check.
 
 Only CREATE is inspected. Container security contexts are immutable after creation, and pods
 receive many UPDATE requests for status changes.

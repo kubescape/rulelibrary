@@ -835,9 +835,11 @@ spec:
                   [
                     has(c.securityContext.privileged) && c.securityContext.privileged == true,
                     has(c.securityContext.capabilities) && has(c.securityContext.capabilities.add) &&
-                      c.securityContext.capabilities.add.exists(cap,
-                        cap in ["ALL", "SYS_ADMIN", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO", "SYS_BOOT",
-                                "NET_ADMIN", "DAC_READ_SEARCH", "BPF", "PERFMON", "SYS_TIME"])
+                      c.securityContext.capabilities.add
+                        .map(cap, string(cap).upperAscii())
+                        .exists(cap, (cap.startsWith("CAP_") ? cap.substring(4) : cap) in
+                          ["ALL", "SYS_ADMIN", "SYS_MODULE", "SYS_PTRACE", "SYS_RAWIO", "SYS_BOOT",
+                           "NET_ADMIN", "DAC_READ_SEARCH", "BPF", "PERFMON", "SYS_TIME"])
                   ].exists(b, b)
                 )
         profileDependency: 2
