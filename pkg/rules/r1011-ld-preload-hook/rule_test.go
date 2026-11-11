@@ -85,6 +85,41 @@ func TestR1011LdPreloadHook(t *testing.T) {
 		t.Fatalf("Rule evaluation should not trigger for read access to ld.so.preload")
 	}
 
+	// Only the access mode (the low two bits) decides whether the file is
+	// being written; other flag bits such as O_CLOEXEC must not count.
+	// The dynamic loader opens the file with O_RDONLY|O_CLOEXEC on every
+	// exec once it exists.
+	const (
+		oWronly  = 0x1
+		oRdwr    = 0x2
+		oAccmode = 0x3
+		oCreat   = 0x40
+		oTrunc   = 0x200
+		oAppend  = 0x400
+		oCloexec = 0x80000
+	)
+	for _, tc := range []struct {
+		name     string
+		flagsRaw uint32
+		want     bool
+	}{
+		{"O_RDONLY|O_CLOEXEC", oCloexec, false},
+		{"O_ACCMODE", oAccmode, false},
+		{"O_WRONLY|O_CREAT|O_TRUNC", oWronly | oCreat | oTrunc, true},
+		{"O_WRONLY|O_APPEND|O_CLOEXEC", oWronly | oAppend | oCloexec, true},
+		{"O_RDWR", oRdwr, true},
+		{"O_RDWR|O_CLOEXEC", oRdwr | oCloexec, true},
+	} {
+		openEvent.FlagsRaw = tc.flagsRaw
+		ok, err = celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
+		if err != nil {
+			t.Fatalf("Failed to evaluate rule for %s: %v", tc.name, err)
+		}
+		if ok != tc.want {
+			t.Fatalf("Rule evaluation for ld.so.preload opened with %s = %v, want %v", tc.name, ok, tc.want)
+		}
+	}
+
 	// Test with different file - SHOULD NOT TRIGGER
 	openEvent.Path = "/etc/passwd"
 	openEvent.FlagsRaw = 1
