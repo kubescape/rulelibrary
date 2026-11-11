@@ -11,8 +11,8 @@
 
 ## Description
 
-Fires at admission time when a Pod is created with a `hostPath` volume whose path is, or sits
-under, a location that gives the container control of the node:
+Fires at admission time when a Pod is created with a `hostPath` volume whose path is, sits
+under, or is a parent directory of a location that gives the container control of the node:
 
 | Sensitive location | Why |
 |---|---|
@@ -25,7 +25,9 @@ under, a location that gives the container control of the node:
 | `/run`, `/var/run` | Container runtime sockets (`docker.sock`, `containerd/containerd.sock`, `crio/crio.sock`), which allow launching arbitrary privileged containers on the node |
 
 The path and everything beneath it count, so `/var/lib/kubelet/pki`, `/run/containerd` and
-`/var/run/docker.sock` all fire. The path is normalised before comparison: Kubernetes rejects
+`/var/run/docker.sock` all fire. A parent directory of a sensitive location exposes that
+location through the mount, so `/var`, `/var/lib` and `/var/lib/docker` fire as well, and `/`
+fires as the parent of all of them. The path is normalised before comparison: Kubernetes rejects
 `..` in a hostPath but accepts single-dot components and repeated separators, so `/./etc`,
 `/var//lib/kubelet` and `/etc/.` are the same mounts as `/etc` and `/var/lib/kubelet` and
 are treated as such.
@@ -52,23 +54,25 @@ object.spec.volumes
   .map(v, "/" + string(v.hostPath.path).split("/")
     .filter(c, c != "" && c != ".")
     .map(c, c + "/").join(""))
-  .exists(p, [
-    p == "/",
+  .exists(p,
     ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
-     "/var/lib/docker/overlay2/", "/var/run/", "/run/"].exists(d, p.startsWith(d))
-  ].exists(b, b))
+     "/var/lib/docker/overlay2/", "/var/run/", "/run/"]
+      .exists(d, [p.startsWith(d), d.startsWith(p)].exists(b, b)))
 ```
 
 `object` is the admitted Pod as an unstructured map. Each hostPath is normalised by path
 component: the path is split on `/`, empty and single-dot components are discarded, and the
 rest are joined back with a leading and trailing slash. Any number of repeated separators or
 `.` components collapses, so there is no bound an attacker can exceed. `..` needs no handling
-because Kubernetes rejects it in a hostPath. After that every sensitive location is a single
-prefix check: `/etc/` matches `/etc`, `/etc/`, `/./etc`, `/////etc`, `/etc/kubernetes/pki`
-and `/etc/.`, but not `/etcd`.
-The root check is a plain equality with `/`. The two checks are combined with a list `exists`
-rather than `||`, because the operator's Kind pre-filter falls back to evaluating every
-admission event if any loaded expression contains `||`.
+because Kubernetes rejects it in a hostPath. After that every sensitive location is a pair of
+prefix checks. `p.startsWith(d)` catches the location and anything under it: `/etc/` matches
+`/etc`, `/etc/`, `/./etc`, `/////etc`, `/etc/kubernetes/pki` and `/etc/.`, but not `/etcd`.
+`d.startsWith(p)` catches a parent directory: `/var/lib/kubelet/` starts with the normalised
+`/var/` and `/var/lib/`, and every location starts with `/`, so the node root needs no check of
+its own. Because both sides end in `/`, a sibling such as `/var/log` or
+`/var/lib/docker/containers` is not a parent and does not match. The two checks are combined
+with a list `exists` rather than `||`, because the operator's Kind pre-filter falls back to
+evaluating every admission event if any loaded expression contains `||`.
 
 `/var/log`, `/var/lib/docker/containers` and `/sys` are intentionally absent. Log shippers and
 node exporters mount them routinely and they are far less useful for escape. `/run` and
@@ -110,7 +114,7 @@ reference, otherwise `namespace/podName`.
 - **Log and metrics shippers** that mount `/var/run/docker.sock` or `/run/containerd/*.sock`
   for container metadata, deployed outside `kube-system`.
 - **Storage and backup tooling** that mounts `/var/lib/kubelet` to reach pod volumes.
-- **Node configuration agents** and security scanners that mount `/` or `/etc` read-only.
+- **Node configuration agents** and security scanners that mount `/`, `/var` or `/etc` read-only.
 
 Handle these with a backend prefilter on the image rather than by disabling the rule. The rule
 is shipped disabled by default in ARMO rulesets for this reason.
