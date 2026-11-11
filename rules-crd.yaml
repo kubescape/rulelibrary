@@ -857,7 +857,7 @@ spec:
       - name: "Pod created with sensitive hostPath volume"
         enabled: true
         id: "R2004"
-        description: "Detects pod creation with a hostPath volume on, or on a parent directory of, a sensitive host location such as /, /etc, /var/lib/kubelet or the container runtime socket directories, via the Kubernetes admission webhook"
+        description: "Detects pod creation with a hostPath volume on, or on a parent directory of, a sensitive host location such as /, /etc, /var/lib/kubelet, the container runtime storage or the container runtime socket directories, via the Kubernetes admission webhook"
         expressions:
           message: >-
             'Pod created with sensitive hostPath volume: ' +
@@ -884,7 +884,8 @@ spec:
                     .map(c, c + "/").join(""))
                   .exists(p,
                     ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
-                     "/var/lib/docker/overlay2/", "/var/run/", "/run/"]
+                     "/var/lib/docker/overlay2/", "/var/lib/containerd/",
+                     "/var/lib/containers/storage/", "/var/run/", "/run/"]
                       .exists(d, [p.startsWith(d), d.startsWith(p)].exists(b, b)))
         profileDependency: 2
         severity: 8

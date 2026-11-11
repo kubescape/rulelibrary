@@ -21,7 +21,9 @@ under, or is a parent directory of a location that gives the container control o
 | `/proc` | Process memory and kernel tunables of every host process |
 | `/root`, `/home` | Credentials and shell history of host users |
 | `/var/lib/kubelet` | Kubelet client certificate and every pod's projected ServiceAccount tokens |
-| `/var/lib/docker/overlay2` | Every other container's filesystem |
+| `/var/lib/docker/overlay2` | Every other container's filesystem (Docker) |
+| `/var/lib/containerd` | Every other container's filesystem and the image content store (containerd) |
+| `/var/lib/containers/storage` | Every other container's filesystem and the image store (CRI-O) |
 | `/run`, `/var/run` | Container runtime sockets (`docker.sock`, `containerd/containerd.sock`, `crio/crio.sock`), which allow launching arbitrary privileged containers on the node |
 
 The path and everything beneath it count, so `/var/lib/kubelet/pki`, `/run/containerd` and
@@ -56,7 +58,8 @@ object.spec.volumes
     .map(c, c + "/").join(""))
   .exists(p,
     ["/etc/", "/proc/", "/root/", "/home/", "/var/lib/kubelet/",
-     "/var/lib/docker/overlay2/", "/var/run/", "/run/"]
+     "/var/lib/docker/overlay2/", "/var/lib/containerd/",
+     "/var/lib/containers/storage/", "/var/run/", "/run/"]
       .exists(d, [p.startsWith(d), d.startsWith(p)].exists(b, b)))
 ```
 
@@ -75,9 +78,14 @@ with a list `exists` rather than `||`, because the operator's Kind pre-filter fa
 evaluating every admission event if any loaded expression contains `||`.
 
 `/var/log`, `/var/lib/docker/containers` and `/sys` are intentionally absent. Log shippers and
-node exporters mount them routinely and they are far less useful for escape. `/run` and
-`/var/run` are matched as whole trees because any directory containing a runtime socket exposes
-the socket, so `/run/containerd` is as dangerous as `/run/containerd/containerd.sock`.
+node exporters mount them routinely and they are far less useful for escape. Under containerd
+and CRI-O, the default runtimes on current Kubernetes distributions, container logs live in
+`/var/log/pods`, so the whole of `/var/lib/containerd` and `/var/lib/containers/storage` is
+runtime state. Both hold the snapshot or overlay directories of every container on the node, so
+a writable mount lets one pod rewrite another pod's filesystem, the same exposure as Docker's
+`/var/lib/docker/overlay2`. `/run` and `/var/run` are matched as whole trees because any
+directory containing a runtime socket exposes the socket, so `/run/containerd` is as dangerous as
+`/run/containerd/containerd.sock`.
 
 Only CREATE is inspected; volumes are immutable after creation. Whether the mount is writable
 is a property of `volumeMounts.readOnly`, not of the volume, and is not evaluated. A read-only
