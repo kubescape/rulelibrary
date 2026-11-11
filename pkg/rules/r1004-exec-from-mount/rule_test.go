@@ -379,3 +379,92 @@ func TestR1004ExepathFallback(t *testing.T) {
 		})
 	}
 }
+
+// TestR1004MountPathBoundary verifies that a mount path matches only itself and
+// the paths beneath it, compared by path component, so a mount at /var/test1
+// does not claim /var/test10 or /var/test1-old.
+func TestR1004MountPathBoundary(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("exec-from-mount.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load rule: %v", err)
+	}
+
+	podSpec := &corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name: "test",
+				VolumeMounts: []corev1.VolumeMount{
+					{Name: "test-volume", MountPath: "/var/test1"},
+					{Name: "data", MountPath: "/data/"},
+					{Name: "tool", MountPath: "/opt/tool", SubPath: "tool"},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		exePath       string
+		args          []string
+		expectTrigger bool
+	}{
+		{name: "binary under the mount", exePath: "/var/test1/run", args: []string{"/var/test1/run"}, expectTrigger: true},
+		{name: "binary in a nested directory of the mount", exePath: "/var/test1/a/b/run", args: []string{"/var/test1/a/b/run"}, expectTrigger: true},
+		{name: "sibling directory sharing the mount prefix", exePath: "/var/test10/run", args: []string{"/var/test10/run"}, expectTrigger: false},
+		{name: "sibling directory with a suffix on the mount name", exePath: "/var/test1-old/run", args: []string{"/var/test1-old/run"}, expectTrigger: false},
+		{name: "file whose name extends the mount name", exePath: "/var/test1.sh", args: []string{"/var/test1.sh"}, expectTrigger: false},
+		{name: "mount path with a trailing slash", exePath: "/data/run.sh", args: []string{"/data/run.sh"}, expectTrigger: true},
+		{name: "sibling of a mount path with a trailing slash", exePath: "/database/run", args: []string{"/database/run"}, expectTrigger: false},
+		{name: "single file mounted with subPath", exePath: "/opt/tool", args: []string{"/opt/tool"}, expectTrigger: true},
+		{name: "sibling of a single file mount", exePath: "/opt/tools/run", args: []string{"/opt/tools/run"}, expectTrigger: false},
+		{name: "empty exepath falls back to argv[0] under the mount", exePath: "", args: []string{"/var/test1/run"}, expectTrigger: true},
+		{name: "empty exepath falls back to argv[0] in a sibling", exePath: "", args: []string{"/var/test10/run"}, expectTrigger: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			objCache := &objectcachev1.RuleObjectCacheMock{
+				ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+			}
+			objCache.SetSharedContainerData("test-container", &objectcache.WatchedContainerData{
+				ContainerType: objectcache.Container,
+				ContainerInfos: map[objectcache.ContainerType][]objectcache.ContainerInfo{
+					objectcache.Container: {
+						{Name: "test"},
+					},
+				},
+			})
+			objCache.SetPodSpec(podSpec)
+
+			celEngine, err := celengine.NewCEL(objCache, config.Config{
+				CelConfigCache: cache.FunctionCacheConfig{
+					MaxSize: 1000,
+					TTL:     1 * time.Microsecond,
+				},
+			})
+			if err != nil {
+				t.Fatalf("Failed to create CEL engine: %v", err)
+			}
+
+			enrichedEvent := &events.EnrichedEvent{Event: &utils.StructEvent{
+				Args:        tt.args,
+				Comm:        "run",
+				Container:   "test",
+				ContainerID: "test-container",
+				EventType:   utils.ExecveEventType,
+				ExePath:     tt.exePath,
+				Namespace:   "test-namespace",
+				Pid:         1234,
+				Pod:         "test-pod",
+			}}
+
+			triggered, err := celEngine.EvaluateRule(enrichedEvent, ruleSpec.Rules[0].Expressions.RuleExpression)
+			if err != nil {
+				t.Fatalf("Failed to evaluate rule: %v", err)
+			}
+			if triggered != tt.expectTrigger {
+				t.Errorf("exepath=%q args=%v: expected trigger=%v, got trigger=%v", tt.exePath, tt.args, tt.expectTrigger, triggered)
+			}
+		})
+	}
+}

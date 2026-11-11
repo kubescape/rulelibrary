@@ -23,10 +23,18 @@ The rule combines an application-profile check with a Kubernetes mount-path look
 ```
 binary not in application profile (same exepath-authoritative check as R0001)
   AND the binary's resolved path (exepath, or argv[0]/comm when exepath is empty)
-      starts with any of the container's mount paths
+      is one of the container's mount paths or lies beneath one
 ```
 
 `k8s.get_container_mount_paths(namespace, podName, containerName)` returns the list of paths mounted into the container from Kubernetes-managed volumes. The rule fires only when the executed binary's path is under one of those mounts and was not seen during learning.
+
+The comparison is by path component, not by raw string prefix:
+
+```cel
+(resolvedPath + '/').startsWith(mount.endsWith('/') ? mount : mount + '/')
+```
+
+Both sides end in `/` before comparing, so a mount at `/var/data` matches `/var/data/run.sh` and a single file mounted with `subPath` at `/opt/tool` matches an exec of `/opt/tool` itself, but neither claims a sibling such as `/var/data2/run.sh`, `/var/data-old/run.sh` or `/opt/tools/run`. A mount path written with a trailing slash (`/var/data/`) behaves the same as one without.
 
 ## Investigation Steps
 
