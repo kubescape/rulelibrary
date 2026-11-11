@@ -16,7 +16,7 @@ spec:
         uniqueId: "event.comm + '_' + event.capName"
         ruleExpression:
           - eventType: "capabilities"
-            expression: "!ap.was_capability_used(event.containerId, event.capName)"
+            expression: "!cp.was_capability_used(event.containerId, event.capName)"
       profileDependency: 0
       profileDataRequired:
         capabilities: all

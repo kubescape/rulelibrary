@@ -22,7 +22,7 @@ The rule fires on any `open` event whose path matches one of the standard token 
 
 ```
 event.path under /run/secrets/.../serviceaccount/token (or /var/run/.../, or EKS equivalents)
-  AND !ap.was_path_opened_with_suffix(containerId, '/token')
+  AND !cp.was_path_opened_with_suffix(containerId, '/token')
 ```
 
 The `was_path_opened_with_suffix` check generalizes across the various mount paths so legitimate access from any of them is correctly suppressed.

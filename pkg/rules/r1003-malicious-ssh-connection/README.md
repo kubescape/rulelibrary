@@ -21,7 +21,7 @@ Mapped to **MITRE T1021.001 — Remote Services** under **TA0008 — Lateral Mov
 ```
 event source port in [32768, 60999]
   AND event destination port NOT in [22, 2022]
-  AND !nn.was_address_in_egress(containerId, event.dstIp)
+  AND !cp.was_address_in_egress(containerId, event.dstIp)
 ```
 
 The source-port range identifies a connecting (client) socket; servers do not allocate ephemeral source ports. The destination-port exclusion suppresses the legitimate-SSH-to-standard-port case (which a different rule could cover). The Network Neighborhood check suppresses any destination the workload was previously observed talking to, removing internal SSH-to-bastion patterns that were learned.

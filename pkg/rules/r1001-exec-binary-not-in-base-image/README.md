@@ -20,7 +20,7 @@ Mapped to **MITRE T1036 — Masquerading** under **TA0005 — Defense Evasion**.
 
 ```
 (event.upperlayer == true || event.pupperlayer == true)
-  AND !ap.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
+  AND !cp.was_executed(containerId, event.exepath != "" ? event.exepath : parse.get_exec_path(args, comm))
 ```
 
 The first clause checks whether the executable (or its parent) lives in the writable upper layer of the container's overlay. The second clause matches against the application profile using the exepath-authoritative resolution shared with R0001 — the CEL ternary prefers the kernel-resolved `exepath` and falls back to `argv[0]`/`comm` (via the 2-arg `parse.get_exec_path`) only when exepath is empty, so the rule queries the same identity the recorder stored.

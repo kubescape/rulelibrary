@@ -22,7 +22,7 @@ The rule fires on any `open` of a path starting with `/etc/shadow` that was not 
 
 ```
 event.path.startsWith('/etc/shadow')
-  AND !ap.was_path_opened(containerId, event.path)
+  AND !cp.was_path_opened(containerId, event.path)
 ```
 
 The prefix match covers `/etc/shadow` proper, `/etc/shadow-` (the backup), and `/etc/shadow.bak`-style variants that some attackers target.
