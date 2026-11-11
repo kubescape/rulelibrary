@@ -50,10 +50,15 @@ spec:
 | `expressions.uniqueId` | string | CEL expression for unique event ID | Yes |
 | `expressions.ruleExpression` | array | Array of detection expressions | Yes |
 | `profileDependency` | integer | Profile dependency level (0,1,2) | Yes |
+| `profileDataRequired` | object | Profile surfaces the expressions query (see [Declaring `profileDataRequired`](#declaring-profiledatarequired)) | When `profileDependency` is 0 or 1 |
 | `severity` | integer | Rule severity level | Yes |
 | `supportPolicy` | boolean | Whether rule supported by rule policy | Yes |
+| `isTriggerAlert` | boolean | Copied onto every alert the rule raises so the backend can tell triggering alerts from informational ones. R0003, R0005 and R0007, for example, set it to `false` | No |
+| `mitreTactic` | string | MITRE ATT&CK tactic ID, for example `TA0002` | No |
+| `mitreTechnique` | string | MITRE ATT&CK technique ID, for example `T1059` | No |
 | `tags` | array | Array of tags for categorization | Yes |
-| `state` | object | Rule state | No |
+| `state` | object | Default pre-filter parameters (see [Pre-filter parameters](#pre-filter-parameters-state)) | No |
+| `agentVersionRequirement` | string | Semver constraint on the node-agent version, for example `">=0.3.307"` (see [Agent version requirement](#agent-version-requirement)) | No |
 
 ### Context Tags
 
@@ -90,6 +95,50 @@ The `Platforms` row in each rule README is human-facing documentation. The `cont
 - `fork` - Process fork events
 - `exit` - Process exit events
 - `procfs` - Proc filesystem events
+- `bpf` - `bpf()` system call events
+- `kmod` - Kernel module load events
+- `unshare` - `unshare()` system call events
+- `k8s-admission` - Kubernetes API requests seen by the Kubescape operator's admission webhook, not by the node-agent (see [Testing `k8s-admission` rules](docs/testing-admission-rules.md))
+
+### Pre-filter parameters (`state`)
+
+The node-agent reads a small set of keys from `state` and uses them to skip events before any
+CEL expression runs, which is much cheaper than rejecting them in CEL. Unknown keys are ignored
+by the pre-filter.
+
+| Key | Applies to | An event is skipped when |
+|-----|-----------|--------------------------|
+| `includePrefixes` | `open` (`event.path`), `exec` (`event.exepath`) | the path is not equal to, or under, any listed prefix |
+| `ignorePrefixes` | `open` (`event.path`), `exec` (`event.exepath`) | the path is equal to, or under, a listed prefix |
+| `ports` | `network`, `ssh` | the destination port is not in the list |
+| `direction` | `http` | the request direction differs from the given `inbound` or `outbound` |
+| `methods` | `http` | the request method is not in the list, for example `["GET", "POST"]` |
+| `excludeProcesses` | `exec` | a `{name, path}` entry matches the process `comm` (truncated to 15 characters by the kernel) and `exepath` |
+| `excludeParentProcesses` | `exec` | a `{name, path}` entry matches the parent's `pcomm` and executable path |
+
+Prefixes are compared by path component, so `/proc` matches `/proc/1/environ` but not
+`/process`, and trailing slashes are ignored. A rule binding can set the same keys as
+parameters, and a binding value replaces the rule's default for that key. For example R1009:
+
+```yaml
+      state:
+        ports:
+          - 3333
+          - 45700
+```
+
+The pre-filter only narrows which events reach CEL. It lets an event through when the field
+is empty, and a binding can replace the defaults, so keep the full condition in the
+`ruleExpression` as well. R1009 still checks `event.dstPort in [3333, 45700]`. The CEL
+tests in `rule_test.go` evaluate expressions without the pre-filter.
+
+### Agent version requirement
+
+Set `agentVersionRequirement` when an expression uses an event field or CEL function that
+older node-agents do not have. The node-agent compares the constraint with its `AGENT_VERSION`
+environment variable using semantic versioning and does not load the rule if the version does
+not satisfy it, instead of failing to compile the expression. When `AGENT_VERSION` is not set,
+the rule is loaded. R1000 uses `">=0.3.307"` because `event.file` was added in that release.
 
 ## Writing Rules
 
@@ -194,25 +243,35 @@ make generate-rules-crd
 
 ## CEL Expressions
 
-Rules use Common Expression Language (CEL) for expressions. Key concepts:
+Rules use Common Expression Language (CEL) for expressions. Event fields are read from the
+`event` variable by their node-agent names, which start with a lower-case letter: `event.comm`,
+`event.pid`, `event.exepath`, `event.args`, `event.containerId`. `k8s-admission` rules are the
+exception: they use the operator's names, such as `event.Kind` and `event.UserInfo.Username`.
+When a rule has expressions for more than one event type, the `eventType` variable holds the
+type of the current event. Key concepts, using R0001's expressions as the example:
 
 ### Message Expression
 Defines the alert message format:
 ```cel
-"'Unexpected process launched: ' + event.Comm + ' with PID ' + string(event.Pid)"
+'Unexpected process launched: ' + event.comm + ' with PID ' + string(event.pid)
 ```
 
 ### Unique ID Expression
 Creates a unique identifier for deduplication:
 ```cel
-"event.Comm + '_' + string(event.Pid) + '_' + event.ExePath"
+event.comm + '_' + event.exepath
 ```
 
 ### Rule Expression
-Defines the detection logic:
+Defines the detection logic. Profile lookups go through helper functions such as
+`ap.was_executed`, and the profile surfaces they query must be declared in
+`profileDataRequired`:
 ```cel
-"!data.profile_checks.exec_path"
+!ap.was_executed(event.containerId, (event.exepath != "" ? event.exepath : parse.get_exec_path(event.args, event.comm)))
 ```
+
+See [`docs/writing-optimized-cel.md`](docs/writing-optimized-cel.md) for how to keep
+expressions cheap.
 
 ## Best Practices
 
