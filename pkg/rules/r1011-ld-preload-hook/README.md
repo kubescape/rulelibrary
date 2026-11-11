@@ -28,14 +28,15 @@ exec:
 
 open:
   event.path == '/etc/ld.so.preload'
-    AND event.flagsRaw is set and non-zero
+    AND event.flagsRaw is set
+    AND event.flagsRaw % 4 in [1, 2]     (access mode O_WRONLY or O_RDWR)
 ```
 
-The exec arm reads the running process's `LD_PRELOAD` variable from procfs; if non-empty (and the process is not one of the well-known legitimate users), it fires. The open arm fires whenever `/etc/ld.so.preload` is opened with any flags set — usually because something is writing it. The two-process allowlist (`java`, `matlab`) covers the most common legitimate users; other legitimate uses should be allowlisted via a per-rule policy rather than expanding the rule's hardcoded list.
+The exec arm reads the running process's `LD_PRELOAD` variable from procfs; if non-empty (and the process is not one of the well-known legitimate users), it fires. The open arm fires when `/etc/ld.so.preload` is opened for writing. The access mode is the low two bits of the open flags (`O_RDONLY` 0, `O_WRONLY` 1, `O_RDWR` 2), and CEL has no bitwise operators, so the expression reads it as `event.flagsRaw % 4`. Other flag bits are ignored: the dynamic loader reads the file with `O_RDONLY | O_CLOEXEC` at every exec of a dynamically linked binary once the file exists, and such reads are not modifications. The two-process allowlist (`java`, `matlab`) covers the most common legitimate users; other legitimate uses should be allowlisted via a per-rule policy rather than expanding the rule's hardcoded list.
 
 ## Investigation Steps
 
-1. **Identify which arm fired.** The exec arm tells you a process started with `LD_PRELOAD` set; the open arm tells you `/etc/ld.so.preload` was opened (almost certainly written). They sometimes fire together when an attacker is establishing persistence.
+1. **Identify which arm fired.** The exec arm tells you a process started with `LD_PRELOAD` set; the open arm tells you `/etc/ld.so.preload` was opened for writing. They sometimes fire together when an attacker is establishing persistence.
 2. **For the exec arm: capture the preloaded library.** `process.get_ld_hook_var(event.pid)` returns the path(s) of the preloaded shared object(s). Read or hash these binaries before the attacker cleans up; static analysis of a userland rootkit's `.so` is usually fast and revealing.
 3. **For the open arm: read the file content.** `/etc/ld.so.preload` listing one or more paths means every subsequent exec on the host (or container if locally scoped) will load those libraries. The listed paths are the rootkit components.
 4. **Identify the persisting process.** Whoever set `LD_PRELOAD` or wrote `/etc/ld.so.preload` is the active loader. Walk the parent chain to find the entry point.
