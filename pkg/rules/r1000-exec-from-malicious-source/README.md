@@ -36,7 +36,7 @@ The alert message and `uniqueId` report `event.file`, falling back to `exepath` 
 
 ## Agent version gate
 
-`agentVersionRequirement: ">=0.3.307"`. `event.file` is registered in CEL from kubescape/node-agent v0.3.307 (kubescape/node-agent#1065). Older agents don't register the field, so the rule would fail to compile there; the rules watcher skips a gated rule before compiling it, and those agents don't run R1000. Prerelease agent builds (for example `v0.3.310-rc.1`) don't satisfy the constraint either, which is how Masterminds/semver treats prereleases.
+`agentVersionRequirement: ">=0.3.307"`. `event.file` is registered in CEL from kubescape/node-agent v0.3.307 (kubescape/node-agent#1065). Older agents don't register the field, so the rule would fail to compile there; the rules watcher skips a gated rule before compiling it, and those agents don't run R1000. Prerelease agent builds (for example `v0.3.310-rc.1`) don't satisfy the constraint either, which is how Masterminds/semver treats prereleases. The gate fails open: an agent whose `AGENT_VERSION` is unset or not a semantic version (for example the image tag `latest`) loads R1000 anyway, and an older one then logs a compile warning and never matches it.
 
 Agents that use a different version line must replace this requirement with their own floor when they consume the rule.
 
