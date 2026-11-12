@@ -12,7 +12,7 @@ spec:
       id: "R1030"
       description: "Detects io_uring operations that were not recorded during the initial observation period, indicating potential unauthorized activity."
       expressions:
-        message: "'Unexpected io_uring operation detected: (opcode=' + string(event.opcode) + ') flags=0x' + (has(event.flagsRaw) ? string(event.flagsRaw) : '0') + ' in ' + event.comm + '.'"
+        message: "'Unexpected io_uring operation detected: (opcode=' + string(event.opcode) + ') flags=0x' + (has(event.flagsRaw) ? '%x'.format([event.flagsRaw]) : '0') + ' in ' + event.comm + '.'"
         uniqueId: "string(event.opcode) + '_' + event.comm"
         ruleExpression:
           - eventType: "iouring"

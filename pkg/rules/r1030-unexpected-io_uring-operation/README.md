@@ -27,7 +27,7 @@ The node agent emits an `iouring` event for io_uring operations and surfaces the
 
 ## Investigation Steps
 
-1. **Identify the opcode and the process.** `event.opcode`, `event.flagsRaw`, and `event.comm` describe what was attempted via io_uring. Opcodes for `READ`, `WRITE`, `OPENAT`, `CONNECT`, `SENDMSG` are the typical attacker uses; the opcode list is in the kernel headers.
+1. **Identify the opcode and the process.** `event.opcode`, `event.flagsRaw`, and `event.comm` describe what was attempted via io_uring. The alert message prints the flags in hexadecimal (`flags=0x10`), since they are a bitmask of the kernel's per-request `REQ_F_*` flags. Opcodes for `READ`, `WRITE`, `OPENAT`, `CONNECT`, `SENDMSG` are the typical attacker uses; the opcode list is in the kernel headers.
 2. **Map the opcode to its effect.** An `OPENAT` opcode opening `/etc/shadow` is identical in effect to a regular `open` syscall, just invisible to a syscall-only audit. The investigation against the target follows the same path as the corresponding syscall would.
 3. **Identify the process and look for io_uring usage history.** Many legitimate workloads use io_uring for performance; new use of io_uring by a workload that previously did not is the signal.
 4. **Pull surrounding events.** Adversary chains that use io_uring usually still emit some events the standard path catches (network connections, file events) — the io_uring miss is on the syscalls themselves, not on the events.

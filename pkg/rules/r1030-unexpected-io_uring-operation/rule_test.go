@@ -1,6 +1,7 @@
 package r1030_unexpected_io_uring_operation
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -127,5 +128,55 @@ func TestR1030UnexpectedIouringOperation(t *testing.T) {
 	}
 	if !ok {
 		t.Fatalf("Rule policy validation should return true for whitelisted process")
+	}
+}
+
+// TestR1030MessageFlagsHex pins the flags in the alert message to hexadecimal.
+// The message prints them after a "0x" prefix, so a decimal rendering would
+// misreport every non-zero bitmask (16 would read as 0x16).
+func TestR1030MessageFlagsHex(t *testing.T) {
+	ruleSpec, err := common.LoadRuleFromYAML("unexpected-io_uring-operation.yaml")
+	if err != nil {
+		t.Fatalf("Failed to load rule: %v", err)
+	}
+
+	objCache := &objectcachev1.RuleObjectCacheMock{
+		ContainerIDToSharedData: maps.NewSafeMap[string, *objectcache.WatchedContainerData](),
+	}
+	celEngine, err := celengine.NewCEL(objCache, config.Config{
+		CelConfigCache: cache.FunctionCacheConfig{
+			MaxSize: 1000,
+			TTL:     1 * time.Microsecond,
+		},
+	})
+	if err != nil {
+		t.Fatalf("Failed to create CEL engine: %v", err)
+	}
+
+	cases := []struct {
+		flags uint32
+		want  string
+	}{
+		{0x0, "flags=0x0 "},
+		{0x10, "flags=0x10 "},
+		{0x2a, "flags=0x2a "},
+		{0x80000000, "flags=0x80000000 "},
+	}
+	for _, c := range cases {
+		e := &utils.StructEvent{
+			Comm:        "test-process",
+			Container:   "test",
+			ContainerID: "test",
+			EventType:   utils.IoUringEventType,
+			FlagsRaw:    c.flags,
+			Opcode:      1,
+		}
+		message, err := celEngine.EvaluateExpression(&events.EnrichedEvent{Event: e}, ruleSpec.Rules[0].Expressions.Message)
+		if err != nil {
+			t.Fatalf("flags %#x: failed to evaluate message: %v", c.flags, err)
+		}
+		if !strings.Contains(message, c.want) {
+			t.Errorf("flags %#x: expected message to contain %q, got %q", c.flags, c.want, message)
+		}
 	}
 }
