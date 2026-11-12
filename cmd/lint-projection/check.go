@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/armosec/armoapi-go/armotypes"
 	"gopkg.in/yaml.v3"
 )
@@ -29,13 +30,15 @@ func (f Finding) String() string {
 }
 
 // ruleDoc mirrors the relevant fields of a kubescape/rulelibrary rule YAML.
-// We only need profileDependency and profileDataRequired here.
+// We only need profileDependency, profileDataRequired and
+// agentVersionRequirement here.
 type ruleDoc struct {
 	Spec struct {
 		Rules []struct {
-			ID                  string                         `yaml:"id"`
-			ProfileDependency   armotypes.ProfileDependency    `yaml:"profileDependency"`
-			ProfileDataRequired *armotypes.ProfileDataRequired `yaml:"profileDataRequired,omitempty"`
+			ID                      string                         `yaml:"id"`
+			ProfileDependency       armotypes.ProfileDependency    `yaml:"profileDependency"`
+			ProfileDataRequired     *armotypes.ProfileDataRequired `yaml:"profileDataRequired,omitempty"`
+			AgentVersionRequirement string                         `yaml:"agentVersionRequirement,omitempty"`
 		} `yaml:"rules"`
 	} `yaml:"spec"`
 }
@@ -63,6 +66,7 @@ func lintFile(path string) []Finding {
 	for _, r := range doc.Spec.Rules {
 		line := lineByID[r.ID]
 		findings = append(findings, checkRule(path, line, r.ID, r.ProfileDependency, r.ProfileDataRequired)...)
+		findings = append(findings, checkAgentVersionRequirement(path, line, r.ID, r.AgentVersionRequirement)...)
 	}
 	return findings
 }
@@ -90,6 +94,22 @@ func checkRule(path string, line int, id string, dep armotypes.ProfileDependency
 		}
 	}
 	return out
+}
+
+// checkAgentVersionRequirement rejects an agentVersionRequirement that
+// Masterminds/semver, the library the node-agent rules watcher uses, cannot
+// parse. The watcher fails open on a parse error: it logs a warning and
+// loads the rule on every agent version, so the gate silently stops
+// protecting older agents from expressions they cannot compile.
+func checkAgentVersionRequirement(path string, line int, id, requirement string) []Finding {
+	if requirement == "" {
+		return nil
+	}
+	if _, err := semver.NewConstraint(requirement); err != nil {
+		return []Finding{{File: path, Line: line, RuleID: id, Severity: SeverityError, Check: "C6",
+			Message: fmt.Sprintf("agentVersionRequirement %q is not a valid semver constraint (%v); node-agent loads a rule with an unparseable constraint on every agent version", requirement, err)}}
+	}
+	return nil
 }
 
 func profileDependencyName(d armotypes.ProfileDependency) string {

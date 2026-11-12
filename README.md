@@ -136,9 +136,23 @@ tests in `rule_test.go` evaluate expressions without the pre-filter.
 
 Set `agentVersionRequirement` when an expression uses an event field or CEL function that
 older node-agents do not have. The node-agent compares the constraint with its `AGENT_VERSION`
-environment variable using semantic versioning and does not load the rule if the version does
-not satisfy it, instead of failing to compile the expression. When `AGENT_VERSION` is not set,
-the rule is loaded. R1000 uses `">=0.3.307"` because `event.file` was added in that release.
+environment variable using semantic versioning ([Masterminds/semver](https://github.com/Masterminds/semver)
+constraint syntax) and does not load the rule if the version does not satisfy it, instead of
+failing to compile the expression. R1000 uses `">=0.3.307"` because `event.file` was added in
+that release.
+
+The gate fails open. The node-agent loads the rule, as if it had no requirement, when:
+
+- `AGENT_VERSION` is not set;
+- `AGENT_VERSION` is not a semantic version. The Helm chart sets it to `nodeAgent.image.tag`,
+  so an image tag such as `latest` or a branch name disables the gate;
+- `agentVersionRequirement` is not a valid constraint, for example `"0.3.307+"`.
+
+In those cases an agent that lacks the field or function tries to compile the expression, logs
+a `CEL expression disabled: failed to compile` warning and never matches that expression, which
+is the failure the requirement is meant to avoid. The projection lint (`make lint-projection`,
+check `C6`) rejects a requirement that does not parse, so only the first two cases can happen
+with rules from this repository.
 
 ## Writing Rules
 
@@ -322,7 +336,8 @@ profileDataRequired:
   execs: all
 ```
 
-The lint at `cmd/lint-projection/` enforces that declarations are present and schema-valid.
+The lint at `cmd/lint-projection/` enforces that declarations are present and schema-valid,
+and that any `agentVersionRequirement` is a valid semver constraint.
 Run it locally with `make lint-projection`. Getting the patterns right is the rule author's
 responsibility — runtime metrics in node-agent catch drift after deployment.
 

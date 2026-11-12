@@ -3,6 +3,7 @@ module github.com/kubescape/rulelibrary
 go 1.27
 
 require (
+	github.com/Masterminds/semver/v3 v3.5.0
 	github.com/armosec/armoapi-go v0.0.742
 	github.com/google/cel-go v0.29.2
 	github.com/goradd/maps v1.3.0

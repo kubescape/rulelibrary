@@ -23,6 +23,8 @@ func TestLintFile(t *testing.T) {
 		{"testdata/error-field-empty.yaml", []Severity{SeverityError}, []string{"C2", "at least one pattern"}},
 		{"testdata/warn-notrequired-with-decl.yaml", []Severity{SeverityWarn}, []string{"C4"}},
 		{"testdata/error-bad-dependency-value.yaml", []Severity{SeverityError}, []string{"C5", "unrecognized profileDependency"}},
+		{"testdata/valid-agent-version.yaml", nil, nil},
+		{"testdata/error-agent-version-invalid.yaml", []Severity{SeverityError}, []string{"C6", `"0.3.307+"`, "not a valid semver constraint"}},
 	}
 	for _, c := range cases {
 		t.Run(c.path, func(t *testing.T) {
@@ -51,4 +53,32 @@ func TestLintExitCode(t *testing.T) {
 		}
 	}
 	assert.True(t, hasError)
+}
+
+func TestCheckAgentVersionRequirement(t *testing.T) {
+	cases := []struct {
+		requirement string
+		wantError   bool
+	}{
+		{"", false},
+		{">=0.3.307", false},
+		{">= 0.3.307", false},
+		{">=0.3.307, <0.4.0", false},
+		{"~0.3", false},
+		{"0.3.307+", true},
+		{"latest", true},
+		{" ", true},
+	}
+	for _, c := range cases {
+		t.Run(c.requirement, func(t *testing.T) {
+			findings := checkAgentVersionRequirement("rule.yaml", 1, "R0000", c.requirement)
+			if !c.wantError {
+				assert.Empty(t, findings)
+				return
+			}
+			require.Len(t, findings, 1)
+			assert.Equal(t, SeverityError, findings[0].Severity)
+			assert.Equal(t, "C6", findings[0].Check)
+		})
+	}
 }
