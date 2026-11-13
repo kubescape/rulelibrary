@@ -1,0 +1,8 @@
+spec:
+  rules:
+    - id: R1011
+      expressions:
+        ruleExpression:
+          - eventType: "exec"
+          - eventType: "Open"
+      profileDependency: 2
