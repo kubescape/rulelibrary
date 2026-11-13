@@ -44,7 +44,7 @@ spec:
 |-------|------|-------------|----------|
 | `name` | string | Human-readable rule name | Yes |
 | `enabled` | boolean | Whether the rule is active | Yes |
-| `id` | string | Unique rule identifier (format: R####) | Yes |
+| `id` | string | Rule identifier (format: R####), unique across the library. The node-agent loads only one rule per `id` | Yes |
 | `description` | string | Detailed description of the rule | Yes |
 | `expressions.message` | string | CEL expression for alert message | Yes |
 | `expressions.uniqueId` | string | CEL expression for unique event ID | Yes |
@@ -82,7 +82,8 @@ The `Platforms` row in each rule README is human-facing documentation. The `cont
 - `exec` - Process execution events
 - `open` - File access events
 - `capabilities` - Linux capability events
-- `dns` - DNS query events
+- `dns` - DNS responses that carry an answer
+- `dnsQuery` - DNS queries and error responses (NXDOMAIN, SERVFAIL, REFUSED). The node-agent sends these to rules only when its `dnsRuleForwarding.enabled` setting is on, which it is not by default. An agent without that setting never matches a `dnsQuery` expression
 - `network` - Network connection events
 - `syscall` - System call events
 - `randomx` - XMRig mining events
@@ -99,6 +100,10 @@ The `Platforms` row in each rule README is human-facing documentation. The `cont
 - `kmod` - Kernel module load events
 - `unshare` - `unshare()` system call events
 - `k8s-admission` - Kubernetes API requests seen by the Kubescape operator's admission webhook, not by the node-agent (see [Testing `k8s-admission` rules](docs/testing-admission-rules.md))
+
+The node-agent compares `eventType` with the event's type as an exact, case-sensitive string,
+so an expression with any other value loads without an error and never runs. The projection
+lint (`make lint-projection`, check `C7`) rejects such values.
 
 ### Pre-filter parameters (`state`)
 
@@ -337,7 +342,9 @@ profileDataRequired:
 ```
 
 The lint at `cmd/lint-projection/` enforces that declarations are present and schema-valid,
-and that any `agentVersionRequirement` is a valid semver constraint.
+that any `agentVersionRequirement` is a valid semver constraint, that every `eventType` is
+one listed under [Supported Event Types](#supported-event-types), and that no two rules
+share an `id`.
 Run it locally with `make lint-projection`. Getting the patterns right is the rule author's
 responsibility — runtime metrics in node-agent catch drift after deployment.
 

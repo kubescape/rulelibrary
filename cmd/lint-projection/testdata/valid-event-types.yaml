@@ -1,0 +1,18 @@
+spec:
+  rules:
+    - id: R1011
+      expressions:
+        ruleExpression:
+          - eventType: "exec"
+          - eventType: "open"
+      profileDependency: 2
+    - id: R0005
+      expressions:
+        ruleExpression:
+          - eventType: "dnsQuery"
+      profileDependency: 2
+    - id: R2000
+      expressions:
+        ruleExpression:
+          - eventType: "k8s-admission"
+      profileDependency: 2

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/armosec/armoapi-go/armotypes"
@@ -30,12 +32,17 @@ func (f Finding) String() string {
 }
 
 // ruleDoc mirrors the relevant fields of a kubescape/rulelibrary rule YAML.
-// We only need profileDependency, profileDataRequired and
-// agentVersionRequirement here.
+// We only need the id, profileDependency, profileDataRequired,
+// agentVersionRequirement and the eventType of each rule expression here.
 type ruleDoc struct {
 	Spec struct {
 		Rules []struct {
-			ID                      string                         `yaml:"id"`
+			ID          string `yaml:"id"`
+			Expressions struct {
+				RuleExpression []struct {
+					EventType string `yaml:"eventType"`
+				} `yaml:"ruleExpression"`
+			} `yaml:"expressions"`
 			ProfileDependency       armotypes.ProfileDependency    `yaml:"profileDependency"`
 			ProfileDataRequired     *armotypes.ProfileDataRequired `yaml:"profileDataRequired,omitempty"`
 			AgentVersionRequirement string                         `yaml:"agentVersionRequirement,omitempty"`
@@ -43,32 +50,90 @@ type ruleDoc struct {
 	} `yaml:"spec"`
 }
 
+// ruleRef records where a rule ID is declared, for the library-wide
+// duplicate ID check.
+type ruleRef struct {
+	ID   string
+	File string
+	Line int
+}
+
+// ruleEventTypes is the set of eventType values a rule expression can be
+// selected for. Apart from k8s-admission, whose events come from the
+// Kubescape operator's admission webhook, these are the values
+// utils.RuleEventType returns in node-agent v0.3.308. "dnsQuery" is the
+// rule-only alias for DNS queries and error responses, which node-agent
+// forwards only when dnsRuleForwarding is enabled.
+var ruleEventTypes = map[string]bool{
+	"bpf":           true,
+	"capabilities":  true,
+	"dns":           true,
+	"dnsQuery":      true,
+	"exec":          true,
+	"exit":          true,
+	"fork":          true,
+	"hardlink":      true,
+	"http":          true,
+	"iouring":       true,
+	"k8s-admission": true,
+	"kmod":          true,
+	"network":       true,
+	"open":          true,
+	"procfs":        true,
+	"ptrace":        true,
+	"randomx":       true,
+	"ssh":           true,
+	"symlink":       true,
+	"syscall":       true,
+	"unshare":       true,
+}
+
 func lintFiles(files []string) []Finding {
 	var findings []Finding
+	var refs []ruleRef
 	for _, path := range files {
-		findings = append(findings, lintFile(path)...)
+		fileFindings, fileRefs := lintFileRules(path)
+		findings = append(findings, fileFindings...)
+		refs = append(refs, fileRefs...)
 	}
-	return findings
+	return append(findings, checkDuplicateIDs(refs)...)
 }
 
 func lintFile(path string) []Finding {
+	findings, refs := lintFileRules(path)
+	return append(findings, checkDuplicateIDs(refs)...)
+}
+
+// lintFileRules runs the per-rule checks on one file and returns the
+// findings together with the location of every rule ID it declares.
+func lintFileRules(path string) ([]Finding, []ruleRef) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return []Finding{{File: path, Line: 0, RuleID: "?", Severity: SeverityError, Check: "C3", Message: fmt.Sprintf("read failed: %v", err)}}
+		return []Finding{{File: path, Line: 0, RuleID: "?", Severity: SeverityError, Check: "C3", Message: fmt.Sprintf("read failed: %v", err)}}, nil
 	}
 	var doc ruleDoc
 	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return []Finding{{File: path, Line: 0, RuleID: "?", Severity: SeverityError, Check: "C3", Message: fmt.Sprintf("yaml unmarshal: %v", err)}}
+		return []Finding{{File: path, Line: 0, RuleID: "?", Severity: SeverityError, Check: "C3", Message: fmt.Sprintf("yaml unmarshal: %v", err)}}, nil
 	}
-	lineByID := indexRuleLines(data)
+	lines := indexRuleLines(data)
 
 	var findings []Finding
-	for _, r := range doc.Spec.Rules {
-		line := lineByID[r.ID]
+	var refs []ruleRef
+	for i, r := range doc.Spec.Rules {
+		line := 0
+		if i < len(lines) {
+			line = lines[i]
+		}
 		findings = append(findings, checkRule(path, line, r.ID, r.ProfileDependency, r.ProfileDataRequired)...)
 		findings = append(findings, checkAgentVersionRequirement(path, line, r.ID, r.AgentVersionRequirement)...)
+		eventTypes := make([]string, 0, len(r.Expressions.RuleExpression))
+		for _, expr := range r.Expressions.RuleExpression {
+			eventTypes = append(eventTypes, expr.EventType)
+		}
+		findings = append(findings, checkEventTypes(path, line, r.ID, eventTypes)...)
+		refs = append(refs, ruleRef{ID: r.ID, File: path, Line: line})
 	}
-	return findings
+	return findings, refs
 }
 
 func checkRule(path string, line int, id string, dep armotypes.ProfileDependency, pdr *armotypes.ProfileDataRequired) []Finding {
@@ -112,6 +177,55 @@ func checkAgentVersionRequirement(path string, line int, id, requirement string)
 	return nil
 }
 
+// checkEventTypes rejects a rule expression whose eventType is not one an
+// event source emits. The node-agent selects expressions by comparing
+// eventType with the event's type as an exact string, so a misspelled or
+// unsupported value, such as "Exec" or "file", loads without any error and
+// the expression never runs.
+func checkEventTypes(path string, line int, id string, eventTypes []string) []Finding {
+	var out []Finding
+	for i, eventType := range eventTypes {
+		if ruleEventTypes[eventType] {
+			continue
+		}
+		out = append(out, Finding{File: path, Line: line, RuleID: id, Severity: SeverityError, Check: "C7",
+			Message: fmt.Sprintf("ruleExpression[%d] has unknown eventType %q (must be one of: %s); node-agent matches eventType exactly, so this expression never runs", i, eventType, knownEventTypes())})
+	}
+	return out
+}
+
+func knownEventTypes() string {
+	names := make([]string, 0, len(ruleEventTypes))
+	for name := range ruleEventTypes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
+}
+
+// checkDuplicateIDs rejects a rule ID that more than one rule declares.
+// gen.sh merges every rule into one Rules object, and the node-agent rule
+// creator keys the rules it loads by ID (RuleCreatorImpl.SyncRules in
+// node-agent v0.3.308), so only one rule per ID is loaded and the others are
+// dropped without a warning. Rules without an ID are left to the other checks.
+func checkDuplicateIDs(refs []ruleRef) []Finding {
+	var out []Finding
+	first := map[string]ruleRef{}
+	for _, r := range refs {
+		if r.ID == "" {
+			continue
+		}
+		prev, seen := first[r.ID]
+		if !seen {
+			first[r.ID] = r
+			continue
+		}
+		out = append(out, Finding{File: r.File, Line: r.Line, RuleID: r.ID, Severity: SeverityError, Check: "C8",
+			Message: fmt.Sprintf("rule ID is already declared at %s:%d; node-agent loads only one rule per ID, so one of them is silently dropped", prev.File, prev.Line)})
+	}
+	return out
+}
+
 func profileDependencyName(d armotypes.ProfileDependency) string {
 	switch d {
 	case armotypes.Required:
@@ -124,24 +238,29 @@ func profileDependencyName(d armotypes.ProfileDependency) string {
 	return fmt.Sprintf("Unknown(%d)", d)
 }
 
-func indexRuleLines(data []byte) map[string]int {
-	out := map[string]int{}
+// indexRuleLines returns, for each entry of spec.rules in order, the line of
+// its id (or of the entry itself when it has no id), so that two rules with
+// the same ID in one file are reported at their own lines.
+func indexRuleLines(data []byte) []int {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return out
+		return nil
 	}
 	if doc.Kind != yaml.DocumentNode || len(doc.Content) == 0 {
-		return out
+		return nil
 	}
 	root := doc.Content[0]
 	spec := findMappingValue(root, "spec")
 	rules := findMappingValue(spec, "rules")
 	if rules == nil || rules.Kind != yaml.SequenceNode {
-		return out
+		return nil
 	}
+	out := make([]int, 0, len(rules.Content))
 	for _, ruleMap := range rules.Content {
 		if id := findMappingValue(ruleMap, "id"); id != nil {
-			out[id.Value] = id.Line
+			out = append(out, id.Line)
+		} else {
+			out = append(out, ruleMap.Line)
 		}
 	}
 	return out

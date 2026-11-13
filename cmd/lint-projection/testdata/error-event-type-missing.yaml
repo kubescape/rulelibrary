@@ -1,0 +1,7 @@
+spec:
+  rules:
+    - id: R1011
+      expressions:
+        ruleExpression:
+          - expression: "true"
+      profileDependency: 2
