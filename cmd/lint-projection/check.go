@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -88,6 +89,27 @@ var ruleEventTypes = map[string]bool{
 	"unshare":       true,
 }
 
+// profileDataSurfaces and profileDataPatternFields are the keys the node-agent
+// rules watcher accepts in a raw profileDataRequired object. Like
+// typesv1.KnownProfileDataSurfaces and KnownProfileDataPatternFields in
+// node-agent v0.3.308, they are read from the JSON tags of the armotypes
+// structs, so a surface added to armoapi-go is accepted here as well.
+var (
+	profileDataSurfaces      = jsonFieldNames(reflect.TypeOf(armotypes.ProfileDataRequired{}))
+	profileDataPatternFields = jsonFieldNames(reflect.TypeOf(armotypes.ProfileDataPattern{}))
+)
+
+func jsonFieldNames(t reflect.Type) map[string]bool {
+	names := make(map[string]bool, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if name != "" && name != "-" {
+			names[name] = true
+		}
+	}
+	return names
+}
+
 func lintFiles(files []string) []Finding {
 	var findings []Finding
 	var refs []ruleRef
@@ -115,16 +137,18 @@ func lintFileRules(path string) ([]Finding, []ruleRef) {
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return []Finding{{File: path, Line: 0, RuleID: "?", Severity: SeverityError, Check: "C3", Message: fmt.Sprintf("yaml unmarshal: %v", err)}}, nil
 	}
-	lines := indexRuleLines(data)
+	nodes := ruleNodes(data)
 
 	var findings []Finding
 	var refs []ruleRef
 	for i, r := range doc.Spec.Rules {
-		line := 0
-		if i < len(lines) {
-			line = lines[i]
+		var node *yaml.Node
+		if i < len(nodes) {
+			node = nodes[i]
 		}
+		line := ruleLine(node)
 		findings = append(findings, checkRule(path, line, r.ID, r.ProfileDependency, r.ProfileDataRequired)...)
+		findings = append(findings, checkProfileDataKeys(path, line, r.ID, findMappingValue(node, "profileDataRequired"))...)
 		findings = append(findings, checkAgentVersionRequirement(path, line, r.ID, r.AgentVersionRequirement)...)
 		eventTypes := make([]string, 0, len(r.Expressions.RuleExpression))
 		for _, expr := range r.Expressions.RuleExpression {
@@ -161,6 +185,45 @@ func checkRule(path string, line int, id string, dep armotypes.ProfileDependency
 	return out
 }
 
+// checkProfileDataKeys rejects a profileDataRequired key that is not a profile
+// surface or a pattern field, such as "exec" for "execs" or "prefixes" for
+// "prefix". Decoding into armotypes drops unknown keys, so C1 and C2 never see
+// them. The node-agent rules watcher validates the raw object first
+// (ValidateRawProfileDataRequired in node-agent v0.3.308) and, on an unknown
+// key, skips the whole Rules object. gen.sh merges every rule into one Rules
+// object, so a single unknown key stops the node-agent from loading any rule
+// in rules-crd.yaml.
+func checkProfileDataKeys(path string, line int, id string, pdr *yaml.Node) []Finding {
+	if pdr == nil || pdr.Kind != yaml.MappingNode {
+		return nil
+	}
+	const consequence = "node-agent rejects the whole Rules object that contains it, so no rule in rules-crd.yaml loads"
+	var out []Finding
+	for i := 0; i+1 < len(pdr.Content); i += 2 {
+		surface, patterns := pdr.Content[i].Value, pdr.Content[i+1]
+		if !profileDataSurfaces[surface] {
+			out = append(out, Finding{File: path, Line: line, RuleID: id, Severity: SeverityError, Check: "C9",
+				Message: fmt.Sprintf("profileDataRequired has unknown surface %q (must be one of: %s); %s", surface, sortedNames(profileDataSurfaces), consequence)})
+			continue
+		}
+		if patterns.Kind != yaml.SequenceNode {
+			continue
+		}
+		for j, pattern := range patterns.Content {
+			if pattern.Kind != yaml.MappingNode {
+				continue
+			}
+			for k := 0; k+1 < len(pattern.Content); k += 2 {
+				if field := pattern.Content[k].Value; !profileDataPatternFields[field] {
+					out = append(out, Finding{File: path, Line: line, RuleID: id, Severity: SeverityError, Check: "C9",
+						Message: fmt.Sprintf("profileDataRequired.%s[%d] has unknown pattern field %q (must be one of: %s); %s", surface, j, field, sortedNames(profileDataPatternFields), consequence)})
+				}
+			}
+		}
+	}
+	return out
+}
+
 // checkAgentVersionRequirement rejects an agentVersionRequirement that
 // Masterminds/semver, the library the node-agent rules watcher uses, cannot
 // parse. The watcher fails open on a parse error: it logs a warning and
@@ -189,14 +252,14 @@ func checkEventTypes(path string, line int, id string, eventTypes []string) []Fi
 			continue
 		}
 		out = append(out, Finding{File: path, Line: line, RuleID: id, Severity: SeverityError, Check: "C7",
-			Message: fmt.Sprintf("ruleExpression[%d] has unknown eventType %q (must be one of: %s); node-agent matches eventType exactly, so this expression never runs", i, eventType, knownEventTypes())})
+			Message: fmt.Sprintf("ruleExpression[%d] has unknown eventType %q (must be one of: %s); node-agent matches eventType exactly, so this expression never runs", i, eventType, sortedNames(ruleEventTypes))})
 	}
 	return out
 }
 
-func knownEventTypes() string {
-	names := make([]string, 0, len(ruleEventTypes))
-	for name := range ruleEventTypes {
+func sortedNames(set map[string]bool) string {
+	names := make([]string, 0, len(set))
+	for name := range set {
 		names = append(names, name)
 	}
 	sort.Strings(names)
@@ -238,10 +301,8 @@ func profileDependencyName(d armotypes.ProfileDependency) string {
 	return fmt.Sprintf("Unknown(%d)", d)
 }
 
-// indexRuleLines returns, for each entry of spec.rules in order, the line of
-// its id (or of the entry itself when it has no id), so that two rules with
-// the same ID in one file are reported at their own lines.
-func indexRuleLines(data []byte) []int {
+// ruleNodes returns the mapping node of each entry of spec.rules, in order.
+func ruleNodes(data []byte) []*yaml.Node {
 	var doc yaml.Node
 	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return nil
@@ -255,15 +316,20 @@ func indexRuleLines(data []byte) []int {
 	if rules == nil || rules.Kind != yaml.SequenceNode {
 		return nil
 	}
-	out := make([]int, 0, len(rules.Content))
-	for _, ruleMap := range rules.Content {
-		if id := findMappingValue(ruleMap, "id"); id != nil {
-			out = append(out, id.Line)
-		} else {
-			out = append(out, ruleMap.Line)
-		}
+	return rules.Content
+}
+
+// ruleLine returns the line of a rule's id (or of the rule entry itself when
+// it has no id), so that two rules with the same ID in one file are reported
+// at their own lines.
+func ruleLine(rule *yaml.Node) int {
+	if rule == nil {
+		return 0
 	}
-	return out
+	if id := findMappingValue(rule, "id"); id != nil {
+		return id.Line
+	}
+	return rule.Line
 }
 
 func findMappingValue(n *yaml.Node, key string) *yaml.Node {
