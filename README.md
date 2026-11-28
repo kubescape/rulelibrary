@@ -341,10 +341,17 @@ profileDataRequired:
   execs: all
 ```
 
+Spell the keys exactly as in the tables above. `execs`, `opens` and `syscalls` are plural
+although their event types are singular. The node-agent also accepts `ingressDomains` and
+`ingressAddresses`. Before it reads a `Rules` object, the node-agent checks every
+`profileDataRequired` key and skips the whole object if one is unknown. `rules-crd.yaml` is a
+single `Rules` object, so one misspelled key, such as `exec` for `execs` or `prefixes` for
+`prefix`, stops every rule in it from loading.
+
 The lint at `cmd/lint-projection/` enforces that declarations are present and schema-valid,
-that any `agentVersionRequirement` is a valid semver constraint, that every `eventType` is
-one listed under [Supported Event Types](#supported-event-types), and that no two rules
-share an `id`.
+that `profileDataRequired` has no unknown keys (check `C9`), that any
+`agentVersionRequirement` is a valid semver constraint, that every `eventType` is one listed
+under [Supported Event Types](#supported-event-types), and that no two rules share an `id`.
 Run it locally with `make lint-projection`. Getting the patterns right is the rule author's
 responsibility — runtime metrics in node-agent catch drift after deployment.
 

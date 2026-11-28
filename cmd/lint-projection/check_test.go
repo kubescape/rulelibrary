@@ -4,8 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	typesv1 "github.com/kubescape/node-agent/pkg/rulemanager/types/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestLintFile(t *testing.T) {
@@ -29,6 +31,8 @@ func TestLintFile(t *testing.T) {
 		{"testdata/error-event-type-unknown.yaml", []Severity{SeverityError}, []string{"C7", `ruleExpression[1] has unknown eventType "Open"`}},
 		{"testdata/error-event-type-missing.yaml", []Severity{SeverityError}, []string{"C7", `ruleExpression[0] has unknown eventType ""`}},
 		{"testdata/error-duplicate-id.yaml", []Severity{SeverityError}, []string{"error-duplicate-id.yaml:5: R1000", "C8", "already declared at testdata/error-duplicate-id.yaml:3", "only one rule per ID"}},
+		{"testdata/error-profile-data-unknown-surface.yaml", []Severity{SeverityError}, []string{"C9", `profileDataRequired has unknown surface "syscall"`, "no rule in rules-crd.yaml loads"}},
+		{"testdata/error-profile-data-unknown-pattern-field.yaml", []Severity{SeverityError}, []string{"C9", `profileDataRequired.opens[0] has unknown pattern field "prefx"`}},
 	}
 	for _, c := range cases {
 		t.Run(c.path, func(t *testing.T) {
@@ -129,4 +133,44 @@ func TestCheckDuplicateIDs(t *testing.T) {
 		assert.Equal(t, "R0001", findings[i].RuleID)
 		assert.Contains(t, findings[i].Message, "a.yaml:3")
 	}
+}
+
+func TestCheckProfileDataKeys(t *testing.T) {
+	cases := []struct {
+		name string
+		pdr  string
+		want []string
+	}{
+		{"every surface", "opens: all\nexecs: all\ncapabilities: all\nsyscalls: all\nendpoints: all\negressDomains: all\negressAddresses: all\ningressDomains: all\ningressAddresses: all", nil},
+		{"every pattern field", "opens:\n  - exact: /a\n  - prefix: /b/\n  - suffix: /c\n  - contains: d", nil},
+		{"null", "null", nil},
+		{"not a mapping", "all", nil},
+		{"scalar pattern", "opens:\n  - /etc/", nil},
+		{"singular surface", "exec: all", []string{`profileDataRequired has unknown surface "exec"`}},
+		{"wrong case", "Opens: all", []string{`profileDataRequired has unknown surface "Opens"`}},
+		{"plural pattern field", "opens:\n  - prefixes: /etc/", []string{`profileDataRequired.opens[0] has unknown pattern field "prefixes"`}},
+		{"in document order", "execs: all\negressDomain: all\nopens:\n  - exact: /a\n  - prefix: /b/\n    sufix: /c", []string{
+			`profileDataRequired has unknown surface "egressDomain"`,
+			`profileDataRequired.opens[1] has unknown pattern field "sufix"`,
+		}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var doc yaml.Node
+			require.NoError(t, yaml.Unmarshal([]byte(c.pdr), &doc))
+			findings := checkProfileDataKeys("rule.yaml", 1, "R0000", doc.Content[0])
+			require.Len(t, findings, len(c.want), "unexpected findings: %v", findings)
+			for i, want := range c.want {
+				assert.Equal(t, SeverityError, findings[i].Severity)
+				assert.Equal(t, "C9", findings[i].Check)
+				assert.Contains(t, findings[i].Message, want)
+			}
+		})
+	}
+	assert.Empty(t, checkProfileDataKeys("rule.yaml", 1, "R0000", nil))
+}
+
+func TestProfileDataKeysMatchNodeAgent(t *testing.T) {
+	assert.Equal(t, typesv1.KnownProfileDataSurfaces, profileDataSurfaces)
+	assert.Equal(t, typesv1.KnownProfileDataPatternFields, profileDataPatternFields)
 }
